@@ -1,0 +1,208 @@
+{
+ "labels": {
+  "sabueso": "Sabueso de Escoria",
+  "horno": "Horno de Fosas",
+  "trueno": "Sabueso del Trueno",
+  "ojo": "Ojo de Latón",
+  "campesino": "Campesino",
+  "escudero": "Escudero",
+  "ballestero": "Ballestero",
+  "clerigo": "Clérigo",
+  "verdugo": "El Verdugo",
+  "inquisidor": "El Inquisidor",
+  "heroe": "Héroe"
+ },
+ "arena": {
+  "door_x": 130,
+  "spawn_x": 1240,
+  "lane_y": [
+   250,
+   380,
+   510
+  ]
+ },
+ "door": {
+  "hp": 100
+ },
+ "slots": [
+  {
+   "lane": 0,
+   "depth": "front",
+   "x": 520
+  },
+  {
+   "lane": 1,
+   "depth": "front",
+   "x": 520
+  },
+  {
+   "lane": 2,
+   "depth": "front",
+   "x": 520
+  },
+  {
+   "lane": 0,
+   "depth": "rear",
+   "x": 330
+  },
+  {
+   "lane": 1,
+   "depth": "rear",
+   "x": 330
+  },
+  {
+   "lane": 2,
+   "depth": "rear",
+   "x": 330
+  }
+ ],
+ "economy": {
+  "start_souls": 40,
+  "wave_bonus": 8,
+  "costs": {
+   "sabueso": 40,
+   "ojo": 60,
+   "guardia": 55
+  }
+ },
+ "garra": {
+  "dmg": 18,
+  "cd": 0.9,
+  "range": 430,
+  "guardia_range": 230,
+  "guardia_hold": 2.5,
+  "guardia_cd": 6.0
+ },
+ "sabueso": {
+  "hp": 100,
+  "dmg": 10,
+  "cd": 0.9,
+  "speed": 170,
+  "leash": 360,
+  "reach": 36,
+  "presa_cd": 6.0,
+  "presa_time": 2.0,
+  "presa_range": 120,
+  "presa_windup": 0.35
+ },
+ "horno": {
+  "hp": 220,
+  "dmg": 8,
+  "cd": 1.0,
+  "speed": 90,
+  "leash": 300,
+  "reach": 40,
+  "inhale_cd": 7.0,
+  "inhale_time": 0.6,
+  "inhale_range": 300,
+  "inhale_max": 4,
+  "fill_timeout": 3.0,
+  "spit_range": 240,
+  "spit_dmg": 20,
+  "burn_dps": 6,
+  "burn_time": 4.0,
+  "minor_dmg": 10,
+  "minor_burn_time": 2.0,
+  "ground_time": 3.0
+ },
+ "trueno": {
+  "hp": 130,
+  "dmg": 10,
+  "cd": 0.9,
+  "speed": 210,
+  "leash": 320,
+  "reach": 36,
+  "jump_cd": 8.0,
+  "crouch_time": 0.5,
+  "jump_time": 0.7,
+  "jump_range": 760,
+  "min_gap": 160,
+  "land_dmg": 40,
+  "chain_dmg": [
+   20,
+   15,
+   10
+  ],
+  "chain_range": 150,
+  "return_after": 6.0
+ },
+ "ojo": {
+  "hp": 60,
+  "dmg": 12,
+  "cd": 1.2,
+  "range": 480,
+  "mark_range": 900,
+  "chain_dmg": 12,
+  "chain_count": 3,
+  "chain_range": 240
+ },
+ "enemies": {
+  "campesino": {
+   "hp": 30,
+   "speed": 45,
+   "dmg": 5,
+   "cd": 1.4,
+   "reach": 30,
+   "door_dmg": 3,
+   "reward": 2
+  },
+  "escudero": {
+   "hp": 140,
+   "speed": 34,
+   "dmg": 8,
+   "cd": 1.5,
+   "reach": 34,
+   "door_dmg": 5,
+   "armor": 0.6,
+   "reward": 6
+  },
+  "ballestero": {
+   "hp": 50,
+   "speed": 38,
+   "dmg": 9,
+   "cd": 1.8,
+   "range": 300,
+   "ranged": true,
+   "door_dmg": 4,
+   "reward": 6
+  },
+  "clerigo": {
+   "hp": 80,
+   "speed": 34,
+   "dmg": 0,
+   "cd": 9.9,
+   "reach": 30,
+   "door_dmg": 0,
+   "support": true,
+   "heal": 20,
+   "heal_cd": 2.0,
+   "heal_radius": 170,
+   "follow_gap": 90,
+   "reward": 8
+  },
+  "verdugo": {
+   "hp": 600,
+   "speed": 28,
+   "dmg": 28,
+   "cd": 1.4,
+   "reach": 42,
+   "door_dmg": 12,
+   "hero": true,
+   "execute": 0.25,
+   "reward": 30
+  },
+  "inquisidor": {
+   "hp": 500,
+   "speed": 30,
+   "dmg": 18,
+   "cd": 1.4,
+   "reach": 42,
+   "door_dmg": 10,
+   "hero": true,
+   "bell": true,
+   "bell_cd": 6.0,
+   "stun": 3.0,
+   "reward": 30
+  }
+ }
+}

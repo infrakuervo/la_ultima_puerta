@@ -1,0 +1,868 @@
+extends Node2D
+## Vista y entrada de La Última Puerta. Toda la lógica vive en sim.gd; aquí solo se
+## dibuja, se oye y se lee el ratón. Se juega entera con el ratón (Espacio/F/B son atajos).
+
+const Sim = preload("res://scripts/sim.gd")
+const Art = preload("res://scripts/art.gd")
+const SoundBank = preload("res://scripts/sound_bank.gd")
+
+const SCREEN_W: float = 1280.0
+const SCREEN_H: float = 720.0
+const BESTIARY_PATH: String = "user://bestiario.json"
+
+const FORM_INFO: Dictionary = {
+	"sabueso": "Muerde y, de vez en cuando, agarra a un enemigo (Presa) para que no avance.",
+	"horno": "Inhala hasta 4 enemigos de su carril y los escupe en llamas. Quema el suelo.",
+	"trueno": "Salta sobre la vanguardia a un apoyo (clérigo/ballestero) y encadena descargas. Deja su hueco abierto.",
+	"ojo": "Dispara desde atrás. Sobre enemigos en llamas encadena el disparo. Marca el objetivo del Trueno.",
+}
+
+var sim = null
+var sound = null
+var players: Array = []
+var player_idx: int = 0
+var sound_last: Dictionary = {}
+
+var clock: float = 0.0
+var accum: float = 0.0
+var speed: int = 1
+var selected_id: int = -1
+var dragging: bool = false
+var mouse_pos: Vector2 = Vector2.ZERO
+var show_bestiary: bool = false
+
+var fx: Array = []
+var warns: Array = []
+var mut_anim: Dictionary = {}
+var banner_text: String = ""
+var banner_t: float = 0.0
+var shake: float = 0.0
+var flash_red: float = 0.0
+var flash_white: float = 0.0
+var font: Font = null
+
+
+func _ready() -> void:
+	font = ThemeDB.fallback_font
+	sim = Sim.new(int(Time.get_ticks_usec() % 1000000))
+	sound = SoundBank.new()
+	for i in 10:
+		var p: AudioStreamPlayer = AudioStreamPlayer.new()
+		add_child(p)
+		players.append(p)
+	_load_bestiary()
+
+
+# ----------------------------------------------------------------------------
+# Bucle
+# ----------------------------------------------------------------------------
+
+func _process(delta: float) -> void:
+	delta = minf(delta, 0.1)
+	clock += delta
+	mouse_pos = get_global_mouse_position()
+	if sim.phase == "combat":
+		accum += delta * float(speed)
+		var guard: int = 0
+		while accum >= Sim.TICK and guard < 12:
+			sim.step(Sim.TICK)
+			accum -= Sim.TICK
+			guard += 1
+			if sim.phase != "combat":
+				break
+	else:
+		accum = 0.0
+	_handle_events()
+	_update_fx(delta)
+	queue_redraw()
+
+
+func _update_fx(delta: float) -> void:
+	var keep: Array = []
+	for f in fx:
+		f["t"] += delta
+		if f["t"] < f["ttl"]:
+			keep.append(f)
+	fx = keep
+	var keepw: Array = []
+	for w in warns:
+		w["t"] += delta
+		if w["t"] < w["ttl"]:
+			keepw.append(w)
+	warns = keepw
+	for k in mut_anim.keys():
+		mut_anim[k] += delta
+		if mut_anim[k] > 1.9:
+			mut_anim.erase(k)
+	banner_t = maxf(0.0, banner_t - delta)
+	shake = maxf(0.0, shake - delta * 18.0)
+	flash_red = maxf(0.0, flash_red - delta * 2.5)
+	flash_white = maxf(0.0, flash_white - delta * 1.6)
+
+
+func _play(name: String, min_gap: float = 0.0) -> void:
+	if min_gap > 0.0:
+		var last: float = float(sound_last.get(name, -10.0))
+		if clock - last < min_gap:
+			return
+		sound_last[name] = clock
+	if not sound.streams.has(name):
+		return
+	var p: AudioStreamPlayer = players[player_idx]
+	player_idx = (player_idx + 1) % players.size()
+	p.stream = sound.streams[name]
+	p.volume_db = -8.0
+	p.play()
+
+
+func _lane_y(lane: int) -> float:
+	return sim.lane_y(lane)
+
+
+func _enemy_pos(id: int) -> Vector2:
+	var e: Dictionary = sim.enemy_by_id(id)
+	if e.is_empty():
+		return Vector2(-100, -100)
+	return Vector2(e["x"], _lane_y(int(e["lane"])))
+
+
+func _creature_pos(c: Dictionary) -> Vector2:
+	var y: float = _lane_y(int(c["lane"]))
+	if c["air"]:
+		var k: float = clampf(float(c["t"]) / float(sim.B["trueno"]["jump_time"]), 0.0, 1.0)
+		y = lerpf(_lane_y(int(c["from_lane"])), _lane_y(int(c["to_lane"])), k) - sin(k * PI) * 130.0
+	return Vector2(c["x"], y)
+
+
+func _creature_pos_by_id(id: int) -> Vector2:
+	var c: Dictionary = sim.creature_by_id(id)
+	if c.is_empty():
+		return Vector2(-100, -100)
+	return _creature_pos(c)
+
+
+func _add_fx(d: Dictionary) -> void:
+	if not d.has("t"):
+		d["t"] = 0.0
+	fx.append(d)
+
+
+func _float(p: Vector2, text: String, col: Color, ttl: float = 1.0) -> void:
+	_add_fx({"type": "float", "p": p, "text": text, "col": col, "ttl": ttl})
+
+
+func _warn(d: Dictionary) -> void:
+	d["t"] = 0.0
+	warns.append(d)
+
+
+# ----------------------------------------------------------------------------
+# Eventos de la simulación -> sonido y señales visuales
+# ----------------------------------------------------------------------------
+
+func _handle_events() -> void:
+	for ev in sim.events:
+		_on_event(ev)
+	sim.events.clear()
+
+
+func _on_event(ev: Dictionary) -> void:
+	var t: String = ev["t"]
+	match t:
+		"placed":
+			_play("click")
+		"bought":
+			_play("buy")
+		"route_chosen":
+			_play("buy")
+		"loan_ojo":
+			_play("revive")
+			var op: Vector2 = _creature_pos_by_id(int(ev["id"]))
+			_float(op + Vector2(0, -110), "Ojo prestado esta oleada", Color(0.95, 0.85, 0.4), 2.2)
+		"wave_start":
+			_play("horn")
+			var w: Dictionary = sim.current_wave()
+			var hero: bool = false
+			for g in w["spawns"]:
+				if g["kind"] == "@hero":
+					hero = true
+			if hero:
+				banner_text = "Llega %s" % String(sim.ROUTES[sim.route]["hero_name"])
+				banner_t = 2.2
+			else:
+				banner_text = "Oleada %d: %s" % [int(ev["wave"]), String(w["title"])]
+				banner_t = 1.6
+		"garra":
+			_play("garra", 0.05)
+			var ep: Vector2 = _enemy_pos(int(ev["target"]))
+			if ep.x > 0.0:
+				_add_fx({"type": "line", "a": Vector2(150, ep.y - 30), "b": ep + Vector2(0, -30), "col": Color(1.0, 0.5, 0.2), "w": 4.0, "ttl": 0.12})
+		"guardia":
+			_play("guardia")
+			var gp: Vector2 = _enemy_pos(int(ev["target"]))
+			_add_fx({"type": "ring", "p": gp + Vector2(0, -30), "r0": 60.0, "r1": 20.0, "col": Color(0.9, 0.9, 0.3), "ttl": 0.4})
+			_float(gp + Vector2(0, -90), "Retenido", Color(0.9, 0.9, 0.4))
+		"bite":
+			_play("bite", 0.06)
+		"hit":
+			_play("hit", 0.05)
+			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 28), "r0": 4.0, "r1": 16.0, "col": Color(1, 1, 1, 0.8), "ttl": 0.15})
+		"kill":
+			_play("kill", 0.04)
+			_float(Vector2(ev["x"], _lane_y(int(ev["lane"])) - 60), "+%d" % int(ev["reward"]), Color(0.7, 0.95, 1.0))
+		"presa_windup":
+			_play("presa_windup")
+			_warn({"type": "presa", "eid": int(ev["target"]), "ttl": 0.4})
+		"presa":
+			_play("presa")
+		"horno_inhale":
+			_play("horno_inhale")
+			_warn({"type": "inhale", "cid": int(ev["id"]), "ttl": float(sim.B["horno"]["inhale_time"]) + 0.2})
+		"horno_spit":
+			_play("horno_spit")
+			shake = maxf(shake, 4.0)
+			_add_fx({"type": "fire", "x0": ev["x0"], "x1": ev["x1"], "y": _lane_y(int(ev["lane"])), "ttl": 0.7})
+			if not bool(ev["minor"]):
+				_float(Vector2((float(ev["x0"]) + float(ev["x1"])) * 0.5, _lane_y(int(ev["lane"])) - 90), "LLAMARADA", Color(1.0, 0.6, 0.2), 1.1)
+		"trueno_crouch":
+			_play("trueno_crouch")
+			_warn({"type": "crouch", "cid": int(ev["id"]), "eid": int(ev["target"]), "ttl": float(sim.B["trueno"]["crouch_time"]) + 0.1})
+		"trueno_jump":
+			_play("trueno_jump")
+			_add_fx({"type": "line", "a": Vector2(ev["from_x"], _lane_y(int(ev["from_lane"])) - 30), "b": Vector2(ev["to_x"], _lane_y(int(ev["to_lane"])) - 30), "col": Color(0.6, 0.8, 1.0), "w": 3.0, "ttl": 0.5})
+			_float(Vector2(ev["from_x"], _lane_y(int(ev["from_lane"])) - 100), "Hueco abierto", Color(1.0, 0.5, 0.4), 1.4)
+		"trueno_land":
+			_play("trueno_land")
+			shake = maxf(shake, 6.0)
+			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 10.0, "r1": 150.0, "col": Color(0.7, 0.85, 1.0), "ttl": 0.45})
+		"ojo_shot":
+			_play("ojo_shot", 0.08)
+			var cp: Vector2 = _creature_pos_by_id(int(ev["id"]))
+			_add_fx({"type": "line", "a": cp + Vector2(0, -62), "b": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 30), "col": Color(1.0, 0.9, 0.4), "w": 2.0, "ttl": 0.1})
+		"ojo_chain":
+			_play("ojo_chain")
+			var op2: Vector2 = _enemy_pos(int(ev["from"]))
+			for tid in ev["to"]:
+				var tp: Vector2 = _enemy_pos(int(tid))
+				if tp.x > 0.0 and op2.x > 0.0:
+					_add_fx({"type": "line", "a": op2 + Vector2(0, -30), "b": tp + Vector2(0, -30), "col": Color(1.0, 0.95, 0.5), "w": 3.0, "ttl": 0.3})
+			_float(op2 + Vector2(0, -80), "COMBO", Color(1.0, 0.95, 0.5), 0.9)
+		"ojo_mark":
+			_play("ojo_mark")
+		"bell":
+			_play("bell")
+			_warn({"type": "bell", "cid": int(ev["id"]), "ttl": 1.0})
+		"heal":
+			_play("heal", 0.2)
+			_float(Vector2(ev["x"], _lane_y(int(ev["lane"])) - 70), "+", Color(0.4, 1.0, 0.5), 0.7)
+		"shot":
+			_play("shot", 0.08)
+			_add_fx({"type": "line", "a": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 30), "b": Vector2(ev["tx"], _lane_y(int(ev["lane"])) - 30), "col": Color(0.8, 0.8, 0.8), "w": 2.0, "ttl": 0.1})
+		"door_hit":
+			_play("door_hit", 0.1)
+			shake = maxf(shake, 5.0)
+			flash_red = 0.5
+			_float(Vector2(120, _lane_y(int(ev["lane"])) - 40), "-%d" % int(ev["amount"]), Color(1.0, 0.3, 0.3))
+		"execute":
+			_float(_creature_pos_by_id(int(ev["id"])) + Vector2(0, -100), "EJECUCION", Color(1.0, 0.2, 0.2), 1.2)
+		"creature_down":
+			_play("down")
+			var dp: Vector2 = _creature_pos_by_id(int(ev["id"]))
+			if bool(ev["named"]):
+				_float(dp + Vector2(0, -100), "Tizón cae... volverá", Color(1.0, 0.7, 0.5), 1.8)
+			else:
+				_float(dp + Vector2(0, -80), "cae", Color(1.0, 0.7, 0.5), 1.0)
+		"revived":
+			_play("revive")
+			var rp: Vector2 = _creature_pos_by_id(int(ev["id"]))
+			_float(rp + Vector2(0, -110), "Vuelve con una cicatriz", Color(1.0, 0.45, 0.4), 2.4)
+		"mutated":
+			_play("mutate")
+			mut_anim[int(ev["id"])] = 0.0
+			flash_white = 0.7
+			banner_text = "%s se convierte en %s" % [String(ev["name"]), sim.label(String(ev["form"]))]
+			banner_t = 2.4
+			_save_bestiary()
+		"form_seen":
+			_save_bestiary()
+		"wave_clear":
+			_play("buy")
+			_save_bestiary()
+		"victory":
+			_play("win")
+			_save_bestiary()
+		"defeat":
+			_play("lose")
+			_save_bestiary()
+
+
+# ----------------------------------------------------------------------------
+# Bestiario (archivo sencillo en user://)
+# ----------------------------------------------------------------------------
+
+func _load_bestiary() -> void:
+	if not FileAccess.file_exists(BESTIARY_PATH):
+		return
+	var f: FileAccess = FileAccess.open(BESTIARY_PATH, FileAccess.READ)
+	if f == null:
+		return
+	var data: Variant = JSON.parse_string(f.get_as_text())
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	var forms: Array = data.get("formas", [])
+	for fm in forms:
+		if not sim.seen_forms.has(fm):
+			sim.seen_forms.append(fm)
+
+
+func _save_bestiary() -> void:
+	var t: Dictionary = sim.named_creature()
+	var rec: Dictionary = {}
+	if not t.is_empty():
+		rec = {"nombre": t["name"], "forma": t["kind"], "bajas": t["kills"], "cicatrices": t["scars"]}
+	var data: Dictionary = {"formas": sim.seen_forms, "tizon": rec}
+	var f: FileAccess = FileAccess.open(BESTIARY_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify(data, "  "))
+
+
+# ----------------------------------------------------------------------------
+# Entrada
+# ----------------------------------------------------------------------------
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		var mb: InputEventMouseButton = event
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			if mb.pressed:
+				_on_press(mb.position)
+			else:
+				_on_release(mb.position)
+	elif event is InputEventKey:
+		var k: InputEventKey = event
+		if k.pressed and not k.echo:
+			if k.keycode == KEY_SPACE or k.keycode == KEY_ENTER:
+				if sim.phase == "prep":
+					sim.start_wave()
+				elif sim.phase == "victory" or sim.phase == "defeat":
+					_restart()
+			elif k.keycode == KEY_F:
+				speed = 3 - speed
+			elif k.keycode == KEY_B:
+				show_bestiary = not show_bestiary
+
+
+func _restart() -> void:
+	sim.reset()
+	fx.clear()
+	warns.clear()
+	mut_anim.clear()
+	selected_id = -1
+	dragging = false
+	accum = 0.0
+	banner_t = 0.0
+	_play("click")
+
+
+func _buttons() -> Array:
+	var out: Array = []
+	var ph: String = sim.phase
+	var y: float = 624.0
+	if ph == "prep":
+		out.append({"id": "buy_sabueso", "rect": Rect2(20, y, 190, 72), "text": "Sabueso", "sub": "%d almas" % sim.cost_of("sabueso"), "on": sim.can_buy("sabueso")})
+		var ojo_sub: String = "%d almas" % sim.cost_of("ojo")
+		out.append({"id": "buy_ojo", "rect": Rect2(220, y, 190, 72), "text": "Ojo de Latón", "sub": ojo_sub, "on": sim.can_buy("ojo")})
+		var gsub: String = "comprada" if sim.guardia_unlocked else "%d almas" % sim.cost_of("guardia")
+		out.append({"id": "buy_guardia", "rect": Rect2(420, y, 190, 72), "text": "Garra de Guardia", "sub": gsub, "on": sim.can_buy("guardia")})
+		out.append({"id": "start", "rect": Rect2(1000, y, 260, 72), "text": "Iniciar oleada", "sub": "Espacio", "on": true})
+	elif ph == "route":
+		out.append({"id": "route_verdugo", "rect": Rect2(150, 150, 480, 360), "text": "", "sub": "", "on": true})
+		out.append({"id": "route_inquisidor", "rect": Rect2(650, 150, 480, 360), "text": "", "sub": "", "on": true})
+	elif ph == "forge":
+		out.append({"id": "forge", "rect": Rect2(490, 430, 300, 64), "text": "Entregar a Tizón", "sub": "", "on": true})
+	elif ph == "victory" or ph == "defeat":
+		out.append({"id": "restart", "rect": Rect2(490, 480, 300, 64), "text": "Reiniciar", "sub": "Espacio", "on": true})
+	out.append({"id": "speed", "rect": Rect2(760, y, 100, 72), "text": "Velocidad", "sub": "x%d" % speed, "on": true})
+	out.append({"id": "bestiary", "rect": Rect2(870, y, 120, 72), "text": "Bestiario", "sub": "B", "on": true})
+	return out
+
+
+func _do_button(id: String) -> void:
+	match id:
+		"start":
+			sim.start_wave()
+		"buy_sabueso":
+			sim.buy("sabueso")
+		"buy_ojo":
+			sim.buy("ojo")
+		"buy_guardia":
+			sim.buy("guardia")
+		"speed":
+			speed = 3 - speed
+			_play("click")
+		"bestiary":
+			show_bestiary = not show_bestiary
+			_play("click")
+		"route_verdugo":
+			sim.choose_route("verdugo")
+		"route_inquisidor":
+			sim.choose_route("inquisidor")
+		"forge":
+			sim.give_relic()
+		"restart":
+			_restart()
+
+
+func _slot_at(p: Vector2) -> int:
+	for i in sim.slot_count():
+		var s: Dictionary = sim.B["slots"][i]
+		var sp: Vector2 = Vector2(float(s["x"]), _lane_y(int(s["lane"])))
+		if absf(p.x - sp.x) <= 58.0 and absf(p.y - sp.y) <= 52.0:
+			return i
+	return -1
+
+
+func _creature_at(p: Vector2) -> int:
+	var best: int = -1
+	for c in sim.creatures:
+		if c["dead"]:
+			continue
+		var cp: Vector2 = _creature_pos(c)
+		var top: float = -110.0 if c["kind"] == "ojo" or c["kind"] == "horno" else -80.0
+		if p.x >= cp.x - 44.0 and p.x <= cp.x + 56.0 and p.y >= cp.y + top and p.y <= cp.y + 12.0:
+			best = int(c["id"])
+	return best
+
+
+func _on_press(p: Vector2) -> void:
+	if show_bestiary:
+		show_bestiary = false
+		return
+	for b in _buttons():
+		if b["on"] and b["rect"].has_point(p):
+			_do_button(String(b["id"]))
+			return
+	if sim.phase != "prep":
+		return
+	var cid: int = _creature_at(p)
+	if cid >= 0:
+		selected_id = cid
+		dragging = true
+		return
+	var si: int = _slot_at(p)
+	if si >= 0 and selected_id >= 0:
+		sim.place(selected_id, si)
+		selected_id = -1
+		return
+	selected_id = -1
+
+
+func _on_release(p: Vector2) -> void:
+	if not dragging:
+		return
+	dragging = false
+	if sim.phase != "prep" or selected_id < 0:
+		return
+	var si: int = _slot_at(p)
+	if si >= 0:
+		var c: Dictionary = sim.creature_by_id(selected_id)
+		if not c.is_empty() and int(c["slot"]) != si:
+			sim.place(selected_id, si)
+			selected_id = -1
+
+
+# ----------------------------------------------------------------------------
+# Dibujo
+# ----------------------------------------------------------------------------
+
+func _txt(s: String, pos: Vector2, size: int, col: Color, align: int = HORIZONTAL_ALIGNMENT_LEFT, width: float = -1.0) -> void:
+	draw_string(font, pos + Vector2(1, 1), s, align, width, size, Color(0, 0, 0, 0.6))
+	draw_string(font, pos, s, align, width, size, col)
+
+
+func _draw() -> void:
+	draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(0.08, 0.03, 0.04))
+	var sh: Vector2 = Vector2.ZERO
+	if shake > 0.0:
+		sh = Vector2(randf_range(-shake, shake), randf_range(-shake, shake))
+	draw_set_transform(sh, 0.0, Vector2.ONE)
+	_draw_arena()
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	_draw_hud()
+	_draw_lane_preview()
+	_draw_buttons()
+	_draw_overlays()
+	_draw_tooltip()
+	if flash_red > 0.0:
+		draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(1.0, 0.1, 0.05, flash_red * 0.3))
+	if flash_white > 0.0:
+		draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(1.0, 0.85, 0.6, flash_white * 0.6))
+	if banner_t > 0.0:
+		var a: float = clampf(banner_t / 0.5, 0.0, 1.0)
+		draw_rect(Rect2(0, 300, SCREEN_W, 90), Color(0, 0, 0, 0.55 * a))
+		_txt(banner_text, Vector2(0, 360), 44, Color(1.0, 0.85, 0.5, a), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+
+
+func _draw_arena() -> void:
+	# carriles
+	for i in 3:
+		var y: float = _lane_y(i)
+		var col: Color = Color(0.14, 0.06, 0.07) if i % 2 == 0 else Color(0.11, 0.05, 0.06)
+		draw_rect(Rect2(60, y - 58, SCREEN_W - 60, 116), col)
+		draw_line(Vector2(60, y + 58), Vector2(SCREEN_W, y + 58), Color(0.3, 0.1, 0.08), 2.0)
+	draw_line(Vector2(60, _lane_y(0) - 58), Vector2(SCREEN_W, _lane_y(0) - 58), Color(0.3, 0.1, 0.08), 2.0)
+	var door_rect: Rect2 = Rect2(40, _lane_y(0) - 70, 90, _lane_y(2) - _lane_y(0) + 140)
+	Art.draw_door(draw_ctx(), door_rect, clampf(sim.door_hp / sim.door_max, 0.0, 1.0), 0.0)
+	# casillas
+	var show_slots: bool = sim.phase == "prep"
+	var hover_slot: int = _slot_at(mouse_pos)
+	for i in sim.slot_count():
+		var s: Dictionary = sim.B["slots"][i]
+		var sp: Vector2 = Vector2(float(s["x"]), _lane_y(int(s["lane"])))
+		if show_slots:
+			var hot: bool = (selected_id >= 0 and hover_slot == i)
+			var a: float = 0.55 if (selected_id >= 0) else 0.25
+			draw_arc(sp, 36.0, 0.0, TAU, 28, Color(1.0, 0.8, 0.4, a + (0.3 if hot else 0.0)), 3.0 if hot else 2.0)
+			if hot:
+				draw_circle(sp, 36.0, Color(1.0, 0.8, 0.4, 0.15))
+	# suelo en llamas
+	for z in sim.zones:
+		var zy: float = _lane_y(int(z["lane"]))
+		var za: float = clampf(float(z["t"]) / 1.0, 0.0, 1.0)
+		draw_rect(Rect2(float(z["x0"]), zy - 20, float(z["x1"]) - float(z["x0"]), 40), Color(1.0, 0.4, 0.1, 0.25 * za))
+		var n: int = int((float(z["x1"]) - float(z["x0"])) / 26.0)
+		for k in n:
+			var fx0: float = float(z["x0"]) + k * 26.0 + 10.0
+			var h: float = 12.0 + 8.0 * sin(clock * 9.0 + k)
+			draw_colored_polygon(PackedVector2Array([Vector2(fx0 - 7, zy + 18), Vector2(fx0, zy + 18 - h), Vector2(fx0 + 7, zy + 18)]), Color(1.0, 0.5, 0.15, 0.7 * za))
+	# hueco del Trueno
+	for c in sim.creatures:
+		if c["kind"] == "trueno" and not c["dead"] and c["state"] != "home":
+			var hp: Vector2 = Vector2(c["home_x"], _lane_y(int(c["home_lane"])))
+			draw_arc(hp, 34.0, 0.0, TAU, 24, Color(1.0, 0.3, 0.25, 0.4 + 0.4 * sin(clock * 8.0)), 3.0)
+			_txt("HUECO", hp + Vector2(-30, -48), 16, Color(1.0, 0.4, 0.35), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+	# ordenar por carril para el solape
+	for lane in 3:
+		for c2 in sim.creatures:
+			if c2["dead"]:
+				continue
+			var cl: int = int(c2["lane"])
+			if c2["air"]:
+				if lane == 2:
+					_draw_creature(c2)
+			elif cl == lane:
+				_draw_creature(c2)
+		for e in sim.enemies:
+			if int(e["lane"]) == lane:
+				_draw_enemy(e)
+	_draw_fx_and_warns()
+
+
+func draw_ctx() -> CanvasItem:
+	return self
+
+
+func _draw_creature(c: Dictionary) -> void:
+	var pos: Vector2 = _creature_pos(c)
+	var kind: String = c["kind"]
+	var scale_v: float = 1.0
+	var glow: float = 0.0
+	var m: float = float(mut_anim.get(int(c["id"]), -1.0))
+	if m >= 0.0:
+		if m < 0.9:
+			kind = "sabueso"
+			glow = m / 0.9
+			scale_v = 1.0 + 0.18 * sin(m * 38.0) * glow
+			pos += Vector2(randf_range(-3.0, 3.0), randf_range(-2.0, 2.0)) * glow
+		else:
+			glow = 1.0 - (m - 0.9) / 1.0
+			scale_v = 1.0 + 0.25 * glow
+			draw_arc(pos + Vector2(0, -34), (m - 0.9) * 260.0, 0.0, TAU, 32, Color(1.0, 0.7, 0.3, clampf(glow, 0.0, 1.0)), 4.0)
+	var crouch: bool = c["state"] == "crouch"
+	if crouch:
+		pos.y += 4.0
+	var opts: Dictionary = {"scale": scale_v, "scars": c["scars"], "hambre": c["hambre"], "crouch": crouch,
+		"fallen": c["fallen"], "glow": glow, "flash": 0.0}
+	if c["stun"] > 0.0:
+		opts["flash"] = 0.25
+	if selected_id == int(c["id"]):
+		draw_arc(pos + Vector2(0, -34), 52.0, 0.0, TAU, 28, Color(1.0, 0.9, 0.4, 0.8), 3.0)
+	Art.draw_creature(self, kind, pos, clock + float(c["id"]), opts)
+	if c["stun"] > 0.0:
+		_txt("aturdido", pos + Vector2(-30, -110), 15, Color(1.0, 0.9, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+	if c["named"]:
+		var nm: String = String(c["name"])
+		_txt(nm, pos + Vector2(-50, 24), 18, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, 100.0)
+	if c["fallen"]:
+		_txt("caído", pos + Vector2(-30, -46), 16, Color(1.0, 0.7, 0.6), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+	elif sim.phase == "combat" and c["hp"] < c["max_hp"]:
+		_bar(pos + Vector2(-26, -100 if kind == "horno" or kind == "ojo" else -82), 52.0, float(c["hp"]) / float(c["max_hp"]), Color(0.4, 0.9, 0.4))
+	if c["loaned"]:
+		_txt("prestado", pos + Vector2(-34, 24), 14, Color(0.9, 0.85, 0.5), HORIZONTAL_ALIGNMENT_CENTER, 68.0)
+
+
+func _bar(p: Vector2, w: float, frac: float, col: Color) -> void:
+	draw_rect(Rect2(p, Vector2(w, 6)), Color(0, 0, 0, 0.7))
+	draw_rect(Rect2(p, Vector2(w * clampf(frac, 0.0, 1.0), 6)), col)
+
+
+func _draw_enemy(e: Dictionary) -> void:
+	var pos: Vector2 = Vector2(e["x"], _lane_y(int(e["lane"])))
+	var kind: String = e["kind"]
+	var opts: Dictionary = {"burning": e["burn_t"] > 0.0, "bump": e["bump"], "flash": 0.0}
+	Art.draw_enemy(self, kind, pos, clock, opts)
+	var st: Dictionary = sim.B["enemies"][kind]
+	var top: float = -118.0 if (kind == "verdugo" or kind == "inquisidor") else -62.0
+	if e["hp"] < e["max_hp"] or bool(st.get("hero", false)):
+		_bar(pos + Vector2(-22, top), 44.0, float(e["hp"]) / float(e["max_hp"]), Color(0.9, 0.3, 0.3))
+	if e["burn_t"] > 0.0:
+		var fl: float = 6.0 + 4.0 * sin(clock * 14.0 + float(e["id"]))
+		draw_colored_polygon(PackedVector2Array([pos + Vector2(-8, -10), pos + Vector2(0, -10 - fl * 2.0), pos + Vector2(8, -10)]), Color(1.0, 0.5, 0.1, 0.8))
+	if e["held"] > 0.0:
+		draw_arc(pos + Vector2(0, -26), 26.0, 0.0, TAU, 20, Color(0.8, 0.8, 0.8), 3.0)
+		_txt("agarrado", pos + Vector2(-30, top - 8), 14, Color(0.85, 0.85, 0.9), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+	if e["stun"] > 0.0 and e["held"] <= 0.0:
+		_txt("retenido", pos + Vector2(-30, top - 8), 14, Color(0.95, 0.9, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+	if e["marked"]:
+		var r: float = 28.0 + 3.0 * sin(clock * 8.0)
+		draw_arc(pos + Vector2(0, -34), r, 0.0, TAU, 24, Color(0.6, 0.85, 1.0), 3.0)
+		_txt("MARCA", pos + Vector2(-30, top - 20), 15, Color(0.6, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+	if e["pull_t"] > 0.0:
+		draw_line(pos + Vector2(0, -30), Vector2(e["pull_x"], pos.y - 30), Color(1.0, 0.5, 0.2, 0.5), 2.0)
+
+
+func _draw_fx_and_warns() -> void:
+	for w in warns:
+		var k: float = clampf(float(w["t"]) / float(w["ttl"]), 0.0, 1.0)
+		var blink: float = 0.5 + 0.5 * sin(float(w["t"]) * 22.0)
+		match String(w["type"]):
+			"presa":
+				var ep: Vector2 = _enemy_pos(int(w["eid"]))
+				if ep.x > 0.0:
+					draw_arc(ep + Vector2(0, -30), 34.0 - 14.0 * k, 0.0, TAU, 24, Color(1.0, 0.25, 0.2, 0.5 + 0.5 * blink), 4.0)
+					_txt("PRESA", ep + Vector2(-30, -80), 17, Color(1.0, 0.35, 0.3), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+			"inhale":
+				var hc: Dictionary = sim.creature_by_id(int(w["cid"]))
+				if not hc.is_empty():
+					var hy: float = _lane_y(int(hc["lane"]))
+					var rng: float = float(sim.B["horno"]["inhale_range"])
+					draw_rect(Rect2(float(hc["x"]) + 40.0, hy - 48, rng * (1.0 - k * 0.5), 96), Color(1.0, 0.45, 0.1, 0.13 + 0.1 * blink))
+					_txt("INHALA", Vector2(float(hc["x"]) - 10.0, hy - 108), 18, Color(1.0, 0.6, 0.2), HORIZONTAL_ALIGNMENT_CENTER, 80.0)
+			"crouch":
+				var tc: Vector2 = _creature_pos_by_id(int(w["cid"]))
+				var te: Vector2 = _enemy_pos(int(w["eid"]))
+				if te.x > 0.0 and tc.x > 0.0:
+					draw_line(tc + Vector2(0, -40), te + Vector2(0, -40), Color(0.6, 0.8, 1.0, 0.35 + 0.4 * blink), 2.0)
+					draw_arc(te + Vector2(0, -34), 36.0 - 10.0 * k, 0.0, TAU, 24, Color(0.6, 0.85, 1.0, 0.6 + 0.4 * blink), 4.0)
+					_txt("SALTA", tc + Vector2(-30, -110), 18, Color(0.6, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+			"bell":
+				var bc: Vector2 = _creature_pos_by_id(int(w["cid"]))
+				if bc.x > 0.0:
+					draw_arc(bc + Vector2(0, -34), 40.0 + 40.0 * k, 0.0, TAU, 28, Color(0.95, 0.85, 0.3, 1.0 - k), 4.0)
+					_txt("CAMPANA", bc + Vector2(-34, -100), 17, Color(0.95, 0.85, 0.3), HORIZONTAL_ALIGNMENT_CENTER, 68.0)
+	for f in fx:
+		var fk: float = clampf(float(f["t"]) / float(f["ttl"]), 0.0, 1.0)
+		match String(f["type"]):
+			"line":
+				var lc: Color = f["col"]
+				lc.a = 1.0 - fk
+				draw_line(f["a"], f["b"], lc, float(f["w"]))
+			"ring":
+				var rc: Color = f["col"]
+				rc.a = rc.a * (1.0 - fk)
+				draw_arc(f["p"], lerpf(float(f["r0"]), float(f["r1"]), fk), 0.0, TAU, 28, rc, 3.0)
+			"fire":
+				var fy: float = float(f["y"])
+				var fa: float = 1.0 - fk
+				var fw: float = float(f["x1"]) - float(f["x0"])
+				draw_rect(Rect2(float(f["x0"]), fy - 30, fw * minf(1.0, fk * 4.0), 56), Color(1.0, 0.5, 0.1, 0.45 * fa))
+			"float":
+				var fc: Color = f["col"]
+				fc.a = 1.0 - fk * fk
+				var fp: Vector2 = f["p"]
+				_txt(String(f["text"]), fp + Vector2(-80, -fk * 34.0), 20, fc, HORIZONTAL_ALIGNMENT_CENTER, 160.0)
+
+
+func _draw_hud() -> void:
+	draw_rect(Rect2(0, 0, SCREEN_W, 78), Color(0.05, 0.02, 0.03))
+	draw_line(Vector2(0, 78), Vector2(SCREEN_W, 78), Color(0.4, 0.12, 0.08), 3.0)
+	_txt("ALMAS %d" % sim.souls, Vector2(24, 48), 30, Color(0.7, 0.9, 1.0))
+	var shown_wave: int = mini(sim.wave_index + 1, sim.wave_count())
+	if sim.phase == "victory":
+		shown_wave = sim.wave_count()
+	var w: Dictionary = sim.WAVES[mini(sim.wave_index, sim.wave_count() - 1)]
+	if sim.phase == "victory":
+		w = sim.WAVES[sim.wave_count() - 1]
+	var title: String = "Oleada %d / %d  -  %s" % [shown_wave, sim.wave_count(), String(w["title"])]
+	if sim.phase == "route" or sim.phase == "forge":
+		title = "Entre oleadas"
+	_txt(title, Vector2(240, 36), 24, Color(1.0, 0.85, 0.55))
+	var note: String = String(w.get("note", ""))
+	if sim.phase == "prep" and note != "":
+		_txt(note, Vector2(240, 62), 17, Color(0.8, 0.7, 0.65))
+	elif sim.phase != "prep":
+		_txt(_phase_hint(), Vector2(240, 62), 17, Color(0.8, 0.7, 0.65))
+	_txt("PUERTA", Vector2(900, 34), 18, Color(1.0, 0.7, 0.5))
+	var frac: float = clampf(sim.door_hp / sim.door_max, 0.0, 1.0)
+	draw_rect(Rect2(900, 42, 340, 22), Color(0, 0, 0, 0.7))
+	var dcol: Color = Color(0.9, 0.7, 0.2).lerp(Color(0.9, 0.15, 0.1), 1.0 - frac)
+	draw_rect(Rect2(900, 42, 340.0 * frac, 22), dcol)
+	_txt("%d / %d" % [int(ceil(sim.door_hp)), int(sim.door_max)], Vector2(900, 60), 16, Color(1, 1, 1), HORIZONTAL_ALIGNMENT_CENTER, 340.0)
+	# panel inferior
+	draw_rect(Rect2(0, 604, SCREEN_W, 116), Color(0.05, 0.02, 0.03))
+	draw_line(Vector2(0, 604), Vector2(SCREEN_W, 604), Color(0.4, 0.12, 0.08), 3.0)
+	if sim.phase == "prep":
+		_txt("Arrastra a tus bestias a una casilla. Delante aguantan; atrás disparan.", Vector2(20, 616), 15, Color(0.75, 0.65, 0.6))
+	elif sim.phase == "combat":
+		var left: int = sim.spawn_queue.size() + sim.enemies.size()
+		_txt("Quedan %d enemigos. Tu mano (Garra) y tus bestias atacan solas." % left, Vector2(20, 650), 18, Color(0.85, 0.75, 0.7))
+
+
+func _phase_hint() -> String:
+	match sim.phase:
+		"combat":
+			return "Combate"
+		"route":
+			return "Elige una ruta"
+		"forge":
+			return "Una reliquia espera"
+		"victory":
+			return "La Puerta resiste"
+		"defeat":
+			return "La Puerta ha caído"
+	return ""
+
+
+func _draw_lane_preview() -> void:
+	if sim.phase != "prep":
+		return
+	var pv: Array = sim.preview(sim.wave_index)
+	_txt("LLEGARÁ", Vector2(1100, 118), 16, Color(0.9, 0.5, 0.4))
+	for lane in 3:
+		var y: float = _lane_y(lane)
+		var d: Dictionary = pv[lane]
+		draw_rect(Rect2(1060, y - 44, 212, 88), Color(0, 0, 0, 0.55))
+		draw_rect(Rect2(1060, y - 44, 212, 88), Color(0.5, 0.2, 0.15), false, 2.0)
+		var line_y: float = y - 22.0
+		var keys: Array = d.keys()
+		if keys.is_empty():
+			_txt("nadie", Vector2(1072, y + 6), 16, Color(0.6, 0.5, 0.5))
+		for kd in keys:
+			var kk: String = String(kd)
+			var hero: bool = bool(sim.B["enemies"].get(kk, {}).get("hero", false)) or kk == "heroe"
+			var col: Color = Color(1.0, 0.35, 0.3) if hero else Color(0.9, 0.85, 0.8)
+			_txt("%d x %s" % [int(d[kd]), sim.label(kk)], Vector2(1072, line_y + 4), 16, col)
+			line_y += 19.0
+
+
+func _draw_buttons() -> void:
+	for b in _buttons():
+		var id: String = String(b["id"])
+		if id == "route_verdugo" or id == "route_inquisidor":
+			continue
+		var r: Rect2 = b["rect"]
+		var hov: bool = r.has_point(mouse_pos) and b["on"]
+		var base: Color = Color(0.32, 0.14, 0.1) if b["on"] else Color(0.15, 0.1, 0.1)
+		if id == "start":
+			base = Color(0.55, 0.18, 0.08)
+		if hov:
+			base = base.lightened(0.25)
+		draw_rect(r, base)
+		draw_rect(r, Color(0.8, 0.45, 0.25) if b["on"] else Color(0.3, 0.2, 0.2), false, 2.0)
+		var tc: Color = Color(1.0, 0.92, 0.8) if b["on"] else Color(0.5, 0.45, 0.45)
+		_txt(String(b["text"]), Vector2(r.position.x, r.position.y + 32), 20, tc, HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		_txt(String(b["sub"]), Vector2(r.position.x, r.position.y + 56), 16, tc.darkened(0.2), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+
+
+func _draw_overlays() -> void:
+	var ph: String = sim.phase
+	if ph == "route":
+		draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0, 0, 0, 0.72))
+		_txt("¿A qué heraldo reciben tus bestias?", Vector2(0, 124), 32, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		for key in ["verdugo", "inquisidor"]:
+			var rt: Dictionary = sim.ROUTES[key]
+			var rect: Rect2 = Rect2(150, 150, 480, 360) if key == "verdugo" else Rect2(650, 150, 480, 360)
+			var hov: bool = rect.has_point(mouse_pos)
+			draw_rect(rect, Color(0.25, 0.1, 0.08) if not hov else Color(0.38, 0.16, 0.1))
+			draw_rect(rect, Color(0.85, 0.5, 0.25), false, 3.0)
+			_txt(String(rt["hero_name"]), Vector2(rect.position.x, rect.position.y + 52), 34, Color(1.0, 0.5, 0.4), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x)
+			_txt("Reliquia: %s" % String(rt["relic"]), Vector2(rect.position.x, rect.position.y + 92), 20, Color(0.95, 0.85, 0.5), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x)
+			_txt("Tizón se convertirá en", Vector2(rect.position.x, rect.position.y + 134), 17, Color(0.8, 0.7, 0.65), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x)
+			_txt(String(rt["form_name"]), Vector2(rect.position.x, rect.position.y + 166), 28, Color(1.0, 0.9, 0.7), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x)
+			draw_multiline_string(font, Vector2(rect.position.x + 30, rect.position.y + 214), String(rt["promise"]), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 60, 20, -1, Color(0.9, 0.85, 0.8))
+			var sil: String = String(rt["form"])
+			Art.draw_creature(self, sil, rect.position + Vector2(rect.size.x * 0.5 - 20, 340), clock, {"scale": 1.1})
+	elif ph == "forge":
+		draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0, 0, 0, 0.72))
+		var r: Dictionary = sim.ROUTES[sim.route]
+		var card: Rect2 = Rect2(390, 130, 500, 380)
+		draw_rect(card, Color(0.22, 0.09, 0.07))
+		draw_rect(card, Color(0.85, 0.5, 0.25), false, 3.0)
+		_txt("Has derrotado a %s" % String(r["hero_name"]), Vector2(card.position.x, card.position.y + 44), 26, Color(1.0, 0.5, 0.4), HORIZONTAL_ALIGNMENT_CENTER, card.size.x)
+		_txt(String(r["relic"]), Vector2(card.position.x, card.position.y + 92), 32, Color(1.0, 0.9, 0.5), HORIZONTAL_ALIGNMENT_CENTER, card.size.x)
+		_txt("Tizón conservará su nombre y su historia.", Vector2(card.position.x, card.position.y + 130), 18, Color(0.85, 0.8, 0.75), HORIZONTAL_ALIGNMENT_CENTER, card.size.x)
+		Art.draw_creature(self, "sabueso", Vector2(520, 330), clock, {"scars": int(sim.named_creature().get("scars", 0))})
+		_txt("->", Vector2(600, 320), 36, Color(1.0, 0.8, 0.4))
+		Art.draw_creature(self, String(r["form"]), Vector2(720, 330), clock, {"scale": 1.0})
+	elif ph == "victory" or ph == "defeat":
+		draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0, 0, 0, 0.78))
+		var title: String = "LA PUERTA RESISTE" if ph == "victory" else "LA PUERTA CAE"
+		var tcol: Color = Color(1.0, 0.85, 0.5) if ph == "victory" else Color(1.0, 0.35, 0.3)
+		_txt(title, Vector2(0, 200), 56, tcol, HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		var sub: String = "Has defendido las %d oleadas." % sim.wave_count() if ph == "victory" else "Cayó en la oleada %d de %d." % [sim.defeat_wave, sim.wave_count()]
+		_txt(sub, Vector2(0, 250), 24, Color(0.9, 0.85, 0.8), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt("Enemigos abatidos: %d    Puerta: %d / %d" % [sim.kills, int(ceil(sim.door_hp)), int(sim.door_max)], Vector2(0, 296), 22, Color(0.8, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		var ep: String = sim.epitaph()
+		if ep != "":
+			_txt(ep, Vector2(0, 350), 26, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		var t: Dictionary = sim.named_creature()
+		if not t.is_empty():
+			Art.draw_creature(self, String(t["kind"]), Vector2(640, 440), clock, {"scars": int(t["scars"])})
+	if show_bestiary:
+		_draw_bestiary()
+
+
+func _draw_bestiary() -> void:
+	var rect: Rect2 = Rect2(220, 96, 840, 500)
+	draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0, 0, 0, 0.6))
+	draw_rect(rect, Color(0.12, 0.06, 0.06))
+	draw_rect(rect, Color(0.85, 0.5, 0.25), false, 3.0)
+	_txt("Bestiario", Vector2(rect.position.x + 28, rect.position.y + 44), 32, Color(1.0, 0.85, 0.55))
+	_txt("(clic para cerrar)", Vector2(rect.end.x - 200, rect.position.y + 40), 15, Color(0.7, 0.6, 0.55))
+	var y: float = rect.position.y + 80.0
+	for f in sim.seen_forms:
+		var fk: String = String(f)
+		Art.draw_creature(self, fk, Vector2(rect.position.x + 90, y + 56), clock, {"scale": 0.8})
+		_txt(sim.label(fk), Vector2(rect.position.x + 180, y + 26), 24, Color(1.0, 0.9, 0.7))
+		draw_multiline_string(font, Vector2(rect.position.x + 180, y + 52), String(FORM_INFO.get(fk, "")), HORIZONTAL_ALIGNMENT_LEFT, 600.0, 17, -1, Color(0.85, 0.8, 0.75))
+		y += 96.0
+	var t: Dictionary = sim.named_creature()
+	if not t.is_empty():
+		_txt("Tizón: %s, %d bajas, %d cicatrices." % [sim.label(String(t["kind"])), int(t["kills"]), int(t["scars"])], Vector2(rect.position.x + 28, rect.end.y - 24), 20, Color(1.0, 0.7, 0.55))
+
+
+func _draw_tooltip() -> void:
+	if show_bestiary or sim.phase == "route" or sim.phase == "forge" or sim.phase == "victory" or sim.phase == "defeat":
+		return
+	var lines: Array = []
+	var cid: int = _creature_at(mouse_pos)
+	if cid >= 0:
+		var c: Dictionary = sim.creature_by_id(cid)
+		lines.append("%s (%s)" % [String(c["name"]), sim.label(String(c["kind"]))])
+		lines.append("Vida %d / %d    Bajas %d    Cicatrices %d" % [int(c["hp"]), int(c["max_hp"]), int(c["kills"]), int(c["scars"])])
+		lines.append(String(FORM_INFO.get(String(c["kind"]), "")))
+	else:
+		for e in sim.enemies:
+			var ep: Vector2 = Vector2(e["x"], _lane_y(int(e["lane"])))
+			if absf(mouse_pos.x - ep.x) < 30.0 and mouse_pos.y > ep.y - 100.0 and mouse_pos.y < ep.y + 10.0:
+				lines.append("%s    Vida %d / %d" % [sim.label(String(e["kind"])), int(e["hp"]), int(e["max_hp"])])
+				break
+	if lines.is_empty():
+		return
+	var w: float = 520.0
+	var h: float = 12.0 + 24.0 * lines.size()
+	var p: Vector2 = Vector2(minf(mouse_pos.x + 16.0, SCREEN_W - w - 8.0), maxf(mouse_pos.y - h - 12.0, 84.0))
+	draw_rect(Rect2(p, Vector2(w, h)), Color(0, 0, 0, 0.85))
+	draw_rect(Rect2(p, Vector2(w, h)), Color(0.8, 0.45, 0.25), false, 2.0)
+	for i in lines.size():
+		_txt(String(lines[i]), p + Vector2(10, 24 + 24 * i), 16, Color(0.95, 0.9, 0.85), HORIZONTAL_ALIGNMENT_LEFT, w - 20.0)

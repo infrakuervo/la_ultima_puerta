@@ -1,0 +1,74 @@
+{
+  "routes": {
+    "verdugo": {
+      "hero": "verdugo",
+      "hero_name": "El Verdugo",
+      "relic": "Brasero del Verdugo",
+      "form": "horno",
+      "form_name": "Horno de Fosas",
+      "promise": "Agrupa y quema. Inhala a los enemigos de su carril y, cuando se llena, escupe fuego."
+    },
+    "inquisidor": {
+      "hero": "inquisidor",
+      "hero_name": "El Inquisidor",
+      "relic": "Campana del Inquisidor",
+      "form": "trueno",
+      "form_name": "Sabueso del Trueno",
+      "promise": "Salta sobre la vanguardia hacia un apoyo y encadena descargas. Deja su hueco abierto hasta volver."
+    }
+  },
+  "waves": [
+    {
+      "title": "Primera sangre",
+      "note": "Tizón y su Presa.",
+      "spawns": [ { "lane": 1, "kind": "campesino", "count": 3, "gap": 1.6 } ]
+    },
+    {
+      "title": "Dos frentes",
+      "note": "Un solo Sabueso no cubre dos carriles.",
+      "spawns": [
+        { "lane": 0, "kind": "campesino", "count": 2, "gap": 1.6 },
+        { "lane": 2, "kind": "campesino", "count": 2, "gap": 1.6 }
+      ]
+    },
+    {
+      "title": "La turba",
+      "note": "Doce campesinos apiñados en un carril.",
+      "spawns": [ { "lane": 0, "kind": "campesino", "count": 12, "gap": 0.6 } ]
+    },
+    {
+      "title": "Escudos y retaguardia",
+      "note": "Los apoyos van detrás de los escudos.",
+      "after": "route",
+      "spawns": [
+        { "lane": 1, "kind": "escudero", "count": 4, "gap": 1.2 },
+        { "lane": 1, "kind": "clerigo", "count": 1, "gap": 0, "delay": 5.5 },
+        { "lane": 1, "kind": "ballestero", "count": 2, "gap": 1.2, "delay": 6.5 },
+        { "lane": 2, "kind": "ballestero", "count": 1, "gap": 0, "delay": 7.0 }
+      ]
+    },
+    {
+      "title": "El héroe",
+      "note": "Derrótalo para conseguir su reliquia.",
+      "after": "forge",
+      "spawns": [
+        { "lane": 1, "kind": "@hero", "count": 1, "gap": 0 },
+        { "lane": 0, "kind": "campesino", "count": 2, "gap": 1.5, "delay": 2.0 },
+        { "lane": 2, "kind": "campesino", "count": 2, "gap": 1.5, "delay": 2.0 }
+      ]
+    },
+    {
+      "title": "Turba y retaguardia",
+      "note": "Prueba tu forma elegida.",
+      "loan_ojo": true,
+      "spawns": [
+        { "lane": 0, "kind": "campesino", "count": 10, "gap": 0.6 },
+        { "lane": 1, "kind": "escudero", "count": 3, "gap": 1.3 },
+        { "lane": 1, "kind": "clerigo", "count": 1, "gap": 0, "delay": 5.0 },
+        { "lane": 1, "kind": "ballestero", "count": 2, "gap": 1.2, "delay": 5.5 },
+        { "lane": 2, "kind": "campesino", "count": 4, "gap": 1.0 },
+        { "lane": 2, "kind": "ballestero", "count": 2, "gap": 1.2, "delay": 4.0 }
+      ]
+    }
+  ]
+}
