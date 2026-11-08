@@ -22,7 +22,7 @@
   ]
  },
  "door": {
-  "hp": 100
+  "hp": 180
  },
  "slots": [
   {
@@ -58,7 +58,7 @@
  ],
  "economy": {
   "start_souls": 40,
-  "wave_bonus": 8,
+  "wave_bonus": 15,
   "costs": {
    "sabueso": 40,
    "ojo": 60,
@@ -66,7 +66,7 @@
   }
  },
  "garra": {
-  "dmg": 18,
+  "dmg": 26,
   "cd": 0.9,
   "range": 430,
   "guardia_range": 230,
@@ -78,7 +78,7 @@
   "dmg": 10,
   "cd": 0.9,
   "speed": 170,
-  "leash": 360,
+  "leash": 280,
   "reach": 36,
   "presa_cd": 6.0,
   "presa_time": 2.0,
@@ -98,7 +98,7 @@
   "inhale_max": 4,
   "fill_timeout": 3.0,
   "spit_range": 240,
-  "spit_dmg": 20,
+  "spit_dmg": 28,
   "burn_dps": 6,
   "burn_time": 4.0,
   "minor_dmg": 10,
@@ -147,23 +147,23 @@
    "reward": 2
   },
   "escudero": {
-   "hp": 140,
+   "hp": 120,
    "speed": 34,
    "dmg": 8,
    "cd": 1.5,
    "reach": 34,
    "door_dmg": 5,
-   "armor": 0.6,
+   "armor": 0.7,
    "reward": 6
   },
   "ballestero": {
    "hp": 50,
    "speed": 38,
-   "dmg": 9,
+   "dmg": 7,
    "cd": 1.8,
    "range": 300,
    "ranged": true,
-   "door_dmg": 4,
+   "door_dmg": 3,
    "reward": 6
   },
   "clerigo": {
@@ -174,30 +174,30 @@
    "reach": 30,
    "door_dmg": 0,
    "support": true,
-   "heal": 20,
+   "heal": 12,
    "heal_cd": 2.0,
    "heal_radius": 170,
    "follow_gap": 90,
    "reward": 8
   },
   "verdugo": {
-   "hp": 600,
+   "hp": 450,
    "speed": 28,
    "dmg": 28,
    "cd": 1.4,
    "reach": 42,
-   "door_dmg": 12,
+   "door_dmg": 8,
    "hero": true,
    "execute": 0.25,
    "reward": 30
   },
   "inquisidor": {
-   "hp": 500,
+   "hp": 400,
    "speed": 30,
    "dmg": 18,
    "cd": 1.4,
    "reach": 42,
-   "door_dmg": 10,
+   "door_dmg": 7,
    "hero": true,
    "bell": true,
    "bell_cd": 6.0,

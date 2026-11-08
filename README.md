@@ -22,7 +22,7 @@ Pantalla 1280x720 con GL Compatibility.
 godot --headless --path C:\ruta\a\la_ultima_puerta --script res://tests/run_tests.gd
 ```
 
-Sale con 0 si todo pasa. Comprueba: datos, combate de la oleada 1, Presa, Garra de Guardia, vuelta de Tizón con cicatriz, flujo de ruta y reliquia (ambas rutas), Horno, Trueno y su hueco, Ojo (combo y marca), préstamo del Ojo, economía, partidas completas automáticas de las dos rutas (Puerta invulnerable) y un recorrido por la interfaz con el ratón. Al final imprime un informe de equilibrio (5 semillas por ruta).
+Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tscn` desde el editor (la salida va al registro del juego). Comprueba: datos, combate de la oleada 1, Presa, Garra de Guardia, vuelta de Tizón con cicatriz, flujo de ruta y reliquia (ambas rutas), Horno, Trueno y su hueco, Ojo (combo y marca), préstamo del Ojo, economía, partidas completas automáticas de las dos rutas (Puerta invulnerable) y un recorrido por la interfaz con el ratón. Al final imprime un informe de equilibrio (5 semillas por ruta).
 
 ## Estructura
 
@@ -43,7 +43,7 @@ Fuera de alcance a propósito: Árbol del Abismo y Ceniza, Caballero del Alba, r
 
 ## Números clave (primera pasada, en `data/balance.json`)
 
-Almas iniciales 40; bonus por oleada 8; Sabueso 40, Ojo 60, Garra de Guardia 55. Puerta 100.
+Almas iniciales 40; bonus por oleada 8; Sabueso 40, Ojo 60, Garra de Guardia 55. Puerta 180; Garra 26 de daño.
 Horno: inhala hasta 4 enemigos (alcance 300, enfriamiento 7 s), escupe 20 y quema 6/s durante 4 s.
 Trueno: salto cada 8 s (alcance 760), 40 al caer y descargas 20/15/10, vuelve a los 6 s.
 Ojo: 12 de daño, y sobre enemigos en llamas encadena a 3 más.
