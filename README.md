@@ -78,4 +78,8 @@ Seis unidades con habilidad propia, en `data/balance.json` (campo `elite`) y `da
 - **Verdugo del Tajo Negro** (6): levanta el hacha y barre; hay que tumbarlo antes o ponerle un señuelo delante.
 - **Campana** (6): repique que aturde e interrumpe a las criaturas cercanas.
 
-Verificado con `tests/suite.gd`: 146 comprobaciones, 0 fallos; el bot gana 5/5 por ruta con élites (ideal, apunta perfecto).
+Verificado con `tests/suite.gd`: 155 comprobaciones, 0 fallos; el bot gana 5/5 por ruta con élites (ideal, apunta perfecto).
+
+## Progreso permanente
+
+El árbol se paga con **Esencia**, que se conserva entre partidas (`user://meta.json`, junto con los rangos comprados). Se gana al superar cada oleada (20 + 10×n) y +100 por victoria. Se compra entre oleadas y en las pantallas de victoria o derrota. Las almas quedan solo para Sabuesos, Ojos y niveles de bestia. Árbol completo: 6635 de Esencia (~15 partidas ganadas).

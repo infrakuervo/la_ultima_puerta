@@ -24,6 +24,7 @@ func run() -> void:
 	test_ojo_loan()
 	test_economy()
 	test_elites()
+	test_meta()
 	test_skills()
 	test_full_runs()
 	await test_ui_smoke()
@@ -781,6 +782,7 @@ func test_ui_smoke() -> void:
 	check(packed != null, "la escena principal carga")
 	if packed == null:
 		return
+	Engine.set_meta("sin_persistencia", true)
 	var m = packed.instantiate()
 	get_tree().root.add_child(m)
 	await get_tree().process_frame
@@ -835,3 +837,39 @@ func test_ui_smoke() -> void:
 	m.queue_free()
 
 
+
+
+func test_meta() -> void:
+	print("Árbol permanente (esencia)")
+	var s = new_sim()
+	s.meta_mode = true
+	s.reset()
+	check(s.essence == 0, "sin partidas previas no hay esencia")
+	s.essence = 500
+	var souls0: int = s.souls
+	var c: int = s.skill_cost("brasa_radio")
+	check(s.buy_skill("brasa_radio") and s.essence == 500 - c and s.souls == souls0, "se paga con esencia, no con almas")
+	var any_route_ok: bool = true
+	for id in s.SK_ORDER:
+		if s.skill_state(id) == "route":
+			any_route_ok = false
+	check(any_route_ok, "ningún nodo queda cerrado por ruta")
+	s.reset()
+	check(s.skill_rank("brasa_radio") == 1, "la mejora sobrevive a reiniciar la partida")
+	check(s.essence == 500 - c, "la esencia sobrevive a reiniciar")
+	s.start_wave()
+	s.essence = 500
+	check(not s.buy_skill("brasa_dmg"), "no se compra en combate")
+	s.door_hp = 0.0
+	s._check_end()
+	check(s.phase == "defeat" and s.can_skill("brasa_dmg"), "tras caer la Puerta se puede comprar")
+	var before: int = s.essence
+	var s2 = new_sim()
+	s2.meta_mode = true
+	s2.reset()
+	s2.start_wave()
+	s2.enemies.clear()
+	s2.spawn_queue.clear()
+	s2._check_end()
+	check(s2.essence == 30, "superar la oleada 1 da 30 de esencia (%d)" % s2.essence)
+	check(before >= 0, "esencia coherente")

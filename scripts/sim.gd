@@ -29,6 +29,8 @@ var next_id: int = 1
 var brasa_cd: float = 0.0
 var rayo_cd: float = 0.0
 var pending_brasas: Array = []
+var meta_mode: bool = false      # árbol permanente: se paga con esencia y se conserva entre partidas
+var essence: int = 0
 var skills: Dictionary = {}      # id de habilidad -> rango comprado
 var SK: Dictionary = {}          # id -> definición (data/skills.json)
 var SK_ORDER: Array = []
@@ -67,9 +69,10 @@ func reset() -> void:
 	phase = "prep"
 	wave_index = 0
 	defeat_wave = 0
-	skills.clear()
+	if not meta_mode:
+		skills.clear()
 	_invalidate()
-	door_max = float(B["door"]["hp"])
+	door_max = float(B["door"]["hp"]) * (1.0 + fmul("door.hp"))
 	door_hp = door_max
 	souls = int(B["economy"]["start_souls"])
 	creatures.clear()
@@ -1322,6 +1325,8 @@ func _wave_cleared() -> void:
 	souls += mini(25, int(float(souls) * fadd("special.interest")))
 	door_hp = minf(door_max, door_hp + door_max * fadd("door.regen"))
 	events.append({"t": "wave_clear", "wave": cleared})
+	if meta_mode:
+		_gain_essence(20 + 10 * cleared)
 	for c in creatures:
 		if c["fallen"]:
 			c["fallen"] = false
@@ -1333,6 +1338,8 @@ func _wave_cleared() -> void:
 	wave_index += 1
 	if wave_index >= WAVES.size():
 		phase = "victory"
+		if meta_mode:
+			_gain_essence(100)
 		events.append({"t": "victory"})
 		return
 	var after: String = String(w.get("after", "prep"))
@@ -1414,6 +1421,15 @@ func _stats(kind: String) -> Dictionary:
 	return d
 
 
+func _gain_essence(n: int) -> void:
+	essence += n
+	events.append({"t": "essence", "n": n})
+
+
+func currency() -> int:
+	return essence if meta_mode else souls
+
+
 func skill_rank(id: String) -> int:
 	return int(skills.get(id, 0))
 
@@ -1432,24 +1448,28 @@ func skill_state(id: String) -> String:
 	if skill_rank(id) >= int(nd["max"]):
 		return "max"
 	for b in BRANCHES:
-		if b["id"] == nd["branch"] and String(b["route"]) != "" and route != String(b["route"]):
+		if not meta_mode and b["id"] == nd["branch"] and String(b["route"]) != "" and route != String(b["route"]):
 			return "route"
 	for r in nd["req"]:
 		if skill_rank(r["id"]) < int(r["rank"]):
 			return "locked"
-	if souls < skill_cost(id):
+	if currency() < skill_cost(id):
 		return "poor"
 	return "ok"
 
 
 func can_skill(id: String) -> bool:
-	return phase == "prep" and SK.has(id) and skill_state(id) == "ok"
+	var ok_phase: bool = phase == "prep" or (meta_mode and (phase == "victory" or phase == "defeat"))
+	return ok_phase and SK.has(id) and skill_state(id) == "ok"
 
 
 func buy_skill(id: String) -> bool:
 	if not can_skill(id):
 		return false
-	souls -= skill_cost(id)
+	if meta_mode:
+		essence -= skill_cost(id)
+	else:
+		souls -= skill_cost(id)
 	skills[id] = skill_rank(id) + 1
 	_invalidate()
 	var nm: float = float(B["door"]["hp"]) * (1.0 + fmul("door.hp"))

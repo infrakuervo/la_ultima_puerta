@@ -51,6 +51,10 @@ var font: Font = null
 func _ready() -> void:
 	font = ThemeDB.fallback_font
 	sim = Sim.new(int(Time.get_ticks_usec() % 1000000))
+	if not Engine.has_meta("sin_persistencia"):
+		sim.meta_mode = true
+		_load_meta()
+		sim.reset()
 	sound = SoundBank.new()
 	for i in 10:
 		var p: AudioStreamPlayer = AudioStreamPlayer.new()
@@ -326,9 +330,11 @@ func _on_event(ev: Dictionary) -> void:
 		"wave_clear":
 			_play("buy")
 			_save_bestiary()
+			_save_meta()
 		"victory":
 			_play("win")
 			_save_bestiary()
+			_save_meta()
 		"defeat":
 			_play("lose")
 			_save_bestiary()
@@ -404,7 +410,7 @@ func _input(event: InputEvent) -> void:
 
 
 func _toggle_tree() -> void:
-	if sim.phase == "prep":
+	if sim.phase == "prep" or sim.phase == "victory" or sim.phase == "defeat":
 		show_tree = not show_tree
 		_play("click")
 	else:
@@ -462,7 +468,7 @@ func _restart() -> void:
 
 func _buttons() -> Array:
 	if show_tree:
-		if sim.phase != "prep":
+		if sim.phase != "prep" and sim.phase != "victory" and sim.phase != "defeat":
 			show_tree = false
 		else:
 			return _tree_buttons()
@@ -500,6 +506,7 @@ func _buttons() -> Array:
 		out.append({"id": "forge", "rect": Rect2(490, 430, 300, 64), "text": "Entregar a Tizón", "sub": "", "on": true})
 	elif ph == "victory" or ph == "defeat":
 		out.append({"id": "restart", "rect": Rect2(490, 480, 300, 64), "text": "Reiniciar", "sub": "Espacio", "on": true})
+		out.append({"id": "tree", "rect": Rect2(490, 552, 300, 64), "text": "Árbol (T)", "sub": "%d esencia" % sim.essence, "on": true})
 	out.append({"id": "speed", "rect": Rect2(820, y, 90, 72), "text": "Velocidad", "sub": "x%d" % speed, "on": true})
 	out.append({"id": "bestiary", "rect": Rect2(920, y, 100, 72), "text": "Bestiario", "sub": "B", "on": true})
 	return out
@@ -509,6 +516,7 @@ func _do_button(id: String) -> void:
 	if id.begins_with("sk:"):
 		if sim.buy_skill(id.substr(3)):
 			_play("level")
+			_save_meta()
 		return
 	match id:
 		"start":
@@ -1087,7 +1095,7 @@ func _draw_tree() -> void:
 		return
 	draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0.03, 0.01, 0.03, 0.93))
 	_txt("ÁRBOL DE HABILIDADES", Vector2(24, 100), 22, Color(1.0, 0.85, 0.55))
-	_txt("%d almas" % sim.souls, Vector2(1040, 100), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_RIGHT, 216.0)
+	_txt("%d esencia" % sim.essence, Vector2(1040, 100), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_RIGHT, 216.0)
 	for ci in sim.BRANCHES.size():
 		var br: Dictionary = sim.BRANCHES[ci]
 		var bc: Color = _branch_color(String(br["id"]))
@@ -1138,7 +1146,7 @@ func _draw_tree() -> void:
 		_txt(String(nd2["name"]), Vector2(r.position.x + 4, r.position.y + 18), 13, tc, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 8.0)
 		var rank_txt: String = "%d/%d" % [sim.skill_rank(id), int(nd2["max"])]
 		var cost: int = sim.skill_cost(id)
-		var sub: String = rank_txt + ("   máx" if cost < 0 else "   %d almas" % cost)
+		var sub: String = rank_txt + ("   máx" if cost < 0 else "   %d esencia" % cost)
 		if st == "route":
 			sub = rank_txt + "   (ruta)"
 		_txt(sub, Vector2(r.position.x + 4, r.position.y + 38), 12, tc.darkened(0.1), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 8.0)
@@ -1165,9 +1173,9 @@ func _draw_skill_tip(id: String) -> void:
 	elif st == "route":
 		lines.append("Se abre al elegir esta ruta.")
 	elif st == "poor":
-		lines.append("Cuesta %d almas (te faltan %d)." % [sim.skill_cost(id), sim.skill_cost(id) - sim.souls])
+		lines.append("Cuesta %d esencia (te faltan %d)." % [sim.skill_cost(id), sim.skill_cost(id) - sim.currency()])
 	elif st == "ok":
-		lines.append("Clic para comprar: %d almas." % sim.skill_cost(id))
+		lines.append("Clic para comprar: %d esencia." % sim.skill_cost(id))
 	var w: float = 470.0
 	var h: float = 14.0 + 22.0 * lines.size()
 	var r: Rect2 = _node_rect(id)
@@ -1302,3 +1310,30 @@ func _draw_tooltip() -> void:
 	draw_rect(Rect2(p, Vector2(w, h)), Color(0.8, 0.45, 0.25), false, 2.0)
 	for i in lines.size():
 		_txt(String(lines[i]), p + Vector2(10, 24 + 24 * i), 16, Color(0.95, 0.9, 0.85), HORIZONTAL_ALIGNMENT_LEFT, w - 20.0)
+
+
+const META_PATH: String = "user://meta.json"
+
+
+func _load_meta() -> void:
+	if not FileAccess.file_exists(META_PATH):
+		return
+	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.READ)
+	if f == null:
+		return
+	var data: Variant = JSON.parse_string(f.get_as_text())
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	sim.essence = int(data.get("esencia", 0))
+	var sk: Dictionary = data.get("habilidades", {})
+	for id in sk:
+		if sim.SK.has(id):
+			sim.skills[id] = mini(int(sk[id]), int(sim.SK[id]["max"]))
+
+
+func _save_meta() -> void:
+	if not sim.meta_mode:
+		return
+	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills}, "  "))
