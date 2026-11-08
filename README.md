@@ -65,3 +65,17 @@ Ver la descripción del PR: qué se ha ejecutado y qué no.
 ## Arte
 
 Pack de la Fosa en `art/` (fondo y 11 sprites, reducidos a ~1,6x su tamaño en pantalla). Si falta algún PNG se usa la silueta provisional de `scripts/art.gd`.
+Cada enemigo común aparece con una de tres variantes de aspecto (sorteada al salir; los héroes no varían).
+
+## Élites
+
+Seis unidades con habilidad propia, en `data/balance.json` (campo `elite`) y `data/waves.json`:
+
+- **Capataz** (oleada 3, 6): acelera ×1,4 a los aliados en 170 px.
+- **Muro de Marfil** (4, 6): absorbe 60% del daño al aliado que protege.
+- **Tirador** (4): avisa y dispara un virote que atraviesa hasta 3 criaturas de la fila (100/70/50%).
+- **Lumbrero** (6): pulso de curación a todos los aliados cercanos, de cualquier fila.
+- **Verdugo del Tajo Negro** (6): levanta el hacha y barre; hay que tumbarlo antes o ponerle un señuelo delante.
+- **Campana** (6): repique que aturde e interrumpe a las criaturas cercanas.
+
+Verificado con `tests/suite.gd`: 146 comprobaciones, 0 fallos; el bot gana 5/5 por ruta con élites (ideal, apunta perfecto).
