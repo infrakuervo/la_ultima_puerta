@@ -14,7 +14,8 @@ func run() -> void:
 	test_data()
 	test_basic_combat()
 	test_presa()
-	test_guardia()
+	test_spells()
+	test_levels()
 	test_fallen_returns_with_scar()
 	test_route_and_forge_flow()
 	test_horno()
@@ -87,11 +88,11 @@ func test_data() -> void:
 	print("Datos")
 	var s = new_sim()
 	check(s.wave_count() == 6, "hay seis oleadas")
-	check(s.slot_count() == 6, "hay seis casillas")
+	check(s.B["zones"].has("front") and s.B["zones"].has("rear"), "hay zonas de vanguardia y retaguardia")
 	check(s.ROUTES.has("verdugo") and s.ROUTES.has("inquisidor"), "hay dos rutas")
 	check(s.named_creature()["name"] == "Tizón", "Tizón empieza en la partida")
-	var pv: Array = s.preview(2)
-	check(int(pv[0].get("campesino", 0)) == 12, "la oleada 3 muestra 12 campesinos por el carril 0")
+	check(int(s.preview_totals(2).get("campesino", 0)) == 14, "la oleada 3 trae 14 campesinos")
+	check(not s.preview(2)[3].is_empty(), "la oleada 3 llega por frentes sorteados")
 
 
 func test_basic_combat() -> void:
@@ -100,6 +101,7 @@ func test_basic_combat() -> void:
 	check(s.start_wave(), "se puede iniciar la oleada 1")
 	var guard: int = 0
 	while s.phase == "combat" and guard < 30 * 120:
+		bot_cast(s)
 		s.step(Sim.TICK)
 		s.events.clear()
 		guard += 1
@@ -107,7 +109,7 @@ func test_basic_combat() -> void:
 	check(s.wave_index == 1, "avanza a la oleada 2")
 	check(s.door_hp > 0.0, "la Puerta sigue en pie (%d)" % int(s.door_hp))
 	check(s.souls > 40, "se ganan almas (%d)" % s.souls)
-	check(s.kills == 3, "caen los 3 campesinos")
+	check(s.kills == 4, "caen los 4 campesinos")
 
 
 func test_presa() -> void:
@@ -120,17 +122,79 @@ func test_presa() -> void:
 	check(seen.has("bite"), "Tizón muerde")
 
 
-func test_guardia() -> void:
-	print("Garra de Guardia")
+func test_spells() -> void:
+	print("Hechizos del demonio")
 	var s = new_sim()
-	s.souls = 500
-	check(s.buy("guardia"), "se compra la Garra de Guardia")
-	check(not s.can_buy("guardia"), "no se puede comprar dos veces")
+	check(not s.cast_brasa(Vector2(500, 380)), "no se lanza fuera del combate")
 	to_combat(s)
-	var e: Dictionary = add_enemy(s, "campesino", 0, 330.0)
-	var seen: Array = run_ticks(s, 3)
-	check(seen.has("guardia"), "la Garra retiene al enemigo que se acerca a la Puerta")
-	check(float(e["stun"]) > 0.0, "el enemigo queda retenido")
+	var a: Dictionary = add_enemy(s, "campesino", 0, 700.0)
+	var b: Dictionary = add_enemy(s, "campesino", 0, 740.0)
+	a["yo"] = 0.0
+	b["yo"] = 0.0
+	var far: Dictionary = add_enemy(s, "campesino", 2, 700.0)
+	far["yo"] = 0.0
+	var hp_a: float = float(a["hp"])
+	check(s.cast_brasa(Vector2(720, s.lane_y(0))), "se lanza la Brasa")
+	check(not s.cast_brasa(Vector2(720, s.lane_y(0))), "la Brasa respeta su enfriamiento")
+	check(float(a["hp"]) == hp_a, "la Brasa tarda en caer: aún no hace daño")
+	var seen: Array = run_ticks(s, 30)
+	check(seen.has("brasa_land"), "la Brasa cae")
+	check(float(a["hp"]) < hp_a and float(b["hp"]) < hp_a + 1.0, "la Brasa daña en área")
+	check(float(far["hp"]) == float(far["max_hp"]), "la Brasa no toca a quien está fuera del círculo")
+	check(float(a["burn_t"]) > 0.0 or a["dead"], "la Brasa prende a los alcanzados")
+	# radio mayor con la mejora
+	var r0: float = s.brasa_radius()
+	s.up_brasa = true
+	check(s.brasa_radius() > r0, "la mejora aumenta el radio de la Brasa")
+	# Rayo
+	var s2 = new_sim()
+	to_combat(s2)
+	var t1: Dictionary = add_enemy(s2, "escudero", 1, 600.0)
+	t1["yo"] = 0.0
+	var t2: Dictionary = add_enemy(s2, "escudero", 1, 660.0)
+	t2["yo"] = 0.0
+	var pt: Vector2 = s2.epos(t1)
+	var h1: float = float(t1["hp"])
+	check(s2.cast_rayo(pt + Vector2(10, 0)), "el Rayo golpea a un enemigo cerca del cursor")
+	check(float(t1["hp"]) < h1, "el Rayo hace daño de inmediato")
+	check(float(t2["hp"]) == float(t2["max_hp"]), "sin la mejora no salta")
+	check(not s2.cast_rayo(pt), "el Rayo respeta su enfriamiento")
+	check(not s2.cast_rayo(Vector2(1200, 100)), "sin objetivo cerca no se lanza ni gasta enfriamiento")
+	var s3 = new_sim()
+	s3.up_rayo = true
+	to_combat(s3)
+	var c1: Dictionary = add_enemy(s3, "escudero", 1, 600.0)
+	c1["yo"] = 0.0
+	var c2: Dictionary = add_enemy(s3, "escudero", 1, 660.0)
+	c2["yo"] = 0.0
+	s3.cast_rayo(s3.epos(c1))
+	check(float(c2["hp"]) < float(c2["max_hp"]), "con la mejora el Rayo salta a un segundo blanco")
+	var s4 = new_sim()
+	to_combat(s4)
+	var out: Dictionary = add_enemy(s4, "campesino", 1, 1100.0)
+	out["yo"] = 0.0
+	check(not s4.cast_rayo(s4.epos(out)), "el Rayo tiene alcance limitado")
+
+
+func test_levels() -> void:
+	print("Subir estadísticas")
+	var s = new_sim()
+	s.souls = 200
+	var t: Dictionary = s.named_creature()
+	var tid: int = int(t["id"])
+	check(s.level_up(tid), "se sube a Tizón de nivel")
+	check(int(t["level"]) == 2 and s.souls == 170, "cuesta 30 almas")
+	check(float(t["max_hp"]) > float(s.B["sabueso"]["hp"]), "sube su vida máxima")
+	check(s.level_up(tid) and int(t["level"]) == 3, "se sube al nivel 3")
+	check(not s.level_up(tid), "el nivel 3 es el máximo")
+	mutate_tizon(s, "verdugo")
+	check(float(t["max_hp"]) > float(s.B["horno"]["hp"]), "la mutación conserva el nivel")
+	to_combat(s)
+	check(not s.level_up(tid), "no se sube de nivel en combate")
+	var e: Dictionary = add_enemy(s, "ballestero", 1, 600.0)
+	var base: float = float(e["hp"])
+	s.damage_enemy(e, 10.0, tid, false)
+	check(base - float(e["hp"]) > 10.0, "el daño de Tizón crece con el nivel")
 
 
 func test_fallen_returns_with_scar() -> void:
@@ -178,9 +242,8 @@ func test_route_and_forge_flow() -> void:
 		check(s.phase == "route", "[%s] tras la oleada 4 se elige ruta" % r)
 		check(s.choose_route(r), "[%s] se elige la ruta" % r)
 		check(s.phase == "prep" and s.wave_index == 4, "[%s] oleada 5 en preparación" % r)
-		var pv: Array = s.preview(4)
 		var want: String = r
-		check(int(pv[1].get(want, 0)) == 1, "[%s] la oleada 5 muestra a %s" % [r, want])
+		check(int(s.preview_totals(4).get(want, 0)) == 1, "[%s] la oleada 5 muestra a %s" % [r, want])
 		s.start_wave()
 		s.enemies.clear()
 		s.spawn_queue.clear()
@@ -279,7 +342,6 @@ func test_ojo_loan() -> void:
 	var s = new_sim()
 	s.souls = 0
 	mutate_tizon(s, "verdugo")
-	check(s.wave_index == 0, "(punto de partida de la prueba)")
 	s.wave_index = 5
 	s._prepare_next()
 	var found: bool = false
@@ -304,12 +366,22 @@ func test_economy() -> void:
 	check(s.buy("sabueso") and s.souls == 0, "se recluta un Sabueso por 40")
 	check(not s.can_buy("ojo"), "sin almas no se compra")
 	var t: Dictionary = s.named_creature()
-	var slot_before: int = int(t["slot"])
-	check(s.place(int(t["id"]), 3), "se puede colocar a Tizón en la retaguardia")
-	check(int(t["slot"]) == 3 and float(t["home_x"]) == 330.0, "ocupa la casilla trasera")
-	check(not s.place(int(t["id"]), 99), "casilla inexistente rechazada")
+	check(s.place_at(int(t["id"]), 330.0, 1), "se puede colocar a Tizón en la retaguardia")
+	check(float(t["home_x"]) == 330.0 and int(t["home_lane"]) == 1, "ocupa el sitio elegido")
+	var other: Dictionary = {}
+	for c in s.creatures:
+		if not c["named"]:
+			other = c
+	check(not s.place_at(int(other["id"]), 340.0, 1), "no caben dos bestias encimadas")
+	check(not s.place_at(int(t["id"]), 500.0, 7), "carril inexistente rechazado")
+	check(s.place_at(int(t["id"]), 50.0, 2) and float(t["home_x"]) == s.zone_min_x(), "fuera de zona se ajusta al borde")
 	s.start_wave()
-	check(not s.place(int(t["id"]), slot_before), "no se recoloca en combate")
+	check(not s.place_at(int(t["id"]), 500.0, 1), "no se recoloca en combate")
+	var s2 = new_sim()
+	s2.souls = 500
+	check(s2.buy("brasa_radio") and s2.up_brasa, "se compra el radio de Brasa")
+	check(s2.buy("rayo_cadena") and s2.up_rayo, "se compra la cadena de Rayo")
+	check(not s2.can_buy("brasa_radio") and not s2.can_buy("rayo_cadena"), "las mejoras no se compran dos veces")
 
 
 # --- partidas completas -------------------------------------------------------
@@ -327,16 +399,10 @@ func dump(s) -> String:
 
 ## Política de colocación del jugador automático: lo fuerte va al carril más cargado de la
 ## próxima oleada, y el Ojo detrás de él. Las bestias de melé van delante, los Ojos detrás.
+## Política de colocación del jugador automático: bestias de melé en la vanguardia repartidas
+## por los tres carriles (los frentes se sortean), el Ojo en la retaguardia.
 func arrange(s) -> void:
-	var pv: Array = s.preview(s.wave_index)
-	var weight: Array = [0.0, 0.0, 0.0]
-	for lane in 3:
-		for k in pv[lane].keys():
-			var hp_k: float = float(s.B["enemies"].get(String(k), {}).get("hp", 50))
-			weight[lane] += hp_k * float(pv[lane][k])
-	var order: Array = [0, 1, 2]
-	order.sort_custom(func(a, b): return weight[a] > weight[b])
-	var melee: Array = []
+	var front: Array = []
 	var ojos: Array = []
 	for c in s.creatures:
 		if c["dead"]:
@@ -344,14 +410,57 @@ func arrange(s) -> void:
 		if c["kind"] == "ojo":
 			ojos.append(c)
 		else:
-			melee.append(c)
-	# Tizón primero, luego el resto por orden de compra.
-	melee.sort_custom(func(a, b): return (0 if a["named"] else 1) < (0 if b["named"] else 1))
-	for i in melee.size():
-		var lane_i: int = order[i % 3]
-		s.place(int(melee[i]["id"]), lane_i)
+			front.append(c)
+	front.sort_custom(func(a, b): return (0 if a["named"] else 1) < (0 if b["named"] else 1))
+	var lanes: Array = [1, 0, 2]
+	for i in front.size():
+		s.place_at(int(front[i]["id"]), 620.0 - float(i / 3) * 62.0, lanes[i % 3])
 	for j in ojos.size():
-		s.place(int(ojos[j]["id"]), 3 + int(order[j % 3]))
+		s.place_at(int(ojos[j]["id"]), 360.0 - float(j / 3) * 62.0, lanes[j % 3])
+
+
+## Jugador automático con el ratón: Brasa sobre el grupo más denso (adelantándose al avance)
+## y Rayo sobre apoyos, héroes o lo más cercano a la Puerta. Reacciona en cada tick.
+func bot_cast(s) -> void:
+	if s.phase != "combat" or s.enemies.is_empty():
+		return
+	if s.brasa_cd <= 0.0:
+		var r: float = s.brasa_radius()
+		var best_score: float = 0.0
+		var best_p: Vector2 = Vector2.ZERO
+		for e in s.enemies:
+			var st: Dictionary = s.B["enemies"][e["kind"]]
+			var p: Vector2 = s.epos(e) + Vector2(-float(st["speed"]) * 0.4, 0.0)
+			var score: float = 0.0
+			for o in s.enemies:
+				if s.epos(o).distance_to(p) <= r:
+					score += 1.0 + (2.0 if bool(s.B["enemies"][o["kind"]].get("hero", false)) else 0.0)
+			if score > best_score:
+				best_score = score
+				best_p = p
+		if best_score >= 2.0:
+			s.cast_brasa(best_p)
+	if s.rayo_cd <= 0.0:
+		var pick: Dictionary = {}
+		var pick_score: float = -1.0
+		var origin: Vector2 = s.demon_pos()
+		for e2 in s.enemies:
+			var ep: Vector2 = s.epos(e2)
+			if ep.distance_to(origin) > float(s.B["spells"]["rayo"]["range"]):
+				continue
+			var kind: String = e2["kind"]
+			var sc: float = 1000.0 - ep.x
+			if kind == "clerigo":
+				sc += 3000.0
+			elif kind == "ballestero":
+				sc += 2000.0
+			elif bool(s.B["enemies"][kind].get("hero", false)):
+				sc += 1500.0
+			if sc > pick_score:
+				pick_score = sc
+				pick = e2
+		if not pick.is_empty():
+			s.cast_rayo(s.epos(pick))
 
 
 func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
@@ -366,15 +475,20 @@ func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 			"prep":
 				var n_sab: int = 0
 				for c in s.creatures:
-					if c["kind"] == "sabueso":
+					if c["kind"] == "sabueso" and not c["named"]:
 						n_sab += 1
-				if s.wave_index >= 1 and n_sab < 2 and s.can_buy("sabueso"):
+				if s.wave_index >= 1 and n_sab < 1 and s.can_buy("sabueso"):
 					s.buy("sabueso")
 				if s.wave_index >= 2 and s.can_buy("ojo"):
 					s.buy("ojo")
-				if s.wave_index >= 3 and s.can_buy("guardia"):
-					s.buy("guardia")
-				if s.wave_index >= 3 and s.can_buy("sabueso"):
+				if s.wave_index >= 2 and s.can_buy("rayo_cadena"):
+					s.buy("rayo_cadena")
+				if s.wave_index >= 3 and s.can_buy("brasa_radio"):
+					s.buy("brasa_radio")
+				for c2 in s.creatures:
+					if c2["named"] and s.wave_index >= 3 and s.can_level(int(c2["id"])):
+						s.level_up(int(c2["id"]))
+				if s.wave_index >= 4 and n_sab < 2 and s.can_buy("sabueso"):
 					s.buy("sabueso")
 				arrange(s)
 				s.start_wave()
@@ -384,6 +498,7 @@ func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 			"forge":
 				s.give_relic()
 			"combat":
+				bot_cast(s)
 				s.step(Sim.TICK)
 				s.events.clear()
 				total += 1
@@ -438,19 +553,32 @@ func test_ui_smoke() -> void:
 	check(m.sim != null, "la vista crea la simulación")
 	m._on_press(Vector2(1130, 660))
 	check(m.sim.phase == "combat", "el botón Iniciar oleada arranca la oleada con el ratón")
+	m._on_press(Vector2(1100, 660))
+	m._on_release(Vector2(1100, 660))
+	check(m.sim.brasa_cd == 0.0, "pulsar el panel inferior no lanza hechizos")
+	m._on_press(Vector2(640, 380))
+	m._on_release(Vector2(640, 380))
+	check(m.sim.brasa_cd > 0.0, "clic en la arena lanza la Brasa")
+	m._on_press(Vector2(95, 660))
+	m._on_press(Vector2(255, 660))
+	check(m.spell == "rayo", "el botón Rayo cambia de hechizo")
 	var guard: int = 0
 	while m.sim.phase == "combat" and guard < 30 * 120:
+		bot_cast(m.sim)
 		m._process(1.0 / 30.0)
 		guard += 1
 	check(m.sim.phase == "prep" and m.sim.wave_index == 1, "la vista avanza la oleada 1")
-	# comprar un sabueso con el botón
-	m.sim.souls = 200
-	m._on_press(Vector2(115, 660))
+	m.sim.souls = 300
+	m._on_press(Vector2(95, 660))
 	check(m.sim.creatures.size() == 2, "el botón Sabueso recluta")
-	# arrastrar a Tizón a la casilla trasera del carril 1
 	var t: Dictionary = m.sim.named_creature()
 	var from_p: Vector2 = m._creature_pos(t) + Vector2(10, -20)
 	m._on_press(from_p)
+	check(m.selected_id == int(t["id"]), "clic en una bestia la selecciona")
+	m._on_press(Vector2(735, 660))
+	check(int(t["level"]) == 2, "el botón Subir nivel sube a la bestia seleccionada")
 	m._on_release(Vector2(330, m._lane_y(1)))
-	check(int(t["slot"]) == 4, "arrastrar con el ratón recoloca a Tizón (casilla %d)" % int(t["slot"]))
+	check(float(t["home_x"]) == 330.0 and int(t["home_lane"]) == 1, "arrastrar con el ratón recoloca a Tizón en la retaguardia (x %d)" % int(t["home_x"]))
 	m.queue_free()
+
+

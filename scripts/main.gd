@@ -9,6 +9,8 @@ const SoundBank = preload("res://scripts/sound_bank.gd")
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
 const BESTIARY_PATH: String = "user://bestiario.json"
+const ARENA_TOP: float = 90.0
+const ARENA_BOTTOM: float = 598.0
 
 const FORM_INFO: Dictionary = {
 	"sabueso": "Muerde y, de vez en cuando, agarra a un enemigo (Presa) para que no avance.",
@@ -30,6 +32,8 @@ var selected_id: int = -1
 var dragging: bool = false
 var mouse_pos: Vector2 = Vector2.ZERO
 var show_bestiary: bool = false
+var spell: String = "brasa"
+var holding: bool = false
 
 var fx: Array = []
 var warns: Array = []
@@ -72,6 +76,8 @@ func _process(delta: float) -> void:
 				break
 	else:
 		accum = 0.0
+	if sim.phase == "combat" and holding and not show_bestiary:
+		_cast_at(mouse_pos)
 	_handle_events()
 	_update_fx(delta)
 	queue_redraw()
@@ -123,7 +129,7 @@ func _enemy_pos(id: int) -> Vector2:
 	var e: Dictionary = sim.enemy_by_id(id)
 	if e.is_empty():
 		return Vector2(-100, -100)
-	return Vector2(e["x"], _lane_y(int(e["lane"])))
+	return sim.epos(e)
 
 
 func _creature_pos(c: Dictionary) -> Vector2:
@@ -192,16 +198,23 @@ func _on_event(ev: Dictionary) -> void:
 			else:
 				banner_text = "Oleada %d: %s" % [int(ev["wave"]), String(w["title"])]
 				banner_t = 1.6
-		"garra":
-			_play("garra", 0.05)
-			var ep: Vector2 = _enemy_pos(int(ev["target"]))
-			if ep.x > 0.0:
-				_add_fx({"type": "line", "a": Vector2(150, ep.y - 30), "b": ep + Vector2(0, -30), "col": Color(1.0, 0.5, 0.2), "w": 4.0, "ttl": 0.12})
-		"guardia":
-			_play("guardia")
-			var gp: Vector2 = _enemy_pos(int(ev["target"]))
-			_add_fx({"type": "ring", "p": gp + Vector2(0, -30), "r0": 60.0, "r1": 20.0, "col": Color(0.9, 0.9, 0.3), "ttl": 0.4})
-			_float(gp + Vector2(0, -90), "Retenido", Color(0.9, 0.9, 0.4))
+		"brasa_cast":
+			_play("brasa_cast")
+		"brasa_land":
+			_play("horno_spit")
+			shake = maxf(shake, 3.0)
+			_add_fx({"type": "ring", "p": ev["p"], "r0": 10.0, "r1": float(ev["r"]), "col": Color(1.0, 0.55, 0.2, 0.9), "ttl": 0.45})
+			_add_fx({"type": "disc", "p": ev["p"], "r": float(ev["r"]), "col": Color(1.0, 0.5, 0.15, 0.35), "ttl": 0.5})
+		"rayo":
+			_play("rayo")
+			_add_fx({"type": "bolt", "a": ev["from"], "b": ev["to"], "col": Color(0.75, 0.9, 1.0), "ttl": 0.18})
+			_add_fx({"type": "ring", "p": ev["to"], "r0": 4.0, "r1": 26.0, "col": Color(0.75, 0.9, 1.0, 0.9), "ttl": 0.2})
+		"rayo_chain":
+			_play("rayo")
+			_add_fx({"type": "bolt", "a": ev["from"], "b": ev["to"], "col": Color(0.9, 0.95, 1.0), "ttl": 0.22})
+		"leveled":
+			_play("level")
+			_float(_creature_pos_by_id(int(ev["id"])) + Vector2(0, -110), "Nivel %d" % int(ev["level"]), Color(1.0, 0.9, 0.4), 1.4)
 		"bite":
 			_play("bite", 0.06)
 		"hit":
@@ -338,6 +351,8 @@ func _input(event: InputEvent) -> void:
 				_on_press(mb.position)
 			else:
 				_on_release(mb.position)
+		elif mb.pressed and (mb.button_index == MOUSE_BUTTON_RIGHT or mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN):
+			_toggle_spell()
 	elif event is InputEventKey:
 		var k: InputEventKey = event
 		if k.pressed and not k.echo:
@@ -350,9 +365,50 @@ func _input(event: InputEvent) -> void:
 				speed = 3 - speed
 			elif k.keycode == KEY_B:
 				show_bestiary = not show_bestiary
+			elif k.keycode == KEY_1:
+				spell = "brasa"
+			elif k.keycode == KEY_2:
+				spell = "rayo"
+
+
+func _toggle_spell() -> void:
+	spell = "rayo" if spell == "brasa" else "brasa"
+	_play("click")
+
+
+func _cast_at(p: Vector2) -> void:
+	if not _in_arena(p) or _over_button(p):
+		return
+	if spell == "brasa":
+		sim.cast_brasa(p)
+	else:
+		sim.cast_rayo(p)
+
+
+func _in_arena(p: Vector2) -> bool:
+	return p.y > ARENA_TOP and p.y < ARENA_BOTTOM
+
+
+func _over_button(p: Vector2) -> bool:
+	for b in _buttons():
+		if b["rect"].has_point(p):
+			return true
+	return false
+
+
+func _nearest_lane(y: float) -> int:
+	var best: int = 0
+	var bd: float = 1e9
+	for i in 3:
+		var d: float = absf(y - _lane_y(i))
+		if d < bd:
+			bd = d
+			best = i
+	return best
 
 
 func _restart() -> void:
+	holding = false
 	sim.reset()
 	fx.clear()
 	warns.clear()
@@ -369,12 +425,27 @@ func _buttons() -> Array:
 	var ph: String = sim.phase
 	var y: float = 624.0
 	if ph == "prep":
-		out.append({"id": "buy_sabueso", "rect": Rect2(20, y, 190, 72), "text": "Sabueso", "sub": "%d almas" % sim.cost_of("sabueso"), "on": sim.can_buy("sabueso")})
-		var ojo_sub: String = "%d almas" % sim.cost_of("ojo")
-		out.append({"id": "buy_ojo", "rect": Rect2(220, y, 190, 72), "text": "Ojo de Latón", "sub": ojo_sub, "on": sim.can_buy("ojo")})
-		var gsub: String = "comprada" if sim.guardia_unlocked else "%d almas" % sim.cost_of("guardia")
-		out.append({"id": "buy_guardia", "rect": Rect2(420, y, 190, 72), "text": "Garra de Guardia", "sub": gsub, "on": sim.can_buy("guardia")})
-		out.append({"id": "start", "rect": Rect2(1000, y, 260, 72), "text": "Iniciar oleada", "sub": "Espacio", "on": true})
+		out.append({"id": "buy_sabueso", "rect": Rect2(20, y, 150, 72), "text": "Sabueso", "sub": "%d almas" % sim.cost_of("sabueso"), "on": sim.can_buy("sabueso")})
+		out.append({"id": "buy_ojo", "rect": Rect2(180, y, 150, 72), "text": "Ojo de Latón", "sub": "%d almas" % sim.cost_of("ojo"), "on": sim.can_buy("ojo")})
+		var bsub: String = "comprado" if sim.up_brasa else "%d almas" % sim.cost_of("brasa_radio")
+		out.append({"id": "buy_brasa_radio", "rect": Rect2(340, y, 150, 72), "text": "Radio de Brasa", "sub": bsub, "on": sim.can_buy("brasa_radio")})
+		var rsub: String = "comprada" if sim.up_rayo else "%d almas" % sim.cost_of("rayo_cadena")
+		out.append({"id": "buy_rayo_cadena", "rect": Rect2(500, y, 150, 72), "text": "Cadena de Rayo", "sub": rsub, "on": sim.can_buy("rayo_cadena")})
+		var lsub: String = "elige una bestia"
+		var lon: bool = false
+		if selected_id >= 0:
+			var sc: Dictionary = sim.creature_by_id(selected_id)
+			if not sc.is_empty():
+				var lc: int = sim.level_cost(sc)
+				lsub = "máximo" if lc < 0 else "%d almas" % lc
+				lon = sim.can_level(selected_id)
+		out.append({"id": "level", "rect": Rect2(660, y, 150, 72), "text": "Subir nivel", "sub": lsub, "on": lon})
+		out.append({"id": "start", "rect": Rect2(1030, y, 230, 72), "text": "Iniciar oleada", "sub": "Espacio", "on": true})
+	elif ph == "combat":
+		var bcd: float = sim.brasa_cd / float(sim.B["spells"]["brasa"]["cd"])
+		var rcd: float = sim.rayo_cd / float(sim.B["spells"]["rayo"]["cd"])
+		out.append({"id": "spell_brasa", "rect": Rect2(20, y, 150, 72), "text": "Brasa", "sub": "tecla 1", "on": true, "cd": bcd, "active": spell == "brasa"})
+		out.append({"id": "spell_rayo", "rect": Rect2(180, y, 150, 72), "text": "Rayo", "sub": "tecla 2", "on": true, "cd": rcd, "active": spell == "rayo"})
 	elif ph == "route":
 		out.append({"id": "route_verdugo", "rect": Rect2(150, 150, 480, 360), "text": "", "sub": "", "on": true})
 		out.append({"id": "route_inquisidor", "rect": Rect2(650, 150, 480, 360), "text": "", "sub": "", "on": true})
@@ -382,8 +453,8 @@ func _buttons() -> Array:
 		out.append({"id": "forge", "rect": Rect2(490, 430, 300, 64), "text": "Entregar a Tizón", "sub": "", "on": true})
 	elif ph == "victory" or ph == "defeat":
 		out.append({"id": "restart", "rect": Rect2(490, 480, 300, 64), "text": "Reiniciar", "sub": "Espacio", "on": true})
-	out.append({"id": "speed", "rect": Rect2(760, y, 100, 72), "text": "Velocidad", "sub": "x%d" % speed, "on": true})
-	out.append({"id": "bestiary", "rect": Rect2(870, y, 120, 72), "text": "Bestiario", "sub": "B", "on": true})
+	out.append({"id": "speed", "rect": Rect2(820, y, 90, 72), "text": "Velocidad", "sub": "x%d" % speed, "on": true})
+	out.append({"id": "bestiary", "rect": Rect2(920, y, 100, 72), "text": "Bestiario", "sub": "B", "on": true})
 	return out
 
 
@@ -395,8 +466,16 @@ func _do_button(id: String) -> void:
 			sim.buy("sabueso")
 		"buy_ojo":
 			sim.buy("ojo")
-		"buy_guardia":
-			sim.buy("guardia")
+		"buy_brasa_radio":
+			sim.buy("brasa_radio")
+		"buy_rayo_cadena":
+			sim.buy("rayo_cadena")
+		"level":
+			sim.level_up(selected_id)
+		"spell_brasa":
+			spell = "brasa"
+		"spell_rayo":
+			spell = "rayo"
 		"speed":
 			speed = 3 - speed
 			_play("click")
@@ -411,15 +490,6 @@ func _do_button(id: String) -> void:
 			sim.give_relic()
 		"restart":
 			_restart()
-
-
-func _slot_at(p: Vector2) -> int:
-	for i in sim.slot_count():
-		var s: Dictionary = sim.B["slots"][i]
-		var sp: Vector2 = Vector2(float(s["x"]), _lane_y(int(s["lane"])))
-		if absf(p.x - sp.x) <= 58.0 and absf(p.y - sp.y) <= 52.0:
-			return i
-	return -1
 
 
 func _creature_at(p: Vector2) -> int:
@@ -439,9 +509,15 @@ func _on_press(p: Vector2) -> void:
 		show_bestiary = false
 		return
 	for b in _buttons():
-		if b["on"] and b["rect"].has_point(p):
-			_do_button(String(b["id"]))
+		if b["rect"].has_point(p):
+			if b["on"]:
+				_do_button(String(b["id"]))
 			return
+	if sim.phase == "combat":
+		if _in_arena(p):
+			holding = true
+			_cast_at(p)
+		return
 	if sim.phase != "prep":
 		return
 	var cid: int = _creature_at(p)
@@ -449,26 +525,33 @@ func _on_press(p: Vector2) -> void:
 		selected_id = cid
 		dragging = true
 		return
-	var si: int = _slot_at(p)
-	if si >= 0 and selected_id >= 0:
-		sim.place(selected_id, si)
-		selected_id = -1
+	if selected_id >= 0 and _in_arena(p):
+		if sim.place_at(selected_id, p.x, _nearest_lane(p.y)):
+			selected_id = -1
+		else:
+			_float(p + Vector2(0, -20), "no cabe ahí", Color(1.0, 0.5, 0.4), 0.9)
 		return
 	selected_id = -1
 
 
 func _on_release(p: Vector2) -> void:
+	holding = false
 	if not dragging:
 		return
 	dragging = false
 	if sim.phase != "prep" or selected_id < 0:
 		return
-	var si: int = _slot_at(p)
-	if si >= 0:
-		var c: Dictionary = sim.creature_by_id(selected_id)
-		if not c.is_empty() and int(c["slot"]) != si:
-			sim.place(selected_id, si)
-			selected_id = -1
+	var c: Dictionary = sim.creature_by_id(selected_id)
+	if c.is_empty():
+		return
+	if _creature_pos(c).distance_to(p) < 24.0:
+		return
+	if not _in_arena(p):
+		return
+	if sim.place_at(selected_id, p.x, _nearest_lane(p.y)):
+		selected_id = -1
+	else:
+		_float(p + Vector2(0, -20), "no cabe ahí", Color(1.0, 0.5, 0.4), 0.9)
 
 
 # ----------------------------------------------------------------------------
@@ -504,27 +587,29 @@ func _draw() -> void:
 
 
 func _draw_arena() -> void:
-	# carriles
+	# suelo de piedra continuo con baldosas en perspectiva
+	var floor_top: float = ARENA_TOP
+	draw_rect(Rect2(40, floor_top, SCREEN_W - 40, ARENA_BOTTOM - floor_top), Color(0.15, 0.08, 0.09))
+	for r in 9:
+		var ty: float = floor_top + r * 58.0
+		var shade: float = 0.015 * float(r % 2)
+		draw_rect(Rect2(40, ty, SCREEN_W - 40, 29.0), Color(0.17 + shade, 0.09 + shade, 0.10 + shade, 0.55))
+		draw_line(Vector2(40, ty), Vector2(SCREEN_W, ty), Color(0.05, 0.02, 0.03, 0.8), 2.0)
+		var off: float = 0.0 if r % 2 == 0 else 60.0
+		var tx: float = 140.0 + off
+		while tx < SCREEN_W:
+			draw_line(Vector2(tx, ty), Vector2(tx, ty + 58.0), Color(0.05, 0.02, 0.03, 0.5), 2.0)
+			tx += 120.0
+	# oscuridad del fondo y entrada de los humanos por la derecha
+	draw_rect(Rect2(40, floor_top, SCREEN_W - 40, 40), Color(0, 0, 0, 0.35))
 	for i in 3:
-		var y: float = _lane_y(i)
-		var col: Color = Color(0.14, 0.06, 0.07) if i % 2 == 0 else Color(0.11, 0.05, 0.06)
-		draw_rect(Rect2(60, y - 58, SCREEN_W - 60, 116), col)
-		draw_line(Vector2(60, y + 58), Vector2(SCREEN_W, y + 58), Color(0.3, 0.1, 0.08), 2.0)
-	draw_line(Vector2(60, _lane_y(0) - 58), Vector2(SCREEN_W, _lane_y(0) - 58), Color(0.3, 0.1, 0.08), 2.0)
+		draw_rect(Rect2(SCREEN_W - 26, _lane_y(i) - 40, 26, 80), Color(0.5, 0.35, 0.2, 0.35))
 	var door_rect: Rect2 = Rect2(40, _lane_y(0) - 70, 90, _lane_y(2) - _lane_y(0) + 140)
 	Art.draw_door(draw_ctx(), door_rect, clampf(sim.door_hp / sim.door_max, 0.0, 1.0), 0.0)
-	# casillas
-	var show_slots: bool = sim.phase == "prep"
-	var hover_slot: int = _slot_at(mouse_pos)
-	for i in sim.slot_count():
-		var s: Dictionary = sim.B["slots"][i]
-		var sp: Vector2 = Vector2(float(s["x"]), _lane_y(int(s["lane"])))
-		if show_slots:
-			var hot: bool = (selected_id >= 0 and hover_slot == i)
-			var a: float = 0.55 if (selected_id >= 0) else 0.25
-			draw_arc(sp, 36.0, 0.0, TAU, 28, Color(1.0, 0.8, 0.4, a + (0.3 if hot else 0.0)), 3.0 if hot else 2.0)
-			if hot:
-				draw_circle(sp, 36.0, Color(1.0, 0.8, 0.4, 0.15))
+	_draw_demon()
+	# zonas de despliegue: solo se resaltan al colocar
+	if sim.phase == "prep":
+		_draw_zones()
 	# suelo en llamas
 	for z in sim.zones:
 		var zy: float = _lane_y(int(z["lane"]))
@@ -541,21 +626,109 @@ func _draw_arena() -> void:
 			var hp: Vector2 = Vector2(c["home_x"], _lane_y(int(c["home_lane"])))
 			draw_arc(hp, 34.0, 0.0, TAU, 24, Color(1.0, 0.3, 0.25, 0.4 + 0.4 * sin(clock * 8.0)), 3.0)
 			_txt("HUECO", hp + Vector2(-30, -48), 16, Color(1.0, 0.4, 0.35), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
-	# ordenar por carril para el solape
-	for lane in 3:
-		for c2 in sim.creatures:
-			if c2["dead"]:
-				continue
-			var cl: int = int(c2["lane"])
-			if c2["air"]:
-				if lane == 2:
-					_draw_creature(c2)
-			elif cl == lane:
-				_draw_creature(c2)
-		for e in sim.enemies:
-			if int(e["lane"]) == lane:
-				_draw_enemy(e)
+	# criaturas y enemigos ordenados por profundidad (más abajo = más cerca)
+	var items: Array = []
+	for c2 in sim.creatures:
+		if c2["dead"]:
+			continue
+		var cy: float = _creature_pos(c2).y
+		if c2["air"]:
+			cy = 2000.0
+		items.append({"y": cy, "c": c2})
+	for e in sim.enemies:
+		items.append({"y": sim.epos(e).y, "e": e})
+	items.sort_custom(func(a, b): return a["y"] < b["y"])
+	for it in items:
+		if it.has("c"):
+			_draw_creature(it["c"])
+		else:
+			_draw_enemy(it["e"])
+	_draw_brasas()
 	_draw_fx_and_warns()
+	if sim.phase == "combat":
+		_draw_aim()
+
+
+func _zone_rect(depth: String) -> Rect2:
+	var z: Dictionary = sim.B["zones"][depth]
+	var top: float = _lane_y(0) - 64.0
+	return Rect2(float(z["x0"]) - 20.0, top, float(z["x1"]) - float(z["x0"]) + 40.0, _lane_y(2) - _lane_y(0) + 128.0)
+
+
+func _draw_zones() -> void:
+	var active: bool = selected_id >= 0
+	var a: float = 0.20 if active else 0.08
+	var rr: Rect2 = _zone_rect("rear")
+	var fr: Rect2 = _zone_rect("front")
+	draw_rect(rr, Color(0.35, 0.5, 0.9, a))
+	draw_rect(fr, Color(1.0, 0.55, 0.2, a))
+	draw_rect(rr, Color(0.5, 0.65, 1.0, 0.5 if active else 0.25), false, 2.0)
+	draw_rect(fr, Color(1.0, 0.7, 0.3, 0.5 if active else 0.25), false, 2.0)
+	_txt("RETAGUARDIA", Vector2(rr.position.x, rr.position.y - 6), 15, Color(0.6, 0.75, 1.0, 0.9), HORIZONTAL_ALIGNMENT_CENTER, rr.size.x)
+	_txt("VANGUARDIA", Vector2(fr.position.x, fr.position.y - 6), 15, Color(1.0, 0.75, 0.4, 0.9), HORIZONTAL_ALIGNMENT_CENTER, fr.size.x)
+	if active and _in_arena(mouse_pos):
+		var lane: int = _nearest_lane(mouse_pos.y)
+		var gx: float = clampf(mouse_pos.x, sim.zone_min_x(), sim.zone_max_x())
+		var ok: bool = sim.spot_ok(gx, lane, selected_id)
+		var col: Color = Color(0.4, 1.0, 0.5, 0.8) if ok else Color(1.0, 0.3, 0.3, 0.8)
+		var gp: Vector2 = Vector2(gx, _lane_y(lane))
+		draw_arc(gp, 30.0, 0.0, TAU, 24, col, 3.0)
+		draw_circle(gp, 30.0, Color(col.r, col.g, col.b, 0.15))
+
+
+func _draw_demon() -> void:
+	var dp: Vector2 = sim.demon_pos() + Vector2(34, 10)
+	var pulse: float = 0.5 + 0.5 * sin(clock * 3.0)
+	draw_circle(dp + Vector2(0, 6), 26.0, Color(0, 0, 0, 0.35))
+	draw_colored_polygon(PackedVector2Array([dp + Vector2(-16, 4), dp + Vector2(-12, -44), dp + Vector2(0, -56), dp + Vector2(12, -44), dp + Vector2(16, 4)]), Color(0.55, 0.08, 0.1))
+	draw_circle(dp + Vector2(0, -60), 11.0, Color(0.7, 0.12, 0.12))
+	draw_colored_polygon(PackedVector2Array([dp + Vector2(-10, -66), dp + Vector2(-20, -88), dp + Vector2(-3, -70)]), Color(0.9, 0.85, 0.7))
+	draw_colored_polygon(PackedVector2Array([dp + Vector2(10, -66), dp + Vector2(20, -88), dp + Vector2(3, -70)]), Color(0.9, 0.85, 0.7))
+	draw_circle(dp + Vector2(-4, -61), 2.0, Color(1.0, 0.85, 0.3))
+	draw_circle(dp + Vector2(4, -61), 2.0, Color(1.0, 0.85, 0.3))
+	var hand: Vector2 = dp + Vector2(22, -34)
+	draw_line(dp + Vector2(10, -40), hand, Color(0.55, 0.08, 0.1), 5.0)
+	draw_circle(hand, 5.0 + 3.0 * pulse, Color(1.0, 0.55, 0.2, 0.6 + 0.4 * pulse))
+
+
+func _draw_brasas() -> void:
+	var origin: Vector2 = sim.demon_pos() + Vector2(56, -34)
+	var delay: float = float(sim.B["spells"]["brasa"]["delay"])
+	for b in sim.pending_brasas:
+		var k: float = clampf(1.0 - float(b["t"]) / delay, 0.0, 1.0)
+		var target: Vector2 = b["p"]
+		draw_arc(target, float(b["r"]), 0.0, TAU, 36, Color(1.0, 0.45, 0.1, 0.9), 3.0)
+		draw_arc(target, float(b["r"]) * (1.0 - k), 0.0, TAU, 36, Color(1.0, 0.8, 0.3, 0.7), 2.0)
+		var pp: Vector2 = origin.lerp(target, k) + Vector2(0, -sin(k * PI) * 170.0)
+		draw_circle(pp, 11.0, Color(1.0, 0.55, 0.15))
+		draw_circle(pp, 6.0, Color(1.0, 0.9, 0.5))
+
+
+func _draw_aim() -> void:
+	if not _in_arena(mouse_pos) or _over_button(mouse_pos) or show_bestiary:
+		return
+	if spell == "brasa":
+		var r: float = sim.brasa_radius()
+		var ready: bool = sim.brasa_cd <= 0.0
+		var col: Color = Color(1.0, 0.5, 0.15, 0.9) if ready else Color(0.6, 0.4, 0.3, 0.6)
+		draw_circle(mouse_pos, r, Color(col.r, col.g, col.b, 0.12))
+		draw_arc(mouse_pos, r, 0.0, TAU, 40, col, 3.0)
+		var cap: String = "Brasa: cae en %.1f s" % float(sim.B["spells"]["brasa"]["delay"]) if ready else "recarga %.1f s" % sim.brasa_cd
+		_txt(cap, mouse_pos + Vector2(-80, -r - 8), 16, col, HORIZONTAL_ALIGNMENT_CENTER, 160.0)
+	else:
+		var rg: float = float(sim.B["spells"]["rayo"]["range"])
+		var origin: Vector2 = sim.demon_pos()
+		draw_arc(origin, rg, -0.9, 0.9, 40, Color(0.7, 0.85, 1.0, 0.25), 2.0)
+		var tgt: Dictionary = sim.rayo_target(mouse_pos)
+		var ready2: bool = sim.rayo_cd <= 0.0
+		var col2: Color = Color(0.75, 0.9, 1.0, 0.95) if ready2 else Color(0.5, 0.55, 0.65, 0.6)
+		draw_arc(mouse_pos, float(sim.B["spells"]["rayo"]["pick_radius"]), 0.0, TAU, 24, Color(col2.r, col2.g, col2.b, 0.35), 2.0)
+		if not tgt.is_empty():
+			var tp: Vector2 = sim.epos(tgt)
+			draw_arc(tp + Vector2(0, -30), 34.0, 0.0, TAU, 24, col2, 3.0)
+			draw_line(origin + Vector2(40, -40), tp + Vector2(0, -30), Color(col2.r, col2.g, col2.b, 0.3), 1.5)
+		var cap2: String = "Rayo: golpe inmediato" if ready2 else "recarga %.1f s" % sim.rayo_cd
+		_txt(cap2, mouse_pos + Vector2(-80, -52), 16, col2, HORIZONTAL_ALIGNMENT_CENTER, 160.0)
 
 
 func draw_ctx() -> CanvasItem:
@@ -590,6 +763,8 @@ func _draw_creature(c: Dictionary) -> void:
 	Art.draw_creature(self, kind, pos, clock + float(c["id"]), opts)
 	if c["stun"] > 0.0:
 		_txt("aturdido", pos + Vector2(-30, -110), 15, Color(1.0, 0.9, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+	for lv in int(c["level"]) - 1:
+		draw_circle(pos + Vector2(-8 + lv * 12, 40), 4.0, Color(1.0, 0.85, 0.3))
 	if c["named"]:
 		var nm: String = String(c["name"])
 		_txt(nm, pos + Vector2(-50, 24), 18, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, 100.0)
@@ -607,7 +782,7 @@ func _bar(p: Vector2, w: float, frac: float, col: Color) -> void:
 
 
 func _draw_enemy(e: Dictionary) -> void:
-	var pos: Vector2 = Vector2(e["x"], _lane_y(int(e["lane"])))
+	var pos: Vector2 = sim.epos(e)
 	var kind: String = e["kind"]
 	var opts: Dictionary = {"burning": e["burn_t"] > 0.0, "bump": e["bump"], "flash": 0.0}
 	Art.draw_enemy(self, kind, pos, clock, opts)
@@ -663,6 +838,23 @@ func _draw_fx_and_warns() -> void:
 	for f in fx:
 		var fk: float = clampf(float(f["t"]) / float(f["ttl"]), 0.0, 1.0)
 		match String(f["type"]):
+			"disc":
+				var dcol: Color = f["col"]
+				dcol.a = dcol.a * (1.0 - fk)
+				draw_circle(f["p"], float(f["r"]), dcol)
+			"bolt":
+				var bcol: Color = f["col"]
+				bcol.a = 1.0 - fk
+				var ba: Vector2 = f["a"]
+				var bb: Vector2 = f["b"]
+				var pts: PackedVector2Array = PackedVector2Array([ba])
+				for j in range(1, 7):
+					var tt: float = float(j) / 7.0
+					var jit: Vector2 = Vector2(sin(clock * 90.0 + j * 7.0), cos(clock * 77.0 + j * 5.0)) * 14.0
+					pts.append(ba.lerp(bb, tt) + jit)
+				pts.append(bb)
+				draw_polyline(pts, bcol, 4.0)
+				draw_polyline(pts, Color(1, 1, 1, bcol.a), 1.5)
 			"line":
 				var lc: Color = f["col"]
 				lc.a = 1.0 - fk
@@ -712,10 +904,10 @@ func _draw_hud() -> void:
 	draw_rect(Rect2(0, 604, SCREEN_W, 116), Color(0.05, 0.02, 0.03))
 	draw_line(Vector2(0, 604), Vector2(SCREEN_W, 604), Color(0.4, 0.12, 0.08), 3.0)
 	if sim.phase == "prep":
-		_txt("Arrastra a tus bestias a una casilla. Delante aguantan; atrás disparan.", Vector2(20, 616), 15, Color(0.75, 0.65, 0.6))
+		_txt("Arrastra bestias a las zonas marcadas: vanguardia hace de muro, retaguardia dispara. Selecciona una para subirla de nivel.", Vector2(20, 618), 14, Color(0.75, 0.65, 0.6))
 	elif sim.phase == "combat":
 		var left: int = sim.spawn_queue.size() + sim.enemies.size()
-		_txt("Quedan %d enemigos. Tu mano (Garra) y tus bestias atacan solas." % left, Vector2(20, 650), 18, Color(0.85, 0.75, 0.7))
+		_txt("Quedan %d enemigos. Clic en la arena lanza el hechizo; mantén pulsado para repetir. Clic derecho o rueda cambia de hechizo." % left, Vector2(340, 654), 15, Color(0.85, 0.75, 0.7))
 
 
 func _phase_hint() -> String:
@@ -736,23 +928,23 @@ func _phase_hint() -> String:
 func _draw_lane_preview() -> void:
 	if sim.phase != "prep":
 		return
+	var tot: Dictionary = sim.preview_totals(sim.wave_index)
 	var pv: Array = sim.preview(sim.wave_index)
-	_txt("LLEGARÁ", Vector2(1100, 118), 16, Color(0.9, 0.5, 0.4))
-	for lane in 3:
-		var y: float = _lane_y(lane)
-		var d: Dictionary = pv[lane]
-		draw_rect(Rect2(1060, y - 44, 212, 88), Color(0, 0, 0, 0.55))
-		draw_rect(Rect2(1060, y - 44, 212, 88), Color(0.5, 0.2, 0.15), false, 2.0)
-		var line_y: float = y - 22.0
-		var keys: Array = d.keys()
-		if keys.is_empty():
-			_txt("nadie", Vector2(1072, y + 6), 16, Color(0.6, 0.5, 0.5))
-		for kd in keys:
-			var kk: String = String(kd)
-			var hero: bool = bool(sim.B["enemies"].get(kk, {}).get("hero", false)) or kk == "heroe"
-			var col: Color = Color(1.0, 0.35, 0.3) if hero else Color(0.9, 0.85, 0.8)
-			_txt("%d x %s" % [int(d[kd]), sim.label(kk)], Vector2(1072, line_y + 4), 16, col)
-			line_y += 19.0
+	var rows: int = tot.size()
+	var h: float = 44.0 + 20.0 * float(rows)
+	var box: Rect2 = Rect2(1040, 98, 232, h)
+	draw_rect(box, Color(0, 0, 0, 0.6))
+	draw_rect(box, Color(0.5, 0.2, 0.15), false, 2.0)
+	_txt("LLEGARÁ POR LA DERECHA", Vector2(box.position.x + 10, box.position.y + 20), 15, Color(0.9, 0.5, 0.4))
+	var y: float = box.position.y + 42.0
+	for k in tot.keys():
+		var kk: String = String(k)
+		var hero: bool = bool(sim.B["enemies"].get(kk, {}).get("hero", false)) or kk == "heroe"
+		var col: Color = Color(1.0, 0.35, 0.3) if hero else Color(0.9, 0.85, 0.8)
+		_txt("%d x %s" % [int(tot[k]), sim.label(kk)], Vector2(box.position.x + 10, y), 16, col)
+		y += 20.0
+	if not pv[3].is_empty():
+		_txt("sin orden y por cualquier frente", Vector2(box.position.x + 10, box.end.y + 18), 14, Color(0.8, 0.7, 0.6))
 
 
 func _draw_buttons() -> void:
@@ -768,10 +960,18 @@ func _draw_buttons() -> void:
 		if hov:
 			base = base.lightened(0.25)
 		draw_rect(r, base)
-		draw_rect(r, Color(0.8, 0.45, 0.25) if b["on"] else Color(0.3, 0.2, 0.2), false, 2.0)
+		if b.has("cd") and float(b["cd"]) > 0.0:
+			var ch: float = r.size.y * clampf(float(b["cd"]), 0.0, 1.0)
+			draw_rect(Rect2(r.position.x, r.end.y - ch, r.size.x, ch), Color(0, 0, 0, 0.55))
+		var edge: Color = Color(0.8, 0.45, 0.25) if b["on"] else Color(0.3, 0.2, 0.2)
+		var edge_w: float = 2.0
+		if b.has("active") and bool(b["active"]):
+			edge = Color(1.0, 0.9, 0.4)
+			edge_w = 4.0
+		draw_rect(r, edge, false, edge_w)
 		var tc: Color = Color(1.0, 0.92, 0.8) if b["on"] else Color(0.5, 0.45, 0.45)
-		_txt(String(b["text"]), Vector2(r.position.x, r.position.y + 32), 20, tc, HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
-		_txt(String(b["sub"]), Vector2(r.position.x, r.position.y + 56), 16, tc.darkened(0.2), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		_txt(String(b["text"]), Vector2(r.position.x, r.position.y + 32), 18, tc, HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		_txt(String(b["sub"]), Vector2(r.position.x, r.position.y + 56), 15, tc.darkened(0.2), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 
 
 func _draw_overlays() -> void:
@@ -848,12 +1048,12 @@ func _draw_tooltip() -> void:
 	var cid: int = _creature_at(mouse_pos)
 	if cid >= 0:
 		var c: Dictionary = sim.creature_by_id(cid)
-		lines.append("%s (%s)" % [String(c["name"]), sim.label(String(c["kind"]))])
+		lines.append("%s (%s)  Nivel %d" % [String(c["name"]), sim.label(String(c["kind"])), int(c["level"])])
 		lines.append("Vida %d / %d    Bajas %d    Cicatrices %d" % [int(c["hp"]), int(c["max_hp"]), int(c["kills"]), int(c["scars"])])
 		lines.append(String(FORM_INFO.get(String(c["kind"]), "")))
 	else:
 		for e in sim.enemies:
-			var ep: Vector2 = Vector2(e["x"], _lane_y(int(e["lane"])))
+			var ep: Vector2 = sim.epos(e)
 			if absf(mouse_pos.x - ep.x) < 30.0 and mouse_pos.y > ep.y - 100.0 and mouse_pos.y < ep.y + 10.0:
 				lines.append("%s    Vida %d / %d" % [sim.label(String(e["kind"])), int(e["hp"]), int(e["max_hp"])])
 				break

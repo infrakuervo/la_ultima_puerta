@@ -26,9 +26,11 @@ var events: Array = []
 var route: String = ""
 var relic: String = ""
 var next_id: int = 1
-var guardia_unlocked: bool = false
-var guardia_cd: float = 0.0
-var garra_cd: float = 0.0
+var brasa_cd: float = 0.0
+var rayo_cd: float = 0.0
+var pending_brasas: Array = []
+var up_brasa: bool = false
+var up_rayo: bool = false
 var kills: int = 0
 var seen_forms: Array = []       # formas vistas (bestiario); la vista lo persiste
 var message: String = ""
@@ -66,12 +68,14 @@ func reset() -> void:
 	route = ""
 	relic = ""
 	next_id = 1
-	guardia_unlocked = false
-	guardia_cd = 0.0
-	garra_cd = 0.0
+	brasa_cd = 0.0
+	rayo_cd = 0.0
+	pending_brasas.clear()
+	up_brasa = false
+	up_rayo = false
 	kills = 0
 	wave_time = 0.0
-	var tizon: Dictionary = _new_creature("sabueso", 1)
+	var tizon: Dictionary = _new_creature("sabueso", {"x": 520.0, "lane": 1})
 	tizon["name"] = "Tizón"
 	tizon["named"] = true
 	creatures.append(tizon)
@@ -99,8 +103,12 @@ func lane_y(lane: int) -> float:
 	return float(B["arena"]["lane_y"][lane])
 
 
-func slot_count() -> int:
-	return B["slots"].size()
+func demon_pos() -> Vector2:
+	return Vector2(float(B["arena"]["door_x"]) + 10.0, lane_y(1))
+
+
+func epos(e: Dictionary) -> Vector2:
+	return Vector2(float(e["x"]), lane_y(int(e["lane"])) + float(e["yo"]))
 
 
 func creature_by_id(id: int) -> Dictionary:
@@ -114,13 +122,6 @@ func enemy_by_id(id: int) -> Dictionary:
 	for e in enemies:
 		if e["id"] == id:
 			return e
-	return {}
-
-
-func creature_in_slot(slot_idx: int) -> Dictionary:
-	for c in creatures:
-		if not c["dead"] and c["slot"] == slot_idx:
-			return c
 	return {}
 
 
@@ -150,8 +151,9 @@ func epitaph() -> String:
 
 
 ## Resumen por carril de la oleada `idx`: [ {kind: cantidad}, {...}, {...} ]
+## Resumen de la oleada `idx` en 4 cubos: carriles 0, 1, 2 y 3 = frente sorteado.
 func preview(idx: int) -> Array:
-	var lanes: Array = [{}, {}, {}]
+	var lanes: Array = [{}, {}, {}, {}]
 	if idx < 0 or idx >= WAVES.size():
 		return lanes
 	var w: Dictionary = WAVES[idx]
@@ -160,20 +162,54 @@ func preview(idx: int) -> Array:
 		if kind == "@hero":
 			kind = String(ROUTES[route]["hero"]) if route != "" else "heroe"
 		var lane: int = int(g["lane"])
+		if lane < 0:
+			lane = 3
 		var prev: int = int(lanes[lane].get(kind, 0))
 		lanes[lane][kind] = prev + int(g["count"])
 	return lanes
 
 
-func _free_slot(depth: String) -> int:
-	var n: int = slot_count()
-	for i in n:
-		if B["slots"][i]["depth"] == depth and creature_in_slot(i).is_empty():
-			return i
-	for j in n:
-		if creature_in_slot(j).is_empty():
-			return j
-	return -1
+func preview_totals(idx: int) -> Dictionary:
+	var tot: Dictionary = {}
+	for bucket in preview(idx):
+		for k in bucket.keys():
+			tot[k] = int(tot.get(k, 0)) + int(bucket[k])
+	return tot
+
+
+func zone_min_x() -> float:
+	return float(B["zones"]["rear"]["x0"])
+
+
+func zone_max_x() -> float:
+	return float(B["zones"]["front"]["x1"])
+
+
+func spot_ok(x: float, lane: int, ignore_id: int) -> bool:
+	if x < zone_min_x() or x > zone_max_x() or lane < 0 or lane > 2:
+		return false
+	var gap: float = float(B["zones"]["min_gap"])
+	for c in creatures:
+		if c["dead"] or c["id"] == ignore_id:
+			continue
+		if int(c["home_lane"]) == lane and absf(float(c["home_x"]) - x) < gap:
+			return false
+	return true
+
+
+## Primer hueco libre en la zona "front" o "rear" (si no hay, en la otra). {} si no cabe.
+func find_spot(depth: String) -> Dictionary:
+	var order: Array = [depth, "rear" if depth == "front" else "front"]
+	var gap: float = float(B["zones"]["min_gap"])
+	for d in order:
+		var z: Dictionary = B["zones"][d]
+		var x: float = float(z["x1"]) - 20.0
+		while x >= float(z["x0"]) + 10.0:
+			for lane in [1, 0, 2]:
+				if spot_ok(x, lane, -1):
+					return {"x": x, "lane": lane}
+			x -= gap + 4.0
+	return {}
 
 
 func _note_seen(form: String) -> void:
@@ -186,27 +222,59 @@ func _note_seen(form: String) -> void:
 # Acciones del jugador (entre oleadas)
 # ----------------------------------------------------------------------------
 
-func place(cid: int, slot_idx: int) -> bool:
+func place_at(cid: int, x: float, lane: int) -> bool:
 	if phase == "combat" or phase == "victory" or phase == "defeat":
 		return false
 	var c: Dictionary = creature_by_id(cid)
-	if c.is_empty() or slot_idx < 0 or slot_idx >= slot_count():
+	if c.is_empty():
 		return false
-	var other: Dictionary = creature_in_slot(slot_idx)
-	if not other.is_empty() and other["id"] != cid:
-		_set_slot(other, int(c["slot"]))
-	_set_slot(c, slot_idx)
+	x = clampf(x, zone_min_x(), zone_max_x())
+	if not spot_ok(x, lane, cid):
+		return false
+	_set_pos(c, x, lane)
 	events.append({"t": "placed", "id": cid})
 	return true
 
 
-func _set_slot(c: Dictionary, slot_idx: int) -> void:
-	var s: Dictionary = B["slots"][slot_idx]
-	c["slot"] = slot_idx
-	c["lane"] = int(s["lane"])
-	c["home_lane"] = int(s["lane"])
-	c["x"] = float(s["x"])
-	c["home_x"] = float(s["x"])
+func _set_pos(c: Dictionary, x: float, lane: int) -> void:
+	c["lane"] = lane
+	c["home_lane"] = lane
+	c["x"] = x
+	c["home_x"] = x
+
+
+func stat_mult(c: Dictionary) -> float:
+	return 1.0 + float(B["economy"]["level_step"]) * float(int(c["level"]) - 1)
+
+
+func level_cost(c: Dictionary) -> int:
+	var costs: Array = B["economy"]["level_costs"]
+	var i: int = int(c["level"]) - 1
+	if i < 0 or i >= costs.size():
+		return -1
+	return int(costs[i])
+
+
+func can_level(cid: int) -> bool:
+	if phase != "prep":
+		return false
+	var c: Dictionary = creature_by_id(cid)
+	if c.is_empty() or c["dead"]:
+		return false
+	var cost: int = level_cost(c)
+	return cost > 0 and souls >= cost
+
+
+func level_up(cid: int) -> bool:
+	if not can_level(cid):
+		return false
+	var c: Dictionary = creature_by_id(cid)
+	souls -= level_cost(c)
+	c["level"] += 1
+	c["max_hp"] = float(B[c["kind"]]["hp"]) * stat_mult(c)
+	c["hp"] = c["max_hp"]
+	events.append({"t": "leveled", "id": cid, "level": c["level"]})
+	return true
 
 
 func can_buy(item: String) -> bool:
@@ -216,14 +284,16 @@ func can_buy(item: String) -> bool:
 		return false
 	match item:
 		"sabueso":
-			return _free_slot("front") >= 0
+			return not find_spot("front").is_empty()
 		"ojo":
 			for c in creatures:
 				if c["kind"] == "ojo" and not c["loaned"] and not c["dead"]:
 					return false
-			return has_kind("ojo") or _free_slot("rear") >= 0
-		"guardia":
-			return not guardia_unlocked
+			return has_kind("ojo") or not find_spot("rear").is_empty()
+		"brasa_radio":
+			return not up_brasa
+		"rayo_cadena":
+			return not up_rayo
 	return false
 
 
@@ -233,7 +303,7 @@ func buy(item: String) -> bool:
 	souls -= cost_of(item)
 	match item:
 		"sabueso":
-			var sc: Dictionary = _new_creature("sabueso", _free_slot("front"))
+			var sc: Dictionary = _new_creature("sabueso", find_spot("front"))
 			sc["name"] = "Sabueso"
 			creatures.append(sc)
 		"ojo":
@@ -245,12 +315,14 @@ func buy(item: String) -> bool:
 				existing["loaned"] = false
 				existing["name"] = label("ojo")
 			else:
-				var oc: Dictionary = _new_creature("ojo", _free_slot("rear"))
+				var oc: Dictionary = _new_creature("ojo", find_spot("rear"))
 				oc["name"] = label("ojo")
 				creatures.append(oc)
 				_note_seen("ojo")
-		"guardia":
-			guardia_unlocked = true
+		"brasa_radio":
+			up_brasa = true
+		"rayo_cadena":
+			up_rayo = true
 	events.append({"t": "bought", "item": item})
 	return true
 
@@ -273,7 +345,7 @@ func give_relic() -> bool:
 	var form: String = r["form"]
 	var st: Dictionary = B[form]
 	t["kind"] = form
-	t["max_hp"] = float(st["hp"])
+	t["max_hp"] = float(st["hp"]) * stat_mult(t)
 	t["hp"] = t["max_hp"]
 	t["state"] = "home"
 	t["skill_cd"] = 0.0
@@ -294,8 +366,9 @@ func start_wave() -> bool:
 	zones.clear()
 	phase = "combat"
 	wave_time = 0.0
-	garra_cd = 0.0
-	guardia_cd = 0.0
+	brasa_cd = 0.0
+	rayo_cd = 0.0
+	pending_brasas.clear()
 	for c in creatures:
 		_reset_combat_state(c)
 	events.append({"t": "wave_start", "wave": wave_index + 1})
@@ -335,9 +408,9 @@ func _build_spawns(w: Dictionary) -> Array:
 func _prepare_next() -> void:
 	var w: Dictionary = WAVES[wave_index]
 	if w.get("loan_ojo", false) and not has_kind("ojo"):
-		var s: int = _free_slot("rear")
-		if s >= 0:
-			var o: Dictionary = _new_creature("ojo", s)
+		var spot: Dictionary = find_spot("rear")
+		if not spot.is_empty():
+			var o: Dictionary = _new_creature("ojo", spot)
 			o["loaned"] = true
 			o["name"] = "Ojo prestado"
 			creatures.append(o)
@@ -346,13 +419,12 @@ func _prepare_next() -> void:
 	message = "Oleada %d: %s" % [wave_index + 1, w["title"]]
 
 
-func _new_creature(kind: String, slot_idx: int) -> Dictionary:
+func _new_creature(kind: String, spot: Dictionary) -> Dictionary:
 	var st: Dictionary = B[kind]
-	var s: Dictionary = B["slots"][slot_idx]
 	var c: Dictionary = {
-		"id": next_id, "kind": kind, "name": label(kind), "named": false,
-		"slot": slot_idx, "lane": int(s["lane"]), "home_lane": int(s["lane"]),
-		"x": float(s["x"]), "home_x": float(s["x"]),
+		"id": next_id, "kind": kind, "name": label(kind), "named": false, "level": 1,
+		"lane": int(spot["lane"]), "home_lane": int(spot["lane"]),
+		"x": float(spot["x"]), "home_x": float(spot["x"]),
 		"hp": float(st["hp"]), "max_hp": float(st["hp"]),
 		"cd": 0.0, "presa_cd": 0.0, "skill_cd": 0.0, "stun": 0.0, "windup": 0.0,
 		"state": "home", "t": 0.0, "scars": 0, "kills": 0,
@@ -378,7 +450,7 @@ func step(dt: float) -> void:
 	_update_zones(dt)
 	for c in creatures:
 		_update_creature(c, dt)
-	_update_garra(dt)
+	_update_spells(dt)
 	for e in enemies:
 		_update_enemy(e, dt)
 	_cleanup()
@@ -386,6 +458,8 @@ func step(dt: float) -> void:
 
 
 func _spawn_enemy(kind: String, lane: int) -> void:
+	if lane < 0:
+		lane = rng.randi_range(0, 2)
 	var st: Dictionary = B["enemies"][kind]
 	var e: Dictionary = {
 		"id": next_id, "kind": kind, "lane": lane, "x": float(B["arena"]["spawn_x"]),
@@ -394,7 +468,7 @@ func _spawn_enemy(kind: String, lane: int) -> void:
 		"burn_t": 0.0, "burn_dps": 0.0,
 		"pull_t": 0.0, "pull_x": 0.0, "pull_speed": 0.0, "fed": false,
 		"marked": false, "heal_t": float(st.get("heal_cd", 2.0)), "bell_t": float(st.get("bell_cd", 4.0)) * 0.7,
-		"dead": false, "bump": rng.randf(),
+		"dead": false, "bump": rng.randf(), "yo": rng.randf_range(-30.0, 30.0),
 	}
 	next_id += 1
 	enemies.append(e)
@@ -404,6 +478,10 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 	if e["dead"]:
 		return
 	var st: Dictionary = B["enemies"][e["kind"]]
+	if src >= 0:
+		var attacker: Dictionary = creature_by_id(src)
+		if not attacker.is_empty():
+			amount *= stat_mult(attacker)
 	var mult: float = float(st.get("armor", 1.0)) if armored else 1.0
 	e["hp"] -= amount * mult
 	if armored:
@@ -448,30 +526,89 @@ func _update_zones(dt: float) -> void:
 	zones = keep
 
 
-func _update_garra(dt: float) -> void:
-	var g: Dictionary = B["garra"]
-	garra_cd = maxf(0.0, garra_cd - dt)
-	guardia_cd = maxf(0.0, guardia_cd - dt)
-	var door_x: float = float(B["arena"]["door_x"])
-	var near: Dictionary = {}
-	var nd: float = 1e9
+func brasa_radius() -> float:
+	var c: Dictionary = B["spells"]["brasa"]
+	return float(c["radius_up"]) if up_brasa else float(c["radius"])
+
+
+func cast_brasa(p: Vector2) -> bool:
+	if phase != "combat" or brasa_cd > 0.0:
+		return false
+	var c: Dictionary = B["spells"]["brasa"]
+	brasa_cd = float(c["cd"])
+	var r: float = brasa_radius()
+	pending_brasas.append({"t": float(c["delay"]), "p": p, "r": r})
+	events.append({"t": "brasa_cast", "p": p, "r": r, "delay": float(c["delay"])})
+	return true
+
+
+func rayo_target(p: Vector2) -> Dictionary:
+	var c: Dictionary = B["spells"]["rayo"]
+	var origin: Vector2 = demon_pos()
+	var best: Dictionary = {}
+	var best_d: float = float(c["pick_radius"])
 	for e in enemies:
 		if e["dead"]:
 			continue
-		var d: float = e["x"] - door_x
-		if d < nd:
-			nd = d
-			near = e
-	if near.is_empty():
-		return
-	if guardia_unlocked and guardia_cd <= 0.0 and nd <= float(g["guardia_range"]) and near["stun"] <= 0.0:
-		near["stun"] = float(g["guardia_hold"])
-		guardia_cd = float(g["guardia_cd"])
-		events.append({"t": "guardia", "target": near["id"], "lane": near["lane"], "x": near["x"]})
-	if garra_cd <= 0.0 and nd <= float(g["range"]):
-		garra_cd = float(g["cd"])
-		damage_enemy(near, float(g["dmg"]), -1)
-		events.append({"t": "garra", "target": near["id"], "lane": near["lane"], "x": near["x"]})
+		var ep: Vector2 = epos(e)
+		if ep.distance_to(origin) > float(c["range"]):
+			continue
+		var d: float = ep.distance_to(p)
+		if d <= best_d:
+			best_d = d
+			best = e
+	return best
+
+
+func cast_rayo(p: Vector2) -> bool:
+	if phase != "combat" or rayo_cd > 0.0:
+		return false
+	var tgt: Dictionary = rayo_target(p)
+	if tgt.is_empty():
+		return false
+	var c: Dictionary = B["spells"]["rayo"]
+	rayo_cd = float(c["cd"])
+	var tp: Vector2 = epos(tgt)
+	damage_enemy(tgt, float(c["dmg"]), -1)
+	events.append({"t": "rayo", "from": demon_pos(), "to": tp, "target": tgt["id"]})
+	if up_rayo:
+		var second: Dictionary = {}
+		var sd: float = float(c["chain_range"])
+		for e in enemies:
+			if e["dead"] or e["id"] == tgt["id"]:
+				continue
+			var d: float = epos(e).distance_to(tp)
+			if d <= sd:
+				sd = d
+				second = e
+		if not second.is_empty():
+			damage_enemy(second, float(c["dmg"]) * float(c["chain_frac"]), -1)
+			events.append({"t": "rayo_chain", "from": tp, "to": epos(second), "target": second["id"]})
+	return true
+
+
+func _update_spells(dt: float) -> void:
+	brasa_cd = maxf(0.0, brasa_cd - dt)
+	rayo_cd = maxf(0.0, rayo_cd - dt)
+	var c: Dictionary = B["spells"]["brasa"]
+	var keep: Array = []
+	for b in pending_brasas:
+		b["t"] -= dt
+		if b["t"] > 0.0:
+			keep.append(b)
+			continue
+		var hits: int = 0
+		for e in enemies:
+			if e["dead"]:
+				continue
+			if epos(e).distance_to(b["p"]) <= float(b["r"]):
+				hits += 1
+				damage_enemy(e, float(c["dmg"]), -1)
+				if not e["dead"]:
+					e["burn_t"] = maxf(e["burn_t"], float(c["burn_time"]))
+					e["burn_dps"] = maxf(e["burn_dps"], float(c["burn_dps"]))
+		events.append({"t": "brasa_land", "p": b["p"], "r": b["r"], "hits": hits})
+	pending_brasas = keep
 
 
 # --- Criaturas ---------------------------------------------------------------
@@ -1020,6 +1157,7 @@ func _wave_cleared() -> void:
 			events.append({"t": "revived", "id": c["id"]})
 		_reset_combat_state(c)
 	zones.clear()
+	pending_brasas.clear()
 	wave_index += 1
 	if wave_index >= WAVES.size():
 		phase = "victory"

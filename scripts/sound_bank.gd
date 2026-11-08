@@ -33,6 +33,9 @@ func _init() -> void:
 	streams["horn"] = make(58.0, 52.0, 0.9, 0.7, 1, 0.1, 0.2)
 	streams["revive"] = make(220.0, 440.0, 0.5, 0.5, 0, 0.0, 0.2)
 	streams["down"] = make(260.0, 70.0, 0.4, 0.55, 2, 0.2, 0.0)
+	streams["brasa_cast"] = make(180.0, 520.0, 0.5, 0.5, 2, 0.3, 0.2)
+	streams["rayo"] = make(1700.0, 260.0, 0.16, 0.5, 1, 0.3, 0.0)
+	streams["level"] = make(420.0, 900.0, 0.25, 0.45, 0, 0.0, 0.1)
 	streams["win"] = make(400.0, 800.0, 1.1, 0.5, 1, 0.0, 0.0)
 	streams["lose"] = make(220.0, 40.0, 1.3, 0.7, 2, 0.3, 0.0)
 

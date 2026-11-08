@@ -10,7 +10,9 @@
   "clerigo": "Clérigo",
   "verdugo": "El Verdugo",
   "inquisidor": "El Inquisidor",
-  "heroe": "Héroe"
+  "heroe": "Héroe",
+  "brasa": "Brasa",
+  "rayo": "Rayo"
  },
  "arena": {
   "door_x": 130,
@@ -24,54 +26,20 @@
  "door": {
   "hp": 180
  },
- "slots": [
-  {
-   "lane": 0,
-   "depth": "front",
-   "x": 520
-  },
-  {
-   "lane": 1,
-   "depth": "front",
-   "x": 520
-  },
-  {
-   "lane": 2,
-   "depth": "front",
-   "x": 520
-  },
-  {
-   "lane": 0,
-   "depth": "rear",
-   "x": 330
-  },
-  {
-   "lane": 1,
-   "depth": "rear",
-   "x": 330
-  },
-  {
-   "lane": 2,
-   "depth": "rear",
-   "x": 330
-  }
- ],
  "economy": {
   "start_souls": 40,
   "wave_bonus": 15,
   "costs": {
    "sabueso": 40,
    "ojo": 60,
-   "guardia": 55
-  }
- },
- "garra": {
-  "dmg": 26,
-  "cd": 0.9,
-  "range": 430,
-  "guardia_range": 230,
-  "guardia_hold": 2.5,
-  "guardia_cd": 6.0
+   "brasa_radio": 45,
+   "rayo_cadena": 50
+  },
+  "level_step": 0.25,
+  "level_costs": [
+   30,
+   45
+  ]
  },
  "sabueso": {
   "hp": 100,
@@ -203,6 +171,36 @@
    "bell_cd": 6.0,
    "stun": 3.0,
    "reward": 30
+  }
+ },
+ "zones": {
+  "rear": {
+   "x0": 220,
+   "x1": 390
+  },
+  "front": {
+   "x0": 410,
+   "x1": 660
+  },
+  "min_gap": 56
+ },
+ "spells": {
+  "brasa": {
+   "dmg": 45,
+   "radius": 95,
+   "radius_up": 140,
+   "delay": 0.8,
+   "cd": 3.5,
+   "burn_time": 2.0,
+   "burn_dps": 5
+  },
+  "rayo": {
+   "dmg": 38,
+   "range": 800,
+   "pick_radius": 70,
+   "cd": 1.2,
+   "chain_frac": 0.6,
+   "chain_range": 170
   }
  }
 }
