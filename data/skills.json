@@ -1,0 +1,1628 @@
+{
+ "branches": [
+  {
+   "id": "brasa",
+   "name": "Brasa",
+   "color": "ff7a2a",
+   "route": ""
+  },
+  {
+   "id": "rayo",
+   "name": "Rayo",
+   "color": "6fd8ff",
+   "route": ""
+  },
+  {
+   "id": "demonio",
+   "name": "Demonio",
+   "color": "c070ff",
+   "route": ""
+  },
+  {
+   "id": "bestias",
+   "name": "Bestias",
+   "color": "e0c070",
+   "route": ""
+  },
+  {
+   "id": "jauria",
+   "name": "Jauría",
+   "color": "b0b0b0",
+   "route": ""
+  },
+  {
+   "id": "horno",
+   "name": "Horno",
+   "color": "ff5a3a",
+   "route": "verdugo"
+  },
+  {
+   "id": "trueno",
+   "name": "Trueno",
+   "color": "4ad0ff",
+   "route": "inquisidor"
+  },
+  {
+   "id": "ojo",
+   "name": "Ojo",
+   "color": "e8c850",
+   "route": ""
+  }
+ ],
+ "nodes": [
+  {
+   "id": "brasa_radio",
+   "branch": "brasa",
+   "name": "Brasa ancha",
+   "desc": "+10% de radio por rango.",
+   "max": 5,
+   "row": 0,
+   "fx": [
+    {
+     "k": "brasa.radius",
+     "mul": 0.1
+    }
+   ],
+   "req": [],
+   "cost_base": 10,
+   "cost_step": 3
+  },
+  {
+   "id": "brasa_dmg",
+   "branch": "brasa",
+   "name": "Brasa ardiente",
+   "desc": "+14% de daño por rango.",
+   "max": 5,
+   "row": 1,
+   "fx": [
+    {
+     "k": "brasa.dmg",
+     "mul": 0.14
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_radio",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "brasa_cd",
+   "branch": "brasa",
+   "name": "Fuego presto",
+   "desc": "-8% de enfriamiento por rango.",
+   "max": 5,
+   "row": 1,
+   "fx": [
+    {
+     "k": "brasa.cd",
+     "mul": -0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_radio",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "brasa_delay",
+   "branch": "brasa",
+   "name": "Caída veloz",
+   "desc": "-12% de retardo antes de caer.",
+   "max": 4,
+   "row": 2,
+   "fx": [
+    {
+     "k": "brasa.delay",
+     "mul": -0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_cd",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "brasa_burn",
+   "branch": "brasa",
+   "name": "Llama viva",
+   "desc": "+40% de quemadura y +25% de duración.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "brasa.burn_dps",
+     "mul": 0.4
+    },
+    {
+     "k": "brasa.burn_time",
+     "mul": 0.25
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_dmg",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "brasa_stun",
+   "branch": "brasa",
+   "name": "Onda de choque",
+   "desc": "Aturde 0,35 s a los alcanzados.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "brasa.stun",
+     "add": 0.35
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_delay",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "brasa_echo",
+   "branch": "brasa",
+   "name": "Eco de brasa",
+   "desc": "Una segunda caída más pequeña, a los 0,6 s, con el 60% del daño.",
+   "max": 1,
+   "row": 4,
+   "fx": [
+    {
+     "k": "special.brasa_echo",
+     "add": 1
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_burn",
+     "rank": 2
+    },
+    {
+     "id": "brasa_stun",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 7
+  },
+  {
+   "id": "brasa_maestria",
+   "branch": "brasa",
+   "name": "Maestría del fuego",
+   "desc": "+10% de daño y -6% de enfriamiento.",
+   "max": 3,
+   "row": 5,
+   "fx": [
+    {
+     "k": "brasa.dmg",
+     "mul": 0.1
+    },
+    {
+     "k": "brasa.cd",
+     "mul": -0.06
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_echo",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 8
+  },
+  {
+   "id": "rayo_cadena",
+   "branch": "rayo",
+   "name": "Rayo encadenado",
+   "desc": "El Rayo salta a un segundo blanco.",
+   "max": 1,
+   "row": 0,
+   "fx": [
+    {
+     "k": "special.rayo_chain",
+     "add": 1
+    }
+   ],
+   "req": [],
+   "cost_base": 30,
+   "cost_step": 3
+  },
+  {
+   "id": "rayo_dmg",
+   "branch": "rayo",
+   "name": "Rayo cargado",
+   "desc": "+14% de daño por rango.",
+   "max": 5,
+   "row": 1,
+   "fx": [
+    {
+     "k": "rayo.dmg",
+     "mul": 0.14
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_cadena",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "rayo_cd",
+   "branch": "rayo",
+   "name": "Rayo veloz",
+   "desc": "-8% de enfriamiento por rango.",
+   "max": 5,
+   "row": 1,
+   "fx": [
+    {
+     "k": "rayo.cd",
+     "mul": -0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_cadena",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "rayo_range",
+   "branch": "rayo",
+   "name": "Largo alcance",
+   "desc": "+12% de alcance y de tolerancia al apuntar.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "rayo.range",
+     "mul": 0.12
+    },
+    {
+     "k": "rayo.pick_radius",
+     "mul": 0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_cd",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "rayo_chain_n",
+   "branch": "rayo",
+   "name": "Cadena larga",
+   "desc": "+1 salto por rango.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "rayo.chain_count",
+     "add": 1
+    },
+    {
+     "k": "rayo.chain_range",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_dmg",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "rayo_stun",
+   "branch": "rayo",
+   "name": "Descarga paralizante",
+   "desc": "Aturde 0,3 s al objetivo.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "rayo.stun",
+     "add": 0.3
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_range",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "rayo_chain_dmg",
+   "branch": "rayo",
+   "name": "Cadena potente",
+   "desc": "Los saltos conservan +10% más de daño.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "rayo.chain_frac",
+     "add": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_chain_n",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "rayo_exec",
+   "branch": "rayo",
+   "name": "Rayo de gracia",
+   "desc": "+50% de daño a enemigos por debajo del 35% de vida.",
+   "max": 3,
+   "row": 4,
+   "fx": [
+    {
+     "k": "special.rayo_exec",
+     "add": 0.5
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_dmg",
+     "rank": 3
+    }
+   ],
+   "cost_base": 34,
+   "cost_step": 7
+  },
+  {
+   "id": "rayo_tormenta",
+   "branch": "rayo",
+   "name": "Tormenta",
+   "desc": "+10% de daño y -10% de enfriamiento.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "rayo.dmg",
+     "mul": 0.1
+    },
+    {
+     "k": "rayo.cd",
+     "mul": -0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_exec",
+     "rank": 1
+    },
+    {
+     "id": "rayo_stun",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 8
+  },
+  {
+   "id": "door_hp",
+   "branch": "demonio",
+   "name": "Puerta reforzada",
+   "desc": "+10% de vida de la Puerta por rango.",
+   "max": 5,
+   "row": 0,
+   "fx": [
+    {
+     "k": "door.hp",
+     "mul": 0.1
+    }
+   ],
+   "req": [],
+   "cost_base": 10,
+   "cost_step": 3
+  },
+  {
+   "id": "eco_reward",
+   "branch": "demonio",
+   "name": "Cosecha de almas",
+   "desc": "+10% de almas por baja.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "eco.reward",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "door_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "eco_bonus",
+   "branch": "demonio",
+   "name": "Tributo",
+   "desc": "+4 almas por oleada superada.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "eco.wave_bonus",
+     "add": 4
+    }
+   ],
+   "req": [
+    {
+     "id": "door_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "door_regen",
+   "branch": "demonio",
+   "name": "Puerta que sana",
+   "desc": "La Puerta recupera un 8% al acabar cada oleada.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "door.regen",
+     "add": 0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "door_hp",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "eco_level",
+   "branch": "demonio",
+   "name": "Maestro de la cría",
+   "desc": "-12% al coste de subir de nivel.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "eco.level_cost",
+     "mul": -0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "eco_reward",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "door_hp2",
+   "branch": "demonio",
+   "name": "Muro de basalto",
+   "desc": "+12% de vida de la Puerta por rango.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "door.hp",
+     "mul": 0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "door_regen",
+     "rank": 2
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "eco_cap",
+   "branch": "demonio",
+   "name": "Más allá del límite",
+   "desc": "+1 nivel máximo de las bestias.",
+   "max": 2,
+   "row": 3,
+   "fx": [
+    {
+     "k": "eco.max_level",
+     "add": 1
+    }
+   ],
+   "req": [
+    {
+     "id": "eco_level",
+     "rank": 2
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "eco_interest",
+   "branch": "demonio",
+   "name": "Usura infernal",
+   "desc": "Cada oleada, +5% de las almas guardadas (máx. 25).",
+   "max": 2,
+   "row": 4,
+   "fx": [
+    {
+     "k": "special.interest",
+     "add": 0.05
+    }
+   ],
+   "req": [
+    {
+     "id": "eco_bonus",
+     "rank": 3
+    }
+   ],
+   "cost_base": 34,
+   "cost_step": 7
+  },
+  {
+   "id": "eco_sabueso",
+   "branch": "demonio",
+   "name": "Cría barata",
+   "desc": "-15% al coste de reclutar Sabuesos.",
+   "max": 3,
+   "row": 5,
+   "fx": [
+    {
+     "k": "eco.sabueso_cost",
+     "mul": -0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "eco_cap",
+     "rank": 1
+    },
+    {
+     "id": "eco_interest",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 8
+  },
+  {
+   "id": "beast_hp",
+   "branch": "bestias",
+   "name": "Piel dura",
+   "desc": "+8% de vida de todas las bestias por rango.",
+   "max": 5,
+   "row": 0,
+   "fx": [
+    {
+     "k": "beast.hp",
+     "mul": 0.08
+    }
+   ],
+   "req": [],
+   "cost_base": 10,
+   "cost_step": 3
+  },
+  {
+   "id": "beast_dmg",
+   "branch": "bestias",
+   "name": "Colmillos",
+   "desc": "+8% de daño de todas las bestias por rango.",
+   "max": 5,
+   "row": 1,
+   "fx": [
+    {
+     "k": "beast.dmg",
+     "mul": 0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "beast_speed",
+   "branch": "bestias",
+   "name": "Patas ligeras",
+   "desc": "+8% de velocidad de movimiento.",
+   "max": 3,
+   "row": 1,
+   "fx": [
+    {
+     "k": "beast.speed",
+     "mul": 0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "beast_cd",
+   "branch": "bestias",
+   "name": "Frenesí",
+   "desc": "-6% de enfriamiento de sus ataques.",
+   "max": 4,
+   "row": 2,
+   "fx": [
+    {
+     "k": "beast.cd",
+     "mul": -0.06
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_dmg",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "beast_leash",
+   "branch": "bestias",
+   "name": "Correa larga",
+   "desc": "+10% de radio de acción.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "beast.leash",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_speed",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "beast_pack",
+   "branch": "bestias",
+   "name": "Instinto de manada",
+   "desc": "+4% de daño por cada otra bestia viva.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.pack",
+     "add": 0.04
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_cd",
+     "rank": 2
+    },
+    {
+     "id": "beast_leash",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "beast_scar",
+   "branch": "bestias",
+   "name": "Orgullo de cicatrices",
+   "desc": "+6% de daño por cicatriz de la criatura.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.scar_dmg",
+     "add": 0.06
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_dmg",
+     "rank": 3
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "beast_regen",
+   "branch": "bestias",
+   "name": "Sangre ardiente",
+   "desc": "Regeneran un 1,5% de su vida por segundo en combate.",
+   "max": 3,
+   "row": 4,
+   "fx": [
+    {
+     "k": "special.regen",
+     "add": 0.015
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_hp",
+     "rank": 3
+    }
+   ],
+   "cost_base": 34,
+   "cost_step": 7
+  },
+  {
+   "id": "beast_furia",
+   "branch": "bestias",
+   "name": "Furia de la jauría",
+   "desc": "+12% de daño y +10% de vida.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "beast.dmg",
+     "mul": 0.12
+    },
+    {
+     "k": "beast.hp",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_pack",
+     "rank": 1
+    },
+    {
+     "id": "beast_scar",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 8
+  },
+  {
+   "id": "sab_hp",
+   "branch": "jauria",
+   "name": "Sabueso recio",
+   "desc": "+12% de vida de los Sabuesos.",
+   "max": 4,
+   "row": 0,
+   "fx": [
+    {
+     "k": "sabueso.hp",
+     "mul": 0.12
+    }
+   ],
+   "req": [],
+   "cost_base": 10,
+   "cost_step": 3
+  },
+  {
+   "id": "sab_presa_time",
+   "branch": "jauria",
+   "name": "Presa tenaz",
+   "desc": "+15% de duración de la Presa.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "sabueso.presa_time",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "sab_presa_cd",
+   "branch": "jauria",
+   "name": "Presa rápida",
+   "desc": "-10% de enfriamiento de la Presa.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "sabueso.presa_cd",
+     "mul": -0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "sab_dmg",
+   "branch": "jauria",
+   "name": "Mordisco",
+   "desc": "+14% de daño de los Sabuesos.",
+   "max": 4,
+   "row": 2,
+   "fx": [
+    {
+     "k": "sabueso.dmg",
+     "mul": 0.14
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_presa_cd",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "sab_range",
+   "branch": "jauria",
+   "name": "Presa larga",
+   "desc": "+15% de alcance de la Presa.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "sabueso.presa_range",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_presa_time",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "sab_leash",
+   "branch": "jauria",
+   "name": "Olfato",
+   "desc": "+12% de radio de acción de los Sabuesos.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "sabueso.leash",
+     "mul": 0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_range",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "sab_speed",
+   "branch": "jauria",
+   "name": "Zancada",
+   "desc": "+10% de velocidad de los Sabuesos.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "sabueso.speed",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_dmg",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "sab_desgarro",
+   "branch": "jauria",
+   "name": "Presa desgarradora",
+   "desc": "La Presa también hiere: 1,5 veces su mordisco por rango.",
+   "max": 3,
+   "row": 4,
+   "fx": [
+    {
+     "k": "special.presa_dmg",
+     "add": 1.5
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_presa_time",
+     "rank": 2
+    },
+    {
+     "id": "sab_dmg",
+     "rank": 2
+    }
+   ],
+   "cost_base": 34,
+   "cost_step": 7
+  },
+  {
+   "id": "sab_alfa",
+   "branch": "jauria",
+   "name": "Sabueso alfa",
+   "desc": "+25% de vida y daño de los Sabuesos.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "sabueso.hp",
+     "mul": 0.25
+    },
+    {
+     "k": "sabueso.dmg",
+     "mul": 0.25
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_desgarro",
+     "rank": 1
+    },
+    {
+     "id": "sab_leash",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 8
+  },
+  {
+   "id": "horno_hp",
+   "branch": "horno",
+   "name": "Costillas de brasa",
+   "desc": "+12% de vida del Horno.",
+   "max": 4,
+   "row": 0,
+   "fx": [
+    {
+     "k": "horno.hp",
+     "mul": 0.12
+    }
+   ],
+   "req": [],
+   "cost_base": 10,
+   "cost_step": 3
+  },
+  {
+   "id": "horno_spit",
+   "branch": "horno",
+   "name": "Llamarada",
+   "desc": "+14% de daño de la llamarada.",
+   "max": 5,
+   "row": 1,
+   "fx": [
+    {
+     "k": "horno.spit_dmg",
+     "mul": 0.14
+    },
+    {
+     "k": "horno.minor_dmg",
+     "mul": 0.14
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "horno_inhale_cd",
+   "branch": "horno",
+   "name": "Pulmones",
+   "desc": "-9% de enfriamiento de la inhalación.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "horno.inhale_cd",
+     "mul": -0.09
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "horno_inhale_max",
+   "branch": "horno",
+   "name": "Boca grande",
+   "desc": "+1 enemigo por inhalación.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "horno.inhale_max",
+     "add": 1
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_inhale_cd",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "horno_burn",
+   "branch": "horno",
+   "name": "Brasa interna",
+   "desc": "+20% de quemadura y +15% de duración.",
+   "max": 4,
+   "row": 2,
+   "fx": [
+    {
+     "k": "horno.burn_dps",
+     "mul": 0.2
+    },
+    {
+     "k": "horno.burn_time",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_spit",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "horno_range",
+   "branch": "horno",
+   "name": "Aliento largo",
+   "desc": "+12% de alcance de la llamarada y la inhalación.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "horno.spit_range",
+     "mul": 0.12
+    },
+    {
+     "k": "horno.inhale_range",
+     "mul": 0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_inhale_max",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "horno_ground",
+   "branch": "horno",
+   "name": "Suelo en llamas",
+   "desc": "+30% de duración del fuego en el suelo.",
+   "max": 3,
+   "row": 4,
+   "fx": [
+    {
+     "k": "horno.ground_time",
+     "mul": 0.3
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_burn",
+     "rank": 2
+    }
+   ],
+   "cost_base": 34,
+   "cost_step": 7
+  },
+  {
+   "id": "horno_infierno",
+   "branch": "horno",
+   "name": "Infierno interior",
+   "desc": "+25% de daño de llamarada y -10% de enfriamiento.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "horno.spit_dmg",
+     "mul": 0.25
+    },
+    {
+     "k": "horno.inhale_cd",
+     "mul": -0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_inhale_max",
+     "rank": 2
+    },
+    {
+     "id": "horno_ground",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 8
+  },
+  {
+   "id": "trueno_hp",
+   "branch": "trueno",
+   "name": "Cuernos de cobre",
+   "desc": "+12% de vida del Trueno.",
+   "max": 4,
+   "row": 0,
+   "fx": [
+    {
+     "k": "trueno.hp",
+     "mul": 0.12
+    }
+   ],
+   "req": [],
+   "cost_base": 10,
+   "cost_step": 3
+  },
+  {
+   "id": "trueno_land",
+   "branch": "trueno",
+   "name": "Caída pesada",
+   "desc": "+15% de daño al aterrizar.",
+   "max": 5,
+   "row": 1,
+   "fx": [
+    {
+     "k": "trueno.land_dmg",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "trueno_cd",
+   "branch": "trueno",
+   "name": "Salto ligero",
+   "desc": "-9% de enfriamiento del salto.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "trueno.jump_cd",
+     "mul": -0.09
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "trueno_chain",
+   "branch": "trueno",
+   "name": "Descarga",
+   "desc": "+15% de daño de las descargas.",
+   "max": 4,
+   "row": 2,
+   "fx": [
+    {
+     "k": "trueno.chain_dmg",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_land",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "trueno_range",
+   "branch": "trueno",
+   "name": "Salto largo",
+   "desc": "+10% de alcance de salto.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "trueno.jump_range",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_cd",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "trueno_chain_range",
+   "branch": "trueno",
+   "name": "Chispa amplia",
+   "desc": "+15% de radio de las descargas.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "trueno.chain_range",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_chain",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "trueno_return",
+   "branch": "trueno",
+   "name": "Regreso rápido",
+   "desc": "-12% de tiempo fuera: el hueco dura menos.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "trueno.return_after",
+     "mul": -0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_cd",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "trueno_dmg",
+   "branch": "trueno",
+   "name": "Mordisco eléctrico",
+   "desc": "+15% de daño cuerpo a cuerpo.",
+   "max": 4,
+   "row": 4,
+   "fx": [
+    {
+     "k": "trueno.dmg",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_chain",
+     "rank": 2
+    }
+   ],
+   "cost_base": 34,
+   "cost_step": 7
+  },
+  {
+   "id": "trueno_tormenta",
+   "branch": "trueno",
+   "name": "Tormenta de cobre",
+   "desc": "+25% de caída y +20% de descargas.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "trueno.land_dmg",
+     "mul": 0.25
+    },
+    {
+     "k": "trueno.chain_dmg",
+     "mul": 0.2
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_chain_range",
+     "rank": 1
+    },
+    {
+     "id": "trueno_return",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 8
+  },
+  {
+   "id": "ojo_dmg",
+   "branch": "ojo",
+   "name": "Iris afilado",
+   "desc": "+12% de daño del Ojo.",
+   "max": 5,
+   "row": 0,
+   "fx": [
+    {
+     "k": "ojo.dmg",
+     "mul": 0.12
+    }
+   ],
+   "req": [],
+   "cost_base": 10,
+   "cost_step": 3
+  },
+  {
+   "id": "ojo_cd",
+   "branch": "ojo",
+   "name": "Párpado veloz",
+   "desc": "-8% de enfriamiento del Ojo.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "ojo.cd",
+     "mul": -0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_dmg",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "ojo_range",
+   "branch": "ojo",
+   "name": "Vista larga",
+   "desc": "+10% de alcance y de marca.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "ojo.range",
+     "mul": 0.1
+    },
+    {
+     "k": "ojo.mark_range",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_dmg",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "ojo_chain_n",
+   "branch": "ojo",
+   "name": "Mirada que salta",
+   "desc": "+1 salto de la cadena por rango.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "ojo.chain_count",
+     "add": 1
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_cd",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "ojo_chain_dmg",
+   "branch": "ojo",
+   "name": "Cadena de latón",
+   "desc": "+15% de daño de la cadena.",
+   "max": 4,
+   "row": 2,
+   "fx": [
+    {
+     "k": "ojo.chain_dmg",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_range",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "ojo_hp",
+   "branch": "ojo",
+   "name": "Cristal grueso",
+   "desc": "+15% de vida del Ojo.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "ojo.hp",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_chain_n",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "ojo_chain_range",
+   "branch": "ojo",
+   "name": "Chispa errante",
+   "desc": "+15% de radio de la cadena.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "ojo.chain_range",
+     "mul": 0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_chain_dmg",
+     "rank": 1
+    }
+   ],
+   "cost_base": 28,
+   "cost_step": 6
+  },
+  {
+   "id": "ojo_mirada",
+   "branch": "ojo",
+   "name": "Mirada del Abismo",
+   "desc": "+20% de daño y -8% de enfriamiento.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "ojo.dmg",
+     "mul": 0.2
+    },
+    {
+     "k": "ojo.cd",
+     "mul": -0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_chain_n",
+     "rank": 2
+    },
+    {
+     "id": "ojo_chain_range",
+     "rank": 1
+    }
+   ],
+   "cost_base": 40,
+   "cost_step": 8
+  }
+ ]
+}

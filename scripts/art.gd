@@ -20,6 +20,89 @@ static func _eye(ci: CanvasItem, p: Vector2, col: Color, r: float) -> void:
 	ci.draw_circle(p, r, col)
 
 
+## Sprites del pack de la Fosa (art/sprites/*.png). Si falta alguno se usa la silueta provisional.
+const SPRITE_H: Dictionary = {
+	"sabueso": 78.0, "horno": 100.0, "trueno": 120.0, "ojo": 90.0, "demonio": 190.0,
+	"campesino": 90.0, "escudero": 96.0, "ballestero": 90.0, "clerigo": 108.0,
+	"verdugo": 140.0, "inquisidor": 150.0,
+}
+const SPRITE_LIFT: Dictionary = {"ojo": 44.0}
+static var _tex_cache: Dictionary = {}
+
+
+static func tex(key: String) -> Texture2D:
+	if _tex_cache.has(key):
+		return _tex_cache[key]
+	var t: Texture2D = null
+	var path: String = "res://art/sprites/%s.png" % key
+	if ResourceLoader.exists(path):
+		t = load(path)
+	else:
+		var gp: String = ProjectSettings.globalize_path(path)
+		if FileAccess.file_exists(gp):
+			var img: Image = Image.load_from_file(gp)
+			if img != null:
+				img.generate_mipmaps()
+				t = ImageTexture.create_from_image(img)
+	_tex_cache[key] = t
+	return t
+
+
+static var _bg_tex: Texture2D = null
+static var _bg_tried: bool = false
+
+
+static func background() -> Texture2D:
+	if _bg_tried:
+		return _bg_tex
+	_bg_tried = true
+	var path: String = "res://art/fondo-fosa.jpg"
+	if ResourceLoader.exists(path):
+		_bg_tex = load(path)
+	else:
+		var gp: String = ProjectSettings.globalize_path(path)
+		if FileAccess.file_exists(gp):
+			var img: Image = Image.load_from_file(gp)
+			if img != null:
+				_bg_tex = ImageTexture.create_from_image(img)
+	return _bg_tex
+
+
+## Dibuja un sprite con los pies en `pos`. opts: scale, alpha, flash, squash, bob, glow
+static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opts: Dictionary) -> bool:
+	var tx: Texture2D = tex(key)
+	if tx == null:
+		return false
+	var sc: float = float(opts.get("scale", 1.0))
+	var h: float = float(SPRITE_H[key]) * sc
+	var w: float = h * float(tx.get_width()) / float(tx.get_height())
+	var squash: float = float(opts.get("squash", 1.0))
+	var alpha: float = float(opts.get("alpha", 1.0))
+	var flash: float = float(opts.get("flash", 0.0))
+	var bob: float = float(opts.get("bob", 0.0))
+	var lift: float = float(SPRITE_LIFT.get(key, 0.0)) * sc
+	if key == "ojo":
+		bob += sin(t * 2.6) * 5.0
+	# sombra elíptica en el suelo
+	var sw: float = maxf(w * 0.34, 26.0)
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i in 16:
+		var a: float = TAU * float(i) / 16.0
+		pts.append(pos + Vector2(cos(a) * sw, 4.0 + sin(a) * sw * 0.28))
+	ci.draw_colored_polygon(pts, Color(0, 0, 0, 0.38 * alpha))
+	var glow: float = float(opts.get("glow", 0.0))
+	if glow > 0.0:
+		ci.draw_circle(pos + Vector2(0, -h * 0.5 - lift), (h * 0.55 + 30.0 * glow), Color(1.0, 0.55, 0.2, 0.25 * glow))
+	var hh: float = h * squash
+	var rect: Rect2 = Rect2(pos.x - w * 0.5, pos.y - hh - lift + bob, w, hh)
+	var col: Color = Color(1, 1, 1, alpha).lerp(Color(1.6, 1.5, 1.3, alpha), flash)
+	ci.draw_texture_rect(tx, rect, false, col)
+	var scars: int = int(opts.get("scars", 0))
+	for i in scars:
+		ci.draw_line(pos + Vector2(-w * 0.18 + i * 7.0, -hh * 0.62 - lift), pos + Vector2(-w * 0.18 + i * 7.0 + 8.0, -hh * 0.62 + 12.0 - lift), Color(1.0, 0.85, 0.5, 0.9 * alpha), 2.0)
+	return true
+
+
 ## kind: sabueso | horno | trueno | ojo. opts: scale, hambre, scars, crouch, fallen, flash, glow
 static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float, opts: Dictionary) -> void:
 	var s: float = float(opts.get("scale", 1.0))
@@ -27,6 +110,14 @@ static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float, 
 	var flash: float = float(opts.get("flash", 0.0))
 	var fallen: bool = bool(opts.get("fallen", false))
 	var glow: float = float(opts.get("glow", 0.0))
+	if SPRITE_H.has(kind):
+		var so: Dictionary = {"scale": s, "alpha": 0.35 if fallen else 1.0, "flash": flash, "glow": glow, "scars": scars,
+			"squash": 0.86 if bool(opts.get("crouch", false)) else 1.0, "bob": sin(t * 5.0) * 1.5}
+		if draw_sprite(ci, kind, pos, t, so):
+			if int(opts.get("hambre", 0)) > 0:
+				for i in int(opts.get("hambre", 0)):
+					ci.draw_circle(pos + Vector2(-16 + i * 12, -34 * s), 4.0, Color(1.0, 0.6, 0.2))
+			return
 	var bob: float = sin(t * 5.0) * 1.5
 	var p: Vector2 = pos + Vector2(0, bob)
 	var alpha: float = 0.35 if fallen else 1.0
@@ -96,6 +187,12 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 	var flash: float = float(opts.get("flash", 0.0))
 	var burning: bool = bool(opts.get("burning", false))
 	var bump: float = float(opts.get("bump", 0.0))
+	if SPRITE_H.has(kind):
+		var eo: Dictionary = {"flash": flash, "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
+		if burning:
+			eo["flash"] = maxf(flash, 0.25 + 0.15 * sin(t * 14.0))
+		if draw_sprite(ci, kind, pos, t, eo):
+			return
 	var p: Vector2 = pos + Vector2(0, absf(sin(t * 6.0 + bump * 6.0)) * -2.0)
 	var skin: Color = Color(0.85, 0.7, 0.55).lerp(Color(1, 1, 1), flash)
 	var cloth: Color = Color(0.4, 0.33, 0.22)

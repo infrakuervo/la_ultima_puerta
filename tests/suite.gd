@@ -23,6 +23,7 @@ func run() -> void:
 	test_ojo_chain_and_mark()
 	test_ojo_loan()
 	test_economy()
+	test_skills()
 	test_full_runs()
 	await test_ui_smoke()
 	print("")
@@ -133,18 +134,24 @@ func test_spells() -> void:
 	b["yo"] = 0.0
 	var far: Dictionary = add_enemy(s, "campesino", 2, 700.0)
 	far["yo"] = 0.0
+	for q in [a, b, far]:
+		q["stun"] = 10.0   # quietos: la Brasa tarda en caer y los enemigos andan
 	var hp_a: float = float(a["hp"])
 	check(s.cast_brasa(Vector2(720, s.lane_y(0))), "se lanza la Brasa")
 	check(not s.cast_brasa(Vector2(720, s.lane_y(0))), "la Brasa respeta su enfriamiento")
 	check(float(a["hp"]) == hp_a, "la Brasa tarda en caer: aún no hace daño")
-	var seen: Array = run_ticks(s, 30)
+	var seen: Array = run_ticks(s, 60)
 	check(seen.has("brasa_land"), "la Brasa cae")
 	check(float(a["hp"]) < hp_a and float(b["hp"]) < hp_a + 1.0, "la Brasa daña en área")
 	check(float(far["hp"]) == float(far["max_hp"]), "la Brasa no toca a quien está fuera del círculo")
 	check(float(a["burn_t"]) > 0.0 or a["dead"], "la Brasa prende a los alcanzados")
 	# radio mayor con la mejora
 	var r0: float = s.brasa_radius()
-	s.up_brasa = true
+	s.souls = 100
+	check(s.phase == "combat" and not s.buy_skill("brasa_radio"), "no se compran habilidades en combate")
+	s.phase = "prep"
+	check(s.buy_skill("brasa_radio"), "se compra el radio de Brasa")
+	s.phase = "combat"
 	check(s.brasa_radius() > r0, "la mejora aumenta el radio de la Brasa")
 	# Rayo
 	var s2 = new_sim()
@@ -161,7 +168,8 @@ func test_spells() -> void:
 	check(not s2.cast_rayo(pt), "el Rayo respeta su enfriamiento")
 	check(not s2.cast_rayo(Vector2(1200, 100)), "sin objetivo cerca no se lanza ni gasta enfriamiento")
 	var s3 = new_sim()
-	s3.up_rayo = true
+	s3.skills["rayo_cadena"] = 1
+	s3._invalidate()
 	to_combat(s3)
 	var c1: Dictionary = add_enemy(s3, "escudero", 1, 600.0)
 	c1["yo"] = 0.0
@@ -379,9 +387,7 @@ func test_economy() -> void:
 	check(not s.place_at(int(t["id"]), 500.0, 1), "no se recoloca en combate")
 	var s2 = new_sim()
 	s2.souls = 500
-	check(s2.buy("brasa_radio") and s2.up_brasa, "se compra el radio de Brasa")
-	check(s2.buy("rayo_cadena") and s2.up_rayo, "se compra la cadena de Rayo")
-	check(not s2.can_buy("brasa_radio") and not s2.can_buy("rayo_cadena"), "las mejoras no se compran dos veces")
+	check(not s2.can_buy("brasa_radio"), "las mejoras de hechizo ya no son compras sueltas")
 
 
 # --- partidas completas -------------------------------------------------------
@@ -463,6 +469,26 @@ func bot_cast(s) -> void:
 			s.cast_rayo(s.epos(pick))
 
 
+const SKILL_PRIORITY: Array = [
+	"rayo_cadena", "brasa_radio", "brasa_cd", "brasa_dmg", "beast_hp", "rayo_dmg", "brasa_cd", "beast_dmg",
+	"brasa_radio", "rayo_cd", "brasa_dmg", "brasa_delay", "beast_hp", "beast_dmg", "rayo_dmg", "brasa_cd",
+	"brasa_delay", "rayo_cd", "brasa_radio", "beast_hp", "beast_dmg", "brasa_dmg", "door_hp", "eco_reward",
+]
+const SKILL_ROUTE: Dictionary = {
+	"verdugo": ["horno_hp", "horno_spit", "horno_inhale_cd", "horno_spit", "horno_burn"],
+	"inquisidor": ["trueno_hp", "trueno_land", "trueno_cd", "trueno_land", "trueno_chain"],
+}
+
+
+func buy_skills(s, route: String) -> void:
+	var order: Array = SKILL_PRIORITY.duplicate()
+	if s.route == route:
+		order = SKILL_ROUTE[route] + order
+	for id in order:
+		if s.can_skill(id):
+			s.buy_skill(id)
+
+
 func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 	var s = new_sim(seed_v)
 	var total: int = 0
@@ -481,10 +507,7 @@ func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 					s.buy("sabueso")
 				if s.wave_index >= 2 and s.can_buy("ojo"):
 					s.buy("ojo")
-				if s.wave_index >= 2 and s.can_buy("rayo_cadena"):
-					s.buy("rayo_cadena")
-				if s.wave_index >= 3 and s.can_buy("brasa_radio"):
-					s.buy("brasa_radio")
+				buy_skills(s, route)
 				for c2 in s.creatures:
 					if c2["named"] and s.wave_index >= 3 and s.can_level(int(c2["id"])):
 						s.level_up(int(c2["id"]))
@@ -513,6 +536,105 @@ func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 		print(dump(s))
 	return {"phase": s.phase, "wave": s.wave_index + 1, "door": int(s.door_hp), "souls": s.souls,
 		"seconds": total / 30, "stalled": stalled, "dump": dump(s), "kills": s.kills, "epitaph": s.epitaph()}
+
+
+func test_skills() -> void:
+	print("Árbol de habilidades")
+	var s = new_sim()
+	check(s.SK.size() >= 60, "el árbol tiene muchos nodos (%d)" % s.SK.size())
+	var ok_req: bool = true
+	var ok_rank: bool = true
+	for id in s.SK:
+		var nd: Dictionary = s.SK[id]
+		for r in nd["req"]:
+			if not s.SK.has(r["id"]) or int(r["rank"]) > int(s.SK[r["id"]]["max"]):
+				ok_req = false
+		if int(nd["max"]) < 1 or int(nd["cost_base"]) < 1:
+			ok_rank = false
+	check(ok_req, "todos los requisitos apuntan a nodos y rangos que existen")
+	check(ok_rank, "todos los nodos tienen rangos y coste válidos")
+	s.souls = 500
+	check(s.skill_state("brasa_dmg") == "locked", "un nodo sin su requisito está bloqueado")
+	check(not s.buy_skill("brasa_dmg"), "no se compra un nodo bloqueado")
+	var c0: int = s.skill_cost("brasa_radio")
+	var before: int = s.souls
+	check(s.buy_skill("brasa_radio") and s.souls == before - c0, "se compra un nodo y se cobra su coste")
+	check(s.skill_cost("brasa_radio") > c0, "cada rango cuesta más")
+	check(s.skill_state("brasa_dmg") == "ok", "el requisito desbloquea el nodo siguiente")
+	for i in 5:
+		s.buy_skill("brasa_radio")
+	check(s.skill_rank("brasa_radio") == 5 and s.skill_state("brasa_radio") == "max", "se llega al rango máximo")
+	check(not s.buy_skill("brasa_radio"), "no se pasa del máximo")
+	var p: Vector2 = Vector2(600, 380)
+	var s1 = new_sim()
+	s1.skills["brasa_dmg"] = 0
+	var d0: float = float(s1._stats("brasa")["dmg"])
+	s1.souls = 500
+	s1.buy_skill("brasa_radio")
+	s1.buy_skill("brasa_dmg")
+	check(float(s1._stats("brasa")["dmg"]) > d0, "Brasa ardiente sube el daño de la Brasa")
+	s1.buy_skill("brasa_cd")
+	check(float(s1._stats("brasa")["cd"]) < float(s1.B["spells"]["brasa"]["cd"]), "Fuego presto baja el enfriamiento")
+	var s2 = new_sim()
+	s2.souls = 500
+	var tz: Dictionary = s2.named_creature()
+	var hp0: float = float(tz["max_hp"])
+	s2.buy_skill("beast_hp")
+	check(float(tz["max_hp"]) > hp0, "Piel dura sube la vida de Tizón al momento")
+	var dm0: float = s2.dmg_mult(tz)
+	s2.buy_skill("beast_dmg")
+	check(s2.dmg_mult(tz) > dm0, "Colmillos sube el daño de las bestias")
+	var door0: float = s2.door_max
+	s2.buy_skill("door_hp")
+	check(s2.door_max > door0 and s2.door_hp > door0, "Puerta reforzada sube su vida")
+	s2.buy_skill("eco_reward")
+	to_combat(s2)
+	var e: Dictionary = add_enemy(s2, "campesino", 1, 600.0)
+	var so: int = s2.souls
+	s2.damage_enemy(e, 9999.0, -1)
+	check(s2.souls - so > int(s2.B["enemies"]["campesino"]["reward"]) - 1, "Cosecha de almas no reduce la recompensa")
+	var s3 = new_sim()
+	s3.souls = 500
+	check(s3.skill_state("horno_hp") == "route", "las ramas de ruta están cerradas hasta elegir ruta")
+	s3.route = "verdugo"
+	check(s3.skill_state("horno_hp") == "ok" and s3.skill_state("trueno_hp") == "route", "solo se abre la rama de la ruta elegida")
+	var tzn: Dictionary = s3.named_creature()
+	tzn["kind"] = "horno"
+	s3.buy_skill("horno_hp")
+	s3.buy_skill("horno_spit")
+	check(float(s3._stats("horno")["spit_dmg"]) > float(s3.B["horno"]["spit_dmg"]), "Llamarada sube el daño del Horno")
+	s3.buy_skill("horno_inhale_cd")
+	s3.buy_skill("horno_inhale_cd")
+	s3.buy_skill("horno_inhale_max")
+	check(int(s3._stats("horno")["inhale_max"]) == int(s3.B["horno"]["inhale_max"]) + 1, "Boca grande suma un enemigo a la inhalación")
+	var s4 = new_sim()
+	s4.souls = 500
+	s4.buy_skill("rayo_cadena")
+	s4.buy_skill("rayo_chain_n")
+	check(s4.skill_state("rayo_chain_n") == "locked", "Cadena larga exige Rayo cargado")
+	s4.buy_skill("rayo_dmg")
+	s4.buy_skill("rayo_dmg")
+	check(s4.buy_skill("rayo_chain_n"), "con Rayo cargado 2 se abre Cadena larga")
+	to_combat(s4)
+	var r1: Dictionary = add_enemy(s4, "escudero", 1, 600.0)
+	var r2: Dictionary = add_enemy(s4, "escudero", 1, 650.0)
+	var r3: Dictionary = add_enemy(s4, "escudero", 1, 700.0)
+	for q in [r1, r2, r3]:
+		q["yo"] = 0.0
+	s4.cast_rayo(s4.epos(r1))
+	check(float(r3["hp"]) < float(r3["max_hp"]), "la cadena larga alcanza un tercer blanco")
+	var s5 = new_sim()
+	s5.souls = 900
+	var lv: Dictionary = s5.named_creature()
+	s5.level_up(int(lv["id"]))
+	s5.level_up(int(lv["id"]))
+	check(not s5.can_level(int(lv["id"])), "sin la habilidad el nivel 3 es el máximo")
+	s5.buy_skill("door_hp")
+	s5.buy_skill("eco_reward")
+	s5.buy_skill("eco_level")
+	s5.buy_skill("eco_level")
+	check(s5.buy_skill("eco_cap") or s5.skill_state("eco_cap") != "locked", "Más allá del límite se desbloquea con Maestro de la cría")
+	check(s5.can_level(int(lv["id"])), "con Más allá del límite se puede subir al nivel 4")
 
 
 func test_full_runs() -> void:
@@ -575,10 +697,29 @@ func test_ui_smoke() -> void:
 	var from_p: Vector2 = m._creature_pos(t) + Vector2(10, -20)
 	m._on_press(from_p)
 	check(m.selected_id == int(t["id"]), "clic en una bestia la selecciona")
-	m._on_press(Vector2(735, 660))
+	m._on_press(Vector2(575, 660))
 	check(int(t["level"]) == 2, "el botón Subir nivel sube a la bestia seleccionada")
 	m._on_release(Vector2(330, m._lane_y(1)))
 	check(float(t["home_x"]) == 330.0 and int(t["home_lane"]) == 1, "arrastrar con el ratón recoloca a Tizón en la retaguardia (x %d)" % int(t["home_x"]))
+	m._on_press(Vector2(415, 660))
+	check(m.show_tree, "el botón Árbol abre el árbol de habilidades")
+	m.sim.souls = 300
+	var nr: Rect2 = m._node_rect("brasa_radio")
+	m._on_press(nr.get_center())
+	check(m.sim.skill_rank("brasa_radio") == 1, "clic en un nodo compra un rango")
+	m._on_press(m._node_rect("brasa_burn").get_center())
+	check(m.sim.skill_rank("brasa_burn") == 0, "clic en un nodo bloqueado no compra")
+	m._on_press(Vector2(300, 400))
+	check(m.show_tree, "clic fuera de los nodos no cierra ni coloca nada")
+	m._on_press(Vector2(640, 660))
+	check(not m.show_tree, "el botón Cerrar árbol lo cierra")
+	m.show_tree = true
+	m.queue_redraw()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	m.show_tree = false
+	m.queue_redraw()
+	await get_tree().process_frame
 	m.queue_free()
 
 

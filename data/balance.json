@@ -31,14 +31,14 @@
   "wave_bonus": 15,
   "costs": {
    "sabueso": 40,
-   "ojo": 60,
-   "brasa_radio": 45,
-   "rayo_cadena": 50
+   "ojo": 60
   },
   "level_step": 0.25,
   "level_costs": [
    30,
-   45
+   45,
+   65,
+   90
   ]
  },
  "sabueso": {
@@ -186,13 +186,13 @@
  },
  "spells": {
   "brasa": {
-   "dmg": 45,
-   "radius": 95,
-   "radius_up": 140,
-   "delay": 0.8,
-   "cd": 3.5,
+   "dmg": 40,
+   "radius": 75,
+   "delay": 1.5,
+   "cd": 6.5,
    "burn_time": 2.0,
-   "burn_dps": 5
+   "burn_dps": 5,
+   "stun": 0.0
   },
   "rayo": {
    "dmg": 38,
@@ -200,7 +200,9 @@
    "pick_radius": 70,
    "cd": 1.2,
    "chain_frac": 0.6,
-   "chain_range": 170
+   "chain_range": 170,
+   "stun": 0.0,
+   "chain_count": 1
   }
  }
 }

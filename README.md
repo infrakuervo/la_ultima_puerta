@@ -15,7 +15,7 @@ godot --path C:\ruta\a\la_ultima_puerta
 Controles:
 - Entre oleadas: arrastra una bestia a la retaguardia (muro de atrás, zona izquierda) o a la vanguardia (cerca de los enemigos). Clic en una bestia para seleccionarla y **Subir nivel**.
 - En combate: clic en la arena lanza el hechizo activo en el cursor; mantener el botón lo repite en cuanto se recarga. Cambia de hechizo con clic derecho, rueda, teclas 1/2 o los botones de abajo. Pulsar la interfaz no lanza nada.
-- Botones: **Iniciar oleada** (Espacio), **Velocidad** x1/x2 (F), **Bestiario** (B).
+- Botones: **Árbol** (T), **Iniciar oleada** (Espacio), **Velocidad** x1/x2 (F), **Bestiario** (B).
 Pantalla 1280x720 con GL Compatibility.
 
 ## Pruebas automáticas
@@ -35,7 +35,8 @@ Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tsc
 
 ## Qué hay (orden de URI-111)
 
-0. Dirección actual (URI-117 + niveles): arena abierta sin casillas, con retaguardia y vanguardia; los enemigos llegan sin orden por frentes sorteados; el demonio ya no ataca solo: **Brasa** (círculo con retardo y llamas) y **Rayo** (inmediato, con cadena) se lanzan con el ratón; con almas se suben de nivel las bestias (+25% de vida y daño por nivel, máximo 3) y se mejoran los hechizos (radio de Brasa, cadena de Rayo).
+00. Árbol de habilidades (`data/skills.json`, 69 nodos y 235 rangos en 8 ramas: Brasa, Rayo, Demonio, Bestias, Jauría, Horno y Trueno —estas dos se abren al elegir ruta—, Ojo). Cada rango se compra con almas entre oleadas; hay requisitos entre nodos, y las mejoras de bestias (vida, daño, velocidad, cicatrices, manada, regeneración) conviven con las de cada forma. Los efectos son datos (`fx`: `mul`/`add` sobre una clave como `brasa.cd` o `horno.inhale_max`), así que se amplía editando el JSON. La Brasa empieza lenta (cae a 1,5 s, enfriamiento 6,5 s, radio 75) para que el árbol la mejore.
+0. Dirección anterior (URI-117 + niveles): arena abierta sin casillas, con retaguardia y vanguardia; los enemigos llegan sin orden por frentes sorteados; el demonio ya no ataca solo: **Brasa** (círculo con retardo y llamas) y **Rayo** (inmediato, con cadena) se lanzan con el ratón; con almas se suben de nivel las bestias (+25% de vida y daño por nivel, máximo 3) y se mejoran los hechizos (radio de Brasa, cadena de Rayo).
 1. Partida base: Puerta, Tizón con Presa, campesinos, previsión de la oleada, colocación libre, x1/x2, reinicio.
 2. Seis oleadas, elección de ruta tras la 4, héroe y reliquia en la 5, pantallas de victoria y derrota.
 3. Mutaciones: Horno de Fosas (Verdugo) y Sabueso del Trueno (Inquisidor), Ojo de Latón con combos visibles y préstamo en la oleada 6.
@@ -46,8 +47,8 @@ Fuera de alcance a propósito: Árbol del Abismo y Ceniza, Caballero del Alba, r
 
 ## Números clave (primera pasada, en `data/balance.json`)
 
-Almas iniciales 40; bonus por oleada 15; Sabueso 40, Ojo 60, Radio de Brasa 45, Cadena de Rayo 50; subir nivel 30 y 45.
-Puerta 180. Brasa: 45 de daño en radio 95 (140 mejorada), cae a los 0,8 s, enfriamiento 3,5 s, quema. Rayo: 38 de daño, enfriamiento 1,2 s, alcance 800; mejorado salta al 60% a un segundo blanco.
+Almas iniciales 40; bonus por oleada 15; Sabueso 40, Ojo 60, subir nivel 30/45 (65/90 con «Más allá del límite»); las mejoras de hechizo ya van en el árbol.
+Puerta 180. Brasa inicial: 40 de daño en radio 75, cae a los 1,5 s, enfriamiento 6,5 s, quema; el árbol la acelera y la ensancha. Rayo: 38 de daño, enfriamiento 1,2 s, alcance 800; mejorado salta al 60% a un segundo blanco.
 Horno: inhala hasta 4 enemigos (alcance 300, enfriamiento 7 s), escupe 28 y quema 6/s durante 4 s.
 Trueno: salto cada 8 s (alcance 760), 40 al caer y descargas 20/15/10, vuelve a los 6 s.
 Ojo: 12 de daño, y sobre enemigos en llamas encadena a 3 más.
@@ -60,3 +61,7 @@ Ojo: 12 de daño, y sobre enemigos en llamas encadena a 3 más.
 ## Estado de verificación
 
 Ver la descripción del PR: qué se ha ejecutado y qué no.
+
+## Arte
+
+Pack de la Fosa en `art/` (fondo y 11 sprites, reducidos a ~1,6x su tamaño en pantalla). Si falta algún PNG se usa la silueta provisional de `scripts/art.gd`.
