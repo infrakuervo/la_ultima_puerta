@@ -74,14 +74,15 @@ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opt
 	if tx == null:
 		return false
 	var sc: float = float(opts.get("scale", 1.0))
-	var h: float = float(SPRITE_H[key]) * sc
+	var base: String = key.get_slice("_", 0)
+	var h: float = float(SPRITE_H[base]) * sc
 	var w: float = h * float(tx.get_width()) / float(tx.get_height())
 	var squash: float = float(opts.get("squash", 1.0))
 	var alpha: float = float(opts.get("alpha", 1.0))
 	var flash: float = float(opts.get("flash", 0.0))
 	var bob: float = float(opts.get("bob", 0.0))
-	var lift: float = float(SPRITE_LIFT.get(key, 0.0)) * sc
-	if key == "ojo":
+	var lift: float = float(SPRITE_LIFT.get(base, 0.0)) * sc
+	if base == "ojo":
 		bob += sin(t * 2.6) * 5.0
 	# sombra elíptica en el suelo
 	var sw: float = maxf(w * 0.34, 26.0)
@@ -191,7 +192,11 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 		var eo: Dictionary = {"flash": flash, "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
 		if burning:
 			eo["flash"] = maxf(flash, 0.25 + 0.15 * sin(t * 14.0))
-		if draw_sprite(ci, kind, pos, t, eo):
+		var vk: String = kind
+		var vi: int = int(opts.get("variant", 0))
+		if vi > 0 and tex("%s_v%02d" % [kind, vi]) != null:
+			vk = "%s_v%02d" % [kind, vi]
+		if draw_sprite(ci, vk, pos, t, eo):
 			return
 	var p: Vector2 = pos + Vector2(0, absf(sin(t * 6.0 + bump * 6.0)) * -2.0)
 	var skin: Color = Color(0.85, 0.7, 0.55).lerp(Color(1, 1, 1), flash)

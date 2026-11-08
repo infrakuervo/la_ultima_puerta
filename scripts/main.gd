@@ -829,7 +829,8 @@ func _bar(p: Vector2, w: float, frac: float, col: Color) -> void:
 func _draw_enemy(e: Dictionary) -> void:
 	var pos: Vector2 = sim.epos(e)
 	var kind: String = e["kind"]
-	var opts: Dictionary = {"burning": e["burn_t"] > 0.0, "bump": e["bump"], "flash": 0.0}
+	var variant: int = 0 if bool(sim.B["enemies"][kind].get("hero", false)) else int(float(e["bump"]) * 4.0) % 4
+	var opts: Dictionary = {"burning": e["burn_t"] > 0.0, "bump": e["bump"], "flash": 0.0, "variant": variant}
 	Art.draw_enemy(self, kind, pos, clock, opts)
 	var st: Dictionary = sim.B["enemies"][kind]
 	var top: float = -118.0 if (kind == "verdugo" or kind == "inquisidor") else -62.0
