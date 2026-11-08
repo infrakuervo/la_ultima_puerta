@@ -500,6 +500,8 @@ func _spawn_enemy(kind: String, lane: int) -> void:
 		"pull_t": 0.0, "pull_x": 0.0, "pull_speed": 0.0, "fed": false,
 		"marked": false, "heal_t": float(st.get("heal_cd", 2.0)), "bell_t": float(st.get("bell_cd", 4.0)) * 0.7,
 		"dead": false, "bump": rng.randf(), "yo": rng.randf_range(-30.0, 30.0),
+		"aim_t": 0.0, "sweep_t": 0.0, "sweep_cd_t": float(st.get("sweep_cd", 0.0)) * 0.5,
+		"ring_t": float(st.get("ring_cd", 0.0)) * 0.6,
 	}
 	next_id += 1
 	enemies.append(e)
@@ -514,6 +516,8 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 		if not attacker.is_empty():
 			amount *= dmg_mult(attacker)
 	var mult: float = float(st.get("armor", 1.0)) if armored else 1.0
+	if armored:
+		mult *= _cover_mult(e)
 	e["hp"] -= amount * mult
 	if armored:
 		events.append({"t": "hit", "x": e["x"], "lane": e["lane"]})
@@ -526,6 +530,37 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 		if not c.is_empty():
 			c["kills"] += 1
 		events.append({"t": "kill", "x": e["x"], "lane": e["lane"], "reward": reward, "id": e["id"]})
+
+
+# El Muro de Marfil protege al aliado que camina justo detrás de él.
+func _cover_mult(e: Dictionary) -> float:
+	for m in enemies:
+		if m["dead"] or m["id"] == e["id"]:
+			continue
+		var ms: Dictionary = B["enemies"][m["kind"]]
+		if not ms.has("cover_range"):
+			continue
+		if m["lane"] == e["lane"] and m["x"] < e["x"] and e["x"] - m["x"] <= float(ms["cover_range"]):
+			return float(ms["cover"])
+	return 1.0
+
+
+# La turba corre más cerca de un Capataz.
+func _haste_mult(e: Dictionary) -> float:
+	var best: float = 1.0
+	for m in enemies:
+		if m["dead"] or m["id"] == e["id"]:
+			continue
+		var ms: Dictionary = B["enemies"][m["kind"]]
+		if not ms.has("haste_radius"):
+			continue
+		if epos(m).distance_to(epos(e)) <= float(ms["haste_radius"]):
+			best = maxf(best, float(ms["haste"]))
+	return best
+
+
+func _creature_point(c: Dictionary) -> Vector2:
+	return Vector2(float(c["x"]), lane_y(int(c["lane"])))
 
 
 func damage_creature(c: Dictionary, amount: float) -> void:
@@ -1109,7 +1144,17 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 		e["stun"] -= dt
 	if st.get("support", false):
 		e["heal_t"] -= dt
-		if e["heal_t"] <= 0.0:
+		if e["heal_t"] <= 0.0 and st.get("pulse", false):
+			e["heal_t"] = float(st["heal_cd"])
+			var healed: int = 0
+			for a in enemies:
+				if a["dead"] or epos(a).distance_to(epos(e)) > float(st["heal_radius"]):
+					continue
+				if a["hp"] < a["max_hp"]:
+					healed += 1
+				a["hp"] = minf(a["max_hp"], a["hp"] + float(st["heal"]))
+			events.append({"t": "heal_pulse", "x": e["x"], "lane": e["lane"], "r": float(st["heal_radius"]), "healed": healed})
+		elif e["heal_t"] <= 0.0:
 			e["heal_t"] = float(st["heal_cd"])
 			for a in enemies:
 				if a["dead"] or a["lane"] != e["lane"]:
@@ -1125,6 +1170,20 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 			if not front.is_empty():
 				front["stun"] = float(st["stun"])
 				events.append({"t": "bell", "lane": e["lane"], "id": front["id"], "x": e["x"]})
+	if st.has("ring_cd") and e["stun"] <= 0.0:
+		e["ring_t"] -= dt
+		if e["ring_t"] <= 0.0:
+			e["ring_t"] = float(st["ring_cd"])
+			var rc: Vector2 = epos(e)
+			var hit_n: int = 0
+			for c in creatures:
+				if c["dead"] or c["fallen"] or c["air"]:
+					continue
+				if _creature_point(c).distance_to(rc) <= float(st["ring_r"]):
+					c["stun"] = maxf(c["stun"], float(st["ring_stun"]))
+					c["windup"] = 0.0
+					hit_n += 1
+			events.append({"t": "ring", "x": e["x"], "lane": e["lane"], "r": float(st["ring_r"]), "hit": hit_n})
 	if e["pull_t"] > 0.0:
 		e["pull_t"] -= dt
 		var dxp: float = e["pull_x"] - e["x"]
@@ -1137,12 +1196,32 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 	if e["stun"] > 0.0:
 		return
 	var door_x: float = float(B["arena"]["door_x"])
+	if st.has("sweep_dmg"):
+		e["sweep_cd_t"] = maxf(0.0, e["sweep_cd_t"] - dt)
+		if e["sweep_t"] > 0.0:
+			e["sweep_t"] -= dt
+			if e["sweep_t"] <= 0.0:
+				_tajo_sweep(e, st)
+			return
+		if e["sweep_cd_t"] <= 0.0 and not _blocker(e, float(st["reach"]) + 40.0).is_empty():
+			e["sweep_t"] = float(st["sweep_wind"])
+			events.append({"t": "sweep_wind", "id": e["id"], "x": e["x"], "lane": e["lane"], "wind": float(st["sweep_wind"])})
+			return
 	if st.get("ranged", false):
 		var r: float = float(st["range"])
+		if e["aim_t"] > 0.0:
+			e["aim_t"] -= dt
+			if e["aim_t"] <= 0.0:
+				_tirador_fire(e, st)
+			return
 		var tgt: Dictionary = _rearmost_creature_in_range(e, r)
 		if not tgt.is_empty():
 			if e["cd"] <= 0.0:
 				e["cd"] = float(st["cd"])
+				if st.has("aim"):
+					e["aim_t"] = float(st["aim"])
+					events.append({"t": "aim", "id": e["id"], "x": e["x"], "lane": e["lane"], "range": r, "aim": float(st["aim"])})
+					return
 				damage_creature(tgt, float(st["dmg"]))
 				events.append({"t": "shot", "x": e["x"], "lane": e["lane"], "tx": tgt["x"]})
 			return
@@ -1177,7 +1256,39 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 				return
 	elif _blocked_by_ally(e, 20.0):
 		return
-	e["x"] -= float(st["speed"]) * dt
+	e["x"] -= float(st["speed"]) * dt * _haste_mult(e)
+
+
+# Virote de torno: atraviesa a todas las criaturas de la fila (hasta 3) con daño decreciente.
+func _tirador_fire(e: Dictionary, st: Dictionary) -> void:
+	var line: Array = []
+	for c in creatures:
+		if c["dead"] or c["fallen"] or c["air"] or c["lane"] != e["lane"]:
+			continue
+		if c["x"] < e["x"] and e["x"] - c["x"] <= float(st["range"]):
+			line.append(c)
+	line.sort_custom(func(a, b): return a["x"] > b["x"])
+	var k: float = 1.0
+	var far_x: float = e["x"] - 40.0
+	for i in mini(line.size(), int(st["pierce"])):
+		damage_creature(line[i], float(st["dmg"]) * k)
+		far_x = line[i]["x"]
+		k *= 0.7
+	events.append({"t": "tirador_shot", "x": e["x"], "lane": e["lane"], "tx": far_x, "hits": mini(line.size(), int(st["pierce"]))})
+
+
+# Barrido del hacha: golpea a todo lo que esté en el semicírculo frontal.
+func _tajo_sweep(e: Dictionary, st: Dictionary) -> void:
+	e["sweep_cd_t"] = float(st["sweep_cd"])
+	var centre: Vector2 = epos(e) + Vector2(-60.0, 0.0)
+	var n: int = 0
+	for c in creatures:
+		if c["dead"] or c["fallen"] or c["air"]:
+			continue
+		if _creature_point(c).distance_to(centre) <= float(st["sweep_r"]):
+			damage_creature(c, float(st["sweep_dmg"]))
+			n += 1
+	events.append({"t": "sweep", "x": centre.x, "lane": e["lane"], "y": centre.y, "r": float(st["sweep_r"]), "hits": n})
 
 
 func _cleanup() -> void:

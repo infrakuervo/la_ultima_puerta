@@ -188,12 +188,21 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 	var flash: float = float(opts.get("flash", 0.0))
 	var burning: bool = bool(opts.get("burning", false))
 	var bump: float = float(opts.get("bump", 0.0))
+	var esp: String = String(opts.get("sprite", ""))
+	if esp != "":
+		var eo2: Dictionary = {"flash": flash, "scale": float(opts.get("scale", 1.0)), "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
+		if burning:
+			eo2["flash"] = maxf(flash, 0.25 + 0.15 * sin(t * 14.0))
+		if draw_sprite(ci, esp, pos, t, eo2):
+			return
+		kind = esp.get_slice("_", 0)
 	if SPRITE_H.has(kind):
 		var eo: Dictionary = {"flash": flash, "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
 		if burning:
 			eo["flash"] = maxf(flash, 0.25 + 0.15 * sin(t * 14.0))
 		var vk: String = kind
 		var vi: int = int(opts.get("variant", 0))
+		eo["scale"] = float(opts.get("scale", 1.0))
 		if vi > 0 and tex("%s_v%02d" % [kind, vi]) != null:
 			vk = "%s_v%02d" % [kind, vi]
 		if draw_sprite(ci, vk, pos, t, eo):

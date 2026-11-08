@@ -273,6 +273,29 @@ func _on_event(ev: Dictionary) -> void:
 		"shot":
 			_play("shot", 0.08)
 			_add_fx({"type": "line", "a": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 30), "b": Vector2(ev["tx"], _lane_y(int(ev["lane"])) - 30), "col": Color(0.8, 0.8, 0.8), "w": 2.0, "ttl": 0.1})
+		"aim":
+			_play("presa_windup")
+			_warn({"type": "aim", "eid": int(ev["id"]), "range": float(ev["range"]), "ttl": float(ev["aim"])})
+		"tirador_shot":
+			_play("shot")
+			shake = maxf(shake, 3.0)
+			_add_fx({"type": "line", "a": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 30), "b": Vector2(ev["tx"], _lane_y(int(ev["lane"])) - 30), "col": Color(1.0, 0.9, 0.6), "w": 6.0, "ttl": 0.25})
+		"sweep_wind":
+			_play("presa_windup")
+			_warn({"type": "sweep", "eid": int(ev["id"]), "ttl": float(ev["wind"])})
+		"sweep":
+			_play("trueno_land")
+			shake = maxf(shake, 7.0)
+			_add_fx({"type": "ring", "p": Vector2(ev["x"], ev["y"]), "r0": 10.0, "r1": float(ev["r"]), "col": Color(1.0, 0.35, 0.2, 0.9), "ttl": 0.4})
+			_add_fx({"type": "disc", "p": Vector2(ev["x"], ev["y"]), "r": float(ev["r"]), "col": Color(1.0, 0.3, 0.15, 0.3), "ttl": 0.4})
+		"ring":
+			_play("bell")
+			shake = maxf(shake, 3.0)
+			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 20.0, "r1": float(ev["r"]), "col": Color(0.95, 0.85, 0.3, 0.9), "ttl": 0.6})
+			_float(Vector2(ev["x"], _lane_y(int(ev["lane"])) - 120), "REPIQUE", Color(0.95, 0.85, 0.3), 1.1)
+		"heal_pulse":
+			_play("heal", 0.2)
+			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 10.0, "r1": float(ev["r"]), "col": Color(0.6, 1.0, 0.7, 0.8), "ttl": 0.5})
 		"door_hit":
 			_play("door_hit", 0.1)
 			shake = maxf(shake, 5.0)
@@ -831,10 +854,23 @@ func _draw_enemy(e: Dictionary) -> void:
 	var kind: String = e["kind"]
 	var variant: int = 0 if bool(sim.B["enemies"][kind].get("hero", false)) else int(float(e["bump"]) * 4.0) % 4
 	var opts: Dictionary = {"burning": e["burn_t"] > 0.0, "bump": e["bump"], "flash": 0.0, "variant": variant}
+	var elite: bool = bool(sim.B["enemies"][kind].get("elite", false))
+	if elite:
+		opts["sprite"] = String(sim.B["enemies"][kind]["sprite"])
+		opts["scale"] = float(sim.B["enemies"][kind].get("scale", 1.0))
+		var ep0: Vector2 = pos
+		draw_arc(ep0 + Vector2(0, 4), 30.0, 0.0, TAU, 20, Color(1.0, 0.82, 0.3, 0.55 + 0.25 * sin(clock * 4.0)), 3.0)
+		if sim.B["enemies"][kind].has("haste_radius"):
+			draw_arc(ep0 + Vector2(0, 4), float(sim.B["enemies"][kind]["haste_radius"]), 0.0, TAU, 40, Color(1.0, 0.5, 0.2, 0.22), 2.0)
+		if sim.B["enemies"][kind].has("cover_range"):
+			draw_line(ep0 + Vector2(0, -6), ep0 + Vector2(float(sim.B["enemies"][kind]["cover_range"]), -6), Color(0.9, 0.85, 0.6, 0.4), 4.0)
 	Art.draw_enemy(self, kind, pos, clock, opts)
 	var st: Dictionary = sim.B["enemies"][kind]
-	var top: float = -118.0 if (kind == "verdugo" or kind == "inquisidor") else -62.0
-	if e["hp"] < e["max_hp"] or bool(st.get("hero", false)):
+	var top: float = -118.0 if (kind == "verdugo" or kind == "inquisidor" or kind == "tajo" or kind == "campana") else -62.0
+	if elite:
+		top = -128.0 if (kind == "tajo" or kind == "campana") else -92.0
+		_txt(sim.label(kind), pos + Vector2(-70, top - 12), 14, Color(1.0, 0.85, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 140.0)
+	if e["hp"] < e["max_hp"] or bool(st.get("hero", false)) or elite:
 		_bar(pos + Vector2(-22, top), 44.0, float(e["hp"]) / float(e["max_hp"]), Color(0.9, 0.3, 0.3))
 	if e["burn_t"] > 0.0:
 		var fl: float = 6.0 + 4.0 * sin(clock * 14.0 + float(e["id"]))
@@ -876,6 +912,17 @@ func _draw_fx_and_warns() -> void:
 					draw_line(tc + Vector2(0, -40), te + Vector2(0, -40), Color(0.6, 0.8, 1.0, 0.35 + 0.4 * blink), 2.0)
 					draw_arc(te + Vector2(0, -34), 36.0 - 10.0 * k, 0.0, TAU, 24, Color(0.6, 0.85, 1.0, 0.6 + 0.4 * blink), 4.0)
 					_txt("SALTA", tc + Vector2(-30, -110), 18, Color(0.6, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+			"aim":
+				var ap: Vector2 = _enemy_pos(int(w["eid"]))
+				if ap.x > 0.0:
+					draw_line(ap + Vector2(0, -30), ap + Vector2(-float(w["range"]), -30), Color(1.0, 0.3, 0.2, 0.25 + 0.45 * blink), 3.0)
+					_txt("VIROTE", ap + Vector2(-30, -110), 17, Color(1.0, 0.4, 0.3), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+			"sweep":
+				var sp: Vector2 = _enemy_pos(int(w["eid"]))
+				if sp.x > 0.0:
+					draw_circle(sp + Vector2(-60, -10), 120.0 * (0.4 + 0.6 * (1.0 - k)), Color(1.0, 0.25, 0.15, 0.12 + 0.18 * blink))
+					draw_arc(sp + Vector2(-60, -10), 120.0, 0.0, TAU, 32, Color(1.0, 0.3, 0.2, 0.5 + 0.4 * blink), 3.0)
+					_txt("BARRIDO", sp + Vector2(-40, -150), 17, Color(1.0, 0.35, 0.25), HORIZONTAL_ALIGNMENT_CENTER, 80.0)
 			"bell":
 				var bc: Vector2 = _creature_pos_by_id(int(w["cid"]))
 				if bc.x > 0.0:
@@ -953,7 +1000,8 @@ func _draw_hud() -> void:
 		_txt("Arrastra bestias a las zonas marcadas: vanguardia hace de muro, retaguardia dispara. Selecciona una para subirla de nivel. T abre el árbol de habilidades.", Vector2(20, 618), 14, Color(0.75, 0.65, 0.6))
 	elif sim.phase == "combat":
 		var left: int = sim.spawn_queue.size() + sim.enemies.size()
-		_txt("Quedan %d enemigos. Clic en la arena lanza el hechizo; mantén pulsado para repetir. Clic derecho o rueda cambia de hechizo." % left, Vector2(340, 654), 15, Color(0.85, 0.75, 0.7))
+		_txt("Quedan %d enemigos." % left, Vector2(340, 646), 17, Color(0.95, 0.85, 0.7))
+		_txt("Clic lanza el hechizo (mantén para repetir). Clic derecho o rueda cambia.", Vector2(340, 672), 14, Color(0.8, 0.7, 0.65), HORIZONTAL_ALIGNMENT_LEFT, 470.0)
 
 
 func _phase_hint() -> String:

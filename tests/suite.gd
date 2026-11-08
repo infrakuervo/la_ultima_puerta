@@ -23,6 +23,7 @@ func run() -> void:
 	test_ojo_chain_and_mark()
 	test_ojo_loan()
 	test_economy()
+	test_elites()
 	test_skills()
 	test_full_runs()
 	await test_ui_smoke()
@@ -456,7 +457,9 @@ func bot_cast(s) -> void:
 				continue
 			var kind: String = e2["kind"]
 			var sc: float = 1000.0 - ep.x
-			if kind == "clerigo":
+			if bool(s.B["enemies"][kind].get("elite", false)):
+				sc += 1800.0
+			if kind == "clerigo" or kind == "lumbrero":
 				sc += 3000.0
 			elif kind == "ballestero":
 				sc += 2000.0
@@ -536,6 +539,115 @@ func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 		print(dump(s))
 	return {"phase": s.phase, "wave": s.wave_index + 1, "door": int(s.door_hp), "souls": s.souls,
 		"seconds": total / 30, "stalled": stalled, "dump": dump(s), "kills": s.kills, "epitaph": s.epitaph()}
+
+
+func test_elites() -> void:
+	print("Élites")
+	# todas tienen sprite y etiqueta
+	var s0 = new_sim()
+	var all_ok: bool = true
+	for k in ["capataz", "muro", "tirador", "lumbrero", "tajo", "campana"]:
+		if not s0.B["enemies"].has(k) or not s0.B["labels"].has(k) or not FileAccess.file_exists("res://art/sprites/%s.png" % String(s0.B["enemies"][k]["sprite"])):
+			all_ok = false
+	check(all_ok, "las seis élites existen con etiqueta y sprite")
+	# Capataz: acelera a la turba cercana
+	var s = new_sim()
+	to_combat(s)
+	s.creatures.clear()
+	var a: Dictionary = add_enemy(s, "campesino", 1, 700.0)
+	a["yo"] = 0.0
+	var x0: float = a["x"]
+	run_ticks(s, 30)
+	var plain: float = x0 - float(a["x"])
+	var s2 = new_sim()
+	to_combat(s2)
+	s2.creatures.clear()
+	var a2: Dictionary = add_enemy(s2, "campesino", 1, 700.0)
+	a2["yo"] = 0.0
+	var cap: Dictionary = add_enemy(s2, "capataz", 1, 760.0)
+	cap["yo"] = 0.0
+	run_ticks(s2, 30)
+	check(x0 - float(a2["x"]) > plain * 1.2, "el Capataz acelera al campesino cercano (%.0f contra %.0f px)" % [x0 - float(a2["x"]), plain])
+	# Muro: cubre al aliado de detrás
+	var s3 = new_sim()
+	to_combat(s3)
+	var back: Dictionary = add_enemy(s3, "campesino", 1, 640.0)
+	back["yo"] = 0.0
+	var h0: float = float(back["hp"])
+	s3.damage_enemy(back, 20.0, -1)
+	var loss_open: float = h0 - float(back["hp"])
+	back["hp"] = h0
+	var wall: Dictionary = add_enemy(s3, "muro", 1, 580.0)
+	wall["yo"] = 0.0
+	s3.damage_enemy(back, 20.0, -1)
+	check(h0 - float(back["hp"]) < loss_open * 0.8, "el Muro de Marfil reduce el daño al aliado de detrás")
+	# Tirador: avisa y atraviesa la fila
+	var s4 = new_sim()
+	to_combat(s4)
+	s4.creatures.clear()
+	var c1: Dictionary = s4._new_creature("sabueso", {"x": 500.0, "lane": 1})
+	var c2: Dictionary = s4._new_creature("sabueso", {"x": 420.0, "lane": 1})
+	s4.creatures.append(c1)
+	s4.creatures.append(c2)
+	c1["stun"] = 99.0
+	c2["stun"] = 99.0
+	var tir: Dictionary = add_enemy(s4, "tirador", 1, 760.0)
+	tir["yo"] = 0.0
+	var hp1: float = float(c1["hp"])
+	var hp2: float = float(c2["hp"])
+	var seen4: Array = run_ticks(s4, 20)
+	check(seen4.has("aim") and float(c1["hp"]) == hp1, "el Tirador avisa antes de disparar")
+	seen4 = run_ticks(s4, 40)
+	check(seen4.has("tirador_shot") and float(c1["hp"]) < hp1 and float(c2["hp"]) < hp2, "el virote atraviesa a las dos criaturas de la fila")
+	# Lumbrero: cura a varios en un pulso
+	var s5 = new_sim()
+	to_combat(s5)
+	s5.creatures.clear()
+	var w1: Dictionary = add_enemy(s5, "escudero", 0, 700.0)
+	var w2: Dictionary = add_enemy(s5, "escudero", 2, 720.0)
+	w1["yo"] = 0.0
+	w2["yo"] = 0.0
+	w1["hp"] = 50.0
+	w2["hp"] = 50.0
+	var lum: Dictionary = add_enemy(s5, "lumbrero", 1, 760.0)
+	lum["yo"] = 0.0
+	lum["heal_t"] = 0.1
+	run_ticks(s5, 10)
+	check(float(w1["hp"]) > 60.0 and float(w2["hp"]) > 60.0, "el Lumbrero cura a varios aliados de filas distintas")
+	# Tajo: barrido con aviso
+	var s6 = new_sim()
+	to_combat(s6)
+	s6.creatures.clear()
+	var d1: Dictionary = s6._new_creature("sabueso", {"x": 500.0, "lane": 1})
+	var d2: Dictionary = s6._new_creature("sabueso", {"x": 500.0, "lane": 0})
+	d2["lane"] = 0
+	s6.creatures.append(d1)
+	s6.creatures.append(d2)
+	d1["stun"] = 99.0
+	d2["stun"] = 99.0
+	var tj: Dictionary = add_enemy(s6, "tajo", 1, 535.0)
+	tj["yo"] = 0.0
+	tj["sweep_cd_t"] = 0.0
+	var seen6: Array = run_ticks(s6, 10)
+	check(seen6.has("sweep_wind"), "el Verdugo del Tajo Negro levanta el hacha antes de barrer")
+	seen6 += run_ticks(s6, 40)
+	check(seen6.has("sweep") and float(d1["hp"]) < float(d1["max_hp"]), "el barrido hiere a la criatura del frente")
+	# Campana: interrumpe a las criaturas cercanas
+	var s7 = new_sim()
+	to_combat(s7)
+	s7.creatures.clear()
+	var k1: Dictionary = s7._new_creature("sabueso", {"x": 500.0, "lane": 1})
+	s7.creatures.append(k1)
+	k1["windup"] = 0.3
+	var cam: Dictionary = add_enemy(s7, "campana", 1, 700.0)
+	cam["yo"] = 0.0
+	cam["ring_t"] = 0.05
+	run_ticks(s7, 3)
+	check(float(k1["stun"]) > 1.0 and float(k1["windup"]) == 0.0, "el repique aturde e interrumpe a las criaturas cercanas")
+	# oleadas con élites y vista previa
+	var s8 = new_sim()
+	var pv: Dictionary = s8.preview_totals(3)
+	check(pv.has("muro") and pv.has("tirador"), "la oleada 4 anuncia al Muro y al Tirador")
 
 
 func test_skills() -> void:

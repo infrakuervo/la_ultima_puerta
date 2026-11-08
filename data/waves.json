@@ -58,6 +58,13 @@
      "kind": "campesino",
      "count": 14,
      "gap": 0.55
+    },
+    {
+     "lane": -1,
+     "kind": "capataz",
+     "count": 1,
+     "gap": 0,
+     "delay": 3.0
     }
    ]
   },
@@ -92,6 +99,20 @@
      "count": 1,
      "gap": 0,
      "delay": 9.0
+    },
+    {
+     "lane": -1,
+     "kind": "muro",
+     "count": 1,
+     "gap": 0,
+     "delay": 3.0
+    },
+    {
+     "lane": -1,
+     "kind": "tirador",
+     "count": 1,
+     "gap": 0,
+     "delay": 11.0
     }
    ]
   },
@@ -153,6 +174,41 @@
      "count": 4,
      "gap": 1.0,
      "delay": 12.0
+    },
+    {
+     "lane": -1,
+     "kind": "capataz",
+     "count": 1,
+     "gap": 0,
+     "delay": 2.0
+    },
+    {
+     "lane": -1,
+     "kind": "muro",
+     "count": 1,
+     "gap": 0,
+     "delay": 6.0
+    },
+    {
+     "lane": -1,
+     "kind": "lumbrero",
+     "count": 1,
+     "gap": 0,
+     "delay": 10.0
+    },
+    {
+     "lane": -1,
+     "kind": "tajo",
+     "count": 1,
+     "gap": 0,
+     "delay": 13.0
+    },
+    {
+     "lane": -1,
+     "kind": "campana",
+     "count": 1,
+     "gap": 0,
+     "delay": 16.0
     }
    ]
   }
