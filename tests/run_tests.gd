@@ -10,6 +10,8 @@ var checks: int = 0
 
 
 func _initialize() -> void:
+	# Se espera un fotograma para que el árbol de escenas esté listo (_ready de Main).
+	await process_frame
 	test_data()
 	test_basic_combat()
 	test_presa()
@@ -22,7 +24,7 @@ func _initialize() -> void:
 	test_ojo_loan()
 	test_economy()
 	test_full_runs()
-	test_ui_smoke()
+	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -312,6 +314,17 @@ func test_economy() -> void:
 
 # --- partidas completas -------------------------------------------------------
 
+func dump(s) -> String:
+	var out: Array = []
+	out.append("fase=%s oleada=%d t=%.1f puerta=%d almas=%d" % [s.phase, s.wave_index + 1, s.wave_time, int(s.door_hp), s.souls])
+	for c in s.creatures:
+		out.append("  criatura %s %s carril=%d x=%d hp=%d/%d estado=%s fallen=%s dead=%s stun=%.1f" % [c["name"], c["kind"], c["lane"], int(c["x"]), int(c["hp"]), int(c["max_hp"]), c["state"], str(c["fallen"]), str(c["dead"]), c["stun"]])
+	for e in s.enemies:
+		out.append("  enemigo %s carril=%d x=%d hp=%d/%d held=%.1f stun=%.1f" % [e["kind"], e["lane"], int(e["x"]), int(e["hp"]), int(e["max_hp"]), e["held"], e["stun"]])
+	out.append("  pendientes por entrar: %d" % s.spawn_queue.size())
+	return "\n".join(out)
+
+
 func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 	var s = new_sim(seed_v)
 	var total: int = 0
@@ -350,8 +363,11 @@ func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 				if wave_ticks > 30 * 300:
 					stalled = true
 					break
+	if stalled:
+		print("  --- estado al atascarse ---")
+		print(dump(s))
 	return {"phase": s.phase, "wave": s.wave_index + 1, "door": int(s.door_hp), "souls": s.souls,
-		"seconds": total / 30, "stalled": stalled, "kills": s.kills, "epitaph": s.epitaph()}
+		"seconds": total / 30, "stalled": stalled, "dump": dump(s), "kills": s.kills, "epitaph": s.epitaph()}
 
 
 func test_full_runs() -> void:
@@ -369,6 +385,9 @@ func test_full_runs() -> void:
 			var res2: Dictionary = autoplay(r2, false, 100 + sd)
 			if res2["phase"] == "victory":
 				wins += 1
+			if sd == 0 and res2["phase"] != "victory":
+				print("  --- estado final ruta %s semilla 100 ---" % r2)
+				print(res2["dump"])
 			lines.append("    semilla %d: %s en oleada %d, Puerta %d, %d s, %s" % [100 + sd, res2["phase"], res2["wave"], res2["door"], res2["seconds"], res2["epitaph"]])
 		print("  ruta %s: %d/5 victorias" % [r2, wins])
 		for ln in lines:
@@ -385,6 +404,7 @@ func test_ui_smoke() -> void:
 		return
 	var m = packed.instantiate()
 	root.add_child(m)
+	await process_frame
 	check(m.sim != null, "la vista crea la simulación")
 	m._on_press(Vector2(1130, 660))
 	check(m.sim.phase == "combat", "el botón Iniciar oleada arranca la oleada con el ratón")
