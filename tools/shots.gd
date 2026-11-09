@@ -145,7 +145,7 @@ func run() -> void:
 		s().draft.clear()
 	if want("bestiario"):
 		s().reset()
-		for k in ["horno", "trueno", "sabueso", "ojo", "alacran", "sapo", "manta"]:
+		for k in ["horno", "trueno", "sabueso", "ojo", "alacran", "sapo", "manta", "gargola", "enjambre", "garfio"]:
 			s()._note_seen(k)
 		main.show_bestiary = true
 		await shot("bestiario")
@@ -167,6 +167,8 @@ func run() -> void:
 	if want("victoria"):
 		s().reset()
 		s().kills = 87
+		main.unlock_note = "Se abre: Segundo asedio: la Orden del Alba. Se abre Ira 1 en este asedio."
+		s().meta_mode = true
 		s().phase = "victory"
 		await shot("victoria")
 	if want("derrota"):

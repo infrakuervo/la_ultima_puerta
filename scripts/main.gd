@@ -15,16 +15,16 @@ const ARENA_TOP: float = 90.0
 const ARENA_BOTTOM: float = 598.0
 
 const FORM_INFO: Dictionary = {
-	"sabueso": "Muerde y, de vez en cuando, agarra a un enemigo (Presa) para que no avance.",
-	"horno": "Inhala hasta 4 enemigos de su carril y los escupe en llamas. Quema el suelo.",
-	"trueno": "Salta sobre la vanguardia a un apoyo (clérigo/ballestero) y encadena descargas. Deja su hueco abierto.",
-	"alacran": "Tanque. Atrapa a un invasor con la pinza 3 s y le hace daño: no avanza.",
-	"sapo": "Desde atrás escupe brea sobre el grupo: daña y ralentiza a quien pisa el charco.",
-	"manta": "Embosca: planea por el carril con más enemigos, golpea a todos y los aturde. Intocable mientras vuela.",
-	"ojo": "Dispara desde atrás. Sobre enemigos en llamas encadena el disparo. Marca el objetivo del Trueno.",
-	"gargola": "Tanque. Herida, se vuelve piedra (inmune) y al romperse devuelve en una onda lo que encajó.",
-	"enjambre": "Desde atrás manda moscas ígneas a los más enteros y los quema. Con el Ojo, combo de llamas.",
-	"garfio": "Engancha a un apoyo o tirador lejano y lo arrastra a la vanguardia, aturdido.",
+	"sabueso": "Muerde y a veces agarra a un enemigo (Presa) para que no avance.",
+	"horno": "Inhala hasta 5 enemigos de su carril y los escupe en llamas. Quema el suelo.",
+	"trueno": "Salta a apoyos y tiradores y encadena descargas. Deja su hueco abierto.",
+	"alacran": "Tanque. Agarra a un invasor con la pinza 3 s y le hace daño.",
+	"sapo": "Escupe brea al grupo desde atrás: daña y frena a quien pisa el charco.",
+	"manta": "Planea por el carril más lleno, golpea y aturde a todos. Intocable en vuelo.",
+	"ojo": "Dispara desde atrás; sobre enemigos en llamas encadena. Marca el blanco del Trueno.",
+	"gargola": "Tanque. Herida, se vuelve piedra y suelta en una onda lo que encajó.",
+	"enjambre": "Quema desde atrás a los dos más enteros. Con el Ojo, combo de llamas.",
+	"garfio": "Engancha a un apoyo o tirador lejano y lo arrastra a la vanguardia.",
 }
 
 var sim = null
@@ -512,11 +512,13 @@ func _load_bestiary() -> void:
 		return
 	var forms: Array = data.get("formas", [])
 	for fm in forms:
-		if not sim.seen_forms.has(fm):
+		if FORM_INFO.has(String(fm)) and not sim.seen_forms.has(fm):
 			sim.seen_forms.append(fm)
 
 
 func _save_bestiary() -> void:
+	if Engine.has_meta("sin_persistencia"):
+		return
 	var t: Dictionary = sim.named_creature()
 	var rec: Dictionary = {}
 	if not t.is_empty():
@@ -1573,7 +1575,8 @@ func _draw_bestiary() -> void:
 		var cell: Vector2 = Vector2(rect.position.x + 20.0 + 410.0 * float(col), rect.position.y + 66.0 + row * float(i / 2))
 		Art.draw_creature(self, fk, Vector2(cell.x + 55, cell.y + row * 0.5 + 22.0 * bs), clock, {"scale": bs})
 		_txt(sim.label(fk), Vector2(cell.x + 115, cell.y + 22), 20, Color(1.0, 0.9, 0.7))
-		draw_multiline_string(font, Vector2(cell.x + 115, cell.y + 42), String(FORM_INFO.get(fk, "")), HORIZONTAL_ALIGNMENT_LEFT, 280.0, 14, maxi(1, int((row - 30.0) / 17.0)), Color(0.85, 0.8, 0.75))
+		var fsz: int = 14 if row >= 90.0 else 13
+		draw_multiline_string(font, Vector2(cell.x + 115, cell.y + 40), String(FORM_INFO.get(fk, "")), HORIZONTAL_ALIGNMENT_LEFT, 285.0, fsz, maxi(1, int((row - 26.0) / float(fsz + 2))), Color(0.85, 0.8, 0.75))
 	var t: Dictionary = sim.named_creature()
 	if not t.is_empty():
 		_txt("Tizón: %s, %d bajas, %d cicatrices." % [sim.label(String(t["kind"])), int(t["kills"]), int(t["scars"])], Vector2(rect.position.x + 28, rect.end.y - 24), 20, Color(1.0, 0.7, 0.55))
