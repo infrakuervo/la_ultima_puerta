@@ -22,6 +22,9 @@ const FORM_INFO: Dictionary = {
 	"sapo": "Desde atrás escupe brea sobre el grupo: daña y ralentiza a quien pisa el charco.",
 	"manta": "Embosca: planea por el carril con más enemigos, golpea a todos y los aturde. Intocable mientras vuela.",
 	"ojo": "Dispara desde atrás. Sobre enemigos en llamas encadena el disparo. Marca el objetivo del Trueno.",
+	"gargola": "Tanque. Herida, se vuelve piedra (inmune) y al romperse devuelve en una onda lo que encajó.",
+	"enjambre": "Desde atrás manda moscas ígneas a los más enteros y los quema. Con el Ojo, combo de llamas.",
+	"garfio": "Engancha a un apoyo o tirador lejano y lo arrastra a la vanguardia, aturdido.",
 }
 
 var sim = null
@@ -52,6 +55,8 @@ var juice = Juice.new()
 var menu = Menu.new()
 var fade: float = 0.0
 var last_phase: String = ""
+var siege_wins: Dictionary = {}   # id de asedio -> mayor nivel de Ira ganado
+var unlock_note: String = ""
 var flash_red: float = 0.0
 var flash_white: float = 0.0
 var font: Font = null
@@ -377,6 +382,61 @@ func _on_event(ev: Dictionary) -> void:
 			else:
 				_play("elite")
 				_float(Vector2(1150, _lane_y(int(ev["lane"])) - 120), "¡%s!" % sim.label(ek), Color(1.0, 0.8, 0.35), 1.8)
+		"stone":
+			_play("guardia")
+			var sp0: Vector2 = _creature_pos_by_id(int(ev["id"]))
+			_float(sp0 + Vector2(0, -110), "PIEDRA", Color(0.8, 0.8, 0.85), 1.0)
+		"stone_absorb":
+			_play("hit", 0.08)
+		"stone_break":
+			_play("trueno_land")
+			juice.add_trauma(0.3)
+			var sbp: Vector2 = Vector2(ev["x"], _lane_y(int(ev["lane"])) - 30)
+			_add_fx({"type": "ring", "p": sbp, "r0": 10.0, "r1": float(ev["r"]), "col": Color(0.85, 0.8, 0.75, 0.9), "ttl": 0.45})
+			juice.burst(sbp, 22, Color(0.55, 0.52, 0.5), 280.0, 0.6, 3.5, 600.0)
+		"swarm":
+			_play("enjambre", 0.1)
+			var swp: Vector2 = _creature_pos_by_id(int(ev["id"])) + Vector2(0, -56)
+			for tid2 in ev["targets"]:
+				var tp2: Vector2 = _enemy_pos(int(tid2))
+				if tp2.x > 0.0:
+					_add_fx({"type": "line", "a": swp, "b": tp2 + Vector2(0, -40), "col": Color(1.0, 0.6, 0.2, 0.7), "w": 2.0, "ttl": 0.3})
+					juice.burst(tp2 + Vector2(0, -40), 8, Color(1.0, 0.6, 0.2), 120.0, 0.5, 2.0, 0.0)
+		"hook_windup":
+			_play("presa_windup")
+			_warn({"type": "hook", "cid": int(ev["id"]), "eid": int(ev["target"]), "ttl": float(sim.B["garfio"]["hook_windup"])})
+		"hook":
+			_play("garfio")
+			var gp0: Vector2 = _creature_pos_by_id(int(ev["id"]))
+			var gp1: Vector2 = _enemy_pos(int(ev["target"]))
+			if gp1.x > 0.0:
+				_add_fx({"type": "line", "a": gp0 + Vector2(20, -46), "b": gp1 + Vector2(0, -40), "col": Color(0.75, 0.85, 0.9), "w": 3.0, "ttl": 0.4})
+		"shield_pulse":
+			_play("escudo", 0.2)
+			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 20), "r0": 10.0, "r1": float(ev["r"]), "col": Color(0.6, 0.85, 1.0, 0.8), "ttl": 0.5})
+		"explode":
+			_play("explosion")
+			juice.add_trauma(0.45)
+			var xp: Vector2 = Vector2(ev["x"], float(ev.get("y", _lane_y(int(ev["lane"])))) - 30)
+			juice.burst(xp, 30, Color(1.0, 0.55, 0.15), 340.0, 0.7, 4.0, 300.0)
+			juice.burst(xp, 16, Color(0.2, 0.15, 0.12), 200.0, 1.0, 5.0, -30.0)
+			_float(xp + Vector2(0, -50), "¡BUM!", Color(1.0, 0.5, 0.2), 1.0)
+		"summon":
+			_play("horn")
+			banner_text = "El Gran Maestre llama a su escolta"
+			banner_t = 1.6
+			banner_dur = 1.6
+		"judgment_wind":
+			_play("juicio_carga")
+			_warn({"type": "judgment", "lane": int(ev["lane"]), "x": float(ev["x"]), "ttl": float(ev["wind"])})
+		"judgment":
+			_play("juicio")
+			juice.add_trauma(0.5)
+			juice.stop(0.07)
+			var jy2: float = _lane_y(int(ev["lane"]))
+			_add_fx({"type": "disc", "p": Vector2((150.0 + float(ev["x"])) * 0.5, jy2), "r": 60.0, "col": Color(1.0, 0.95, 0.7, 0.0), "ttl": 0.1})
+			_add_fx({"type": "line", "a": Vector2(150, jy2 - 10), "b": Vector2(ev["x"], jy2 - 10), "col": Color(1.0, 0.97, 0.75), "w": 40.0, "ttl": 0.35})
+			flash_white = 0.35
 		"draft_pick":
 			_play("level")
 			_save_meta()
@@ -419,6 +479,17 @@ func _on_event(ev: Dictionary) -> void:
 			_save_meta()
 		"victory":
 			_play("win")
+			var sid: String = sim.siege_id()
+			unlock_note = ""
+			var first: bool = not siege_wins.has(sid)
+			if first or int(siege_wins[sid]) < sim.wrath:
+				siege_wins[sid] = sim.wrath
+				if sim.wrath < int(sim.B["wrath"]["max"]):
+					unlock_note = "Se abre Ira %d en este asedio." % (sim.wrath + 1)
+			if first:
+				for sg in sim.SIEGES:
+					if String(sg.get("unlock", "")) == sid:
+						unlock_note = "Se abre: %s. %s" % [String(sg["name"]), unlock_note]
 			_save_bestiary()
 			_save_meta()
 		"defeat":
@@ -622,6 +693,7 @@ func _buttons() -> Array:
 	elif ph == "victory" or ph == "defeat":
 		out.append({"id": "restart", "rect": Rect2(490, 480, 300, 64), "text": "Reiniciar", "sub": "Espacio", "on": true})
 		out.append({"id": "tree", "rect": Rect2(490, 552, 300, 64), "text": "Árbol (T)", "sub": "%d esencia" % sim.essence, "on": true})
+		out.append({"id": "menu", "rect": Rect2(810, 480, 160, 64), "text": "Menú", "sub": "Esc", "on": true})
 	out.append({"id": "speed", "rect": Rect2(820, y, 90, 72), "text": "Velocidad", "sub": "x%d" % speed, "on": true})
 	out.append({"id": "bestiary", "rect": Rect2(920, y, 100, 72), "text": "Bestiario", "sub": "B", "on": true})
 	return out
@@ -667,6 +739,8 @@ func _do_button(id: String) -> void:
 			sim.give_relic()
 		"restart":
 			_restart()
+		"menu":
+			menu.toggle(self)
 
 
 func _creature_at(p: Vector2) -> int:
@@ -964,7 +1038,7 @@ func _draw_creature(c: Dictionary) -> void:
 	var crouch: bool = c["state"] == "crouch"
 	if crouch:
 		pos.y += 4.0
-	var opts: Dictionary = {"scale": scale_v, "scars": c["scars"], "hambre": c["hambre"], "crouch": crouch,
+	var opts: Dictionary = {"scale": scale_v, "scars": c["scars"], "hambre": c["hambre"], "crouch": crouch, "stone": c["state"] == "stone",
 		"fallen": c["fallen"], "glow": glow, "flash": 0.0}
 	if c["stun"] > 0.0:
 		opts["flash"] = 0.15
@@ -999,7 +1073,17 @@ func _draw_enemy(e: Dictionary) -> void:
 	var hfl: float = juice.flash_of(int(e["id"]))
 	var opts: Dictionary = {"burning": e["burn_t"] > 0.0, "bump": e["bump"], "flash": hfl, "variant": variant}
 	var elite: bool = bool(sim.B["enemies"][kind].get("elite", false))
-	if elite:
+	var est0: Dictionary = sim.B["enemies"][kind]
+	if est0.has("tint"):
+		var tn: Array = est0["tint"]
+		opts["tint"] = Color(float(tn[0]), float(tn[1]), float(tn[2]))
+	if est0.has("sprite") and not elite:
+		opts["sprite"] = String(est0["sprite"])
+		opts["scale"] = float(est0.get("scale", 1.0))
+	if bool(est0.get("boss", false)):
+		draw_circle(pos + Vector2(0, -130), 70.0 + 6.0 * sin(clock * 3.0), Color(1.0, 0.9, 0.5, 0.10))
+		draw_arc(pos + Vector2(0, -232), 26.0, 0.0, TAU, 28, Color(1.0, 0.9, 0.5, 0.8), 3.0)
+	if elite and est0.has("sprite"):
 		opts["sprite"] = String(sim.B["enemies"][kind]["sprite"])
 		opts["scale"] = float(sim.B["enemies"][kind].get("scale", 1.0))
 		var ep0: Vector2 = pos
@@ -1013,9 +1097,24 @@ func _draw_enemy(e: Dictionary) -> void:
 	var top: float = -118.0 if (kind == "verdugo" or kind == "inquisidor" or kind == "tajo" or kind == "campana") else -62.0
 	if elite:
 		top = -128.0 if (kind == "tajo" or kind == "campana") else -92.0
+		if kind == "ariete":
+			top = -124.0
+		elif kind == "paladin":
+			top = -102.0
+	if bool(st.get("boss", false)):
+		top = -250.0
+		_txt(sim.label(kind), pos + Vector2(-100, top - 8), 16, Color(1.0, 0.9, 0.5), HORIZONTAL_ALIGNMENT_CENTER, 200.0)
+		_bar(pos + Vector2(-50, top), 100.0, float(e["hp"]) / float(e["max_hp"]), Color(1.0, 0.75, 0.25))
+	elif elite:
 		_txt(sim.label(kind), pos + Vector2(-100, top - 8), 13, Color(1.0, 0.85, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 200.0)
-	if e["hp"] < e["max_hp"] or bool(st.get("hero", false)) or elite:
+	if (e["hp"] < e["max_hp"] or bool(st.get("hero", false)) or elite) and not bool(st.get("boss", false)):
 		_bar(pos + Vector2(-22, top), 44.0, float(e["hp"]) / float(e["max_hp"]), Color(0.9, 0.3, 0.3))
+	if float(e.get("shield", 0.0)) > 0.0:
+		draw_arc(pos + Vector2(0, -40), 34.0, 0.0, TAU, 24, Color(0.6, 0.85, 1.0, 0.45 + 0.2 * sin(clock * 6.0)), 3.0)
+	if bool(st.get("explode", false)):
+		var fz: Vector2 = pos + Vector2(-14, -70)
+		draw_circle(fz, 6.0, Color(0.15, 0.1, 0.08))
+		draw_circle(fz + Vector2(0, -8), 2.5 + 1.5 * sin(clock * 30.0), Color(1.0, 0.8, 0.3))
 	if e["burn_t"] > 0.0:
 		var fl: float = 6.0 + 4.0 * sin(clock * 14.0 + float(e["id"]))
 		draw_colored_polygon(PackedVector2Array([pos + Vector2(-8, -10), pos + Vector2(0, -10 - fl * 2.0), pos + Vector2(8, -10)]), Color(1.0, 0.5, 0.1, 0.8))
@@ -1073,6 +1172,20 @@ func _draw_fx_and_warns() -> void:
 				if bc.x > 0.0:
 					draw_arc(bc + Vector2(0, -34), 40.0 + 40.0 * k, 0.0, TAU, 28, Color(0.95, 0.85, 0.3, 1.0 - k), 4.0)
 					_txt("CAMPANA", bc + Vector2(-34, -100), 17, Color(0.95, 0.85, 0.3), HORIZONTAL_ALIGNMENT_CENTER, 68.0)
+			"judgment":
+				var jy: float = _lane_y(int(w["lane"]))
+				var jx: float = float(w["x"])
+				draw_rect(Rect2(150, jy - 50, jx - 150, 100), Color(1.0, 0.95, 0.6, 0.10 + 0.22 * blink * k))
+				draw_line(Vector2(150, jy - 50), Vector2(jx, jy - 50), Color(1.0, 0.9, 0.5, 0.7), 2.0)
+				draw_line(Vector2(150, jy + 50), Vector2(jx, jy + 50), Color(1.0, 0.9, 0.5, 0.7), 2.0)
+				_txt("JUICIO: ¡APARTA A TUS BESTIAS!", Vector2(150, jy - 58), 18, Color(1.0, 0.95, 0.6), HORIZONTAL_ALIGNMENT_CENTER, jx - 150)
+			"hook":
+				var hc2: Vector2 = _creature_pos_by_id(int(w["cid"]))
+				var he: Vector2 = _enemy_pos(int(w["eid"]))
+				if hc2.x > 0.0 and he.x > 0.0:
+					draw_line(hc2 + Vector2(20, -46), he + Vector2(0, -40), Color(0.7, 0.9, 1.0, 0.3 + 0.4 * blink), 2.0)
+					draw_arc(he + Vector2(0, -34), 30.0, 0.0, TAU, 20, Color(0.7, 0.9, 1.0, 0.6 + 0.4 * blink), 3.0)
+					_txt("GARFIO", hc2 + Vector2(-34, -110), 17, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 68.0)
 	for f in fx:
 		var fk: float = clampf(float(f["t"]) / float(f["ttl"]), 0.0, 1.0)
 		match String(f["type"]):
@@ -1116,7 +1229,11 @@ func _draw_fx_and_warns() -> void:
 func _draw_hud() -> void:
 	draw_rect(Rect2(0, 0, SCREEN_W, 78), Color(0.05, 0.02, 0.03))
 	draw_line(Vector2(0, 78), Vector2(SCREEN_W, 78), Color(0.4, 0.12, 0.08), 3.0)
-	_txt("ALMAS %d" % sim.souls, Vector2(24, 48), 30, Color(0.7, 0.9, 1.0))
+	_txt("ALMAS %d" % sim.souls, Vector2(24, 44), 30, Color(0.7, 0.9, 1.0))
+	var sg_txt: String = sim.siege_name().get_slice(":", 0)
+	if sim.wrath > 0:
+		sg_txt += "  ·  Ira %d" % sim.wrath
+	_txt(sg_txt, Vector2(24, 68), 14, Color(0.85, 0.6, 0.5))
 	var shown_wave: int = mini(sim.wave_index + 1, sim.wave_count())
 	if sim.phase == "victory":
 		shown_wave = sim.wave_count()
@@ -1428,6 +1545,8 @@ func _draw_overlays() -> void:
 		var ep: String = sim.epitaph()
 		if ep != "":
 			_txt(ep, Vector2(0, 296), 24, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		if ph == "victory" and unlock_note != "" and sim.meta_mode:
+			_txt(unlock_note, Vector2(0, 336), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var t: Dictionary = sim.named_creature()
 		if not t.is_empty():
 			Art.draw_creature(self, String(t["kind"]), Vector2(640, 452), clock, {"scars": int(t["scars"])})
@@ -1510,6 +1629,9 @@ func _load_meta() -> void:
 	if typeof(data) != TYPE_DICTIONARY:
 		return
 	sim.essence = int(data.get("esencia", 0))
+	var wins: Dictionary = data.get("asedios", {})
+	for k in wins:
+		siege_wins[String(k)] = int(wins[k])
 	var sk: Dictionary = data.get("habilidades", {})
 	for id in sk:
 		if sim.SK.has(id):
@@ -1521,4 +1643,18 @@ func _save_meta() -> void:
 		return
 	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.WRITE)
 	if f != null:
-		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills}, "  "))
+		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins}, "  "))
+
+
+## Asedio desbloqueado: el primero siempre; los demás al ganar el que piden en `unlock`.
+func siege_unlocked(i: int) -> bool:
+	var un: String = String(sim.SIEGES[i].get("unlock", ""))
+	return un == "" or siege_wins.has(un) or not sim.meta_mode
+
+
+## Ira máxima elegible en un asedio: una más que la mayor ganada.
+func max_wrath(i: int) -> int:
+	var id: String = String(sim.SIEGES[i]["id"])
+	if not siege_wins.has(id):
+		return 0
+	return mini(int(sim.B["wrath"]["max"]), int(siege_wins[id]) + 1)

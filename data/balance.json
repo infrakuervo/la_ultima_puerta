@@ -21,7 +21,15 @@
   "campana": "Inquisidor de la Gran Campana",
   "alacran": "Alacrán de la Fosa",
   "sapo": "Sapo de Brea",
-  "manta": "Manta del Umbral"
+  "manta": "Manta del Umbral",
+  "gargola": "Gárgola de Ceniza",
+  "enjambre": "Enjambre Ígneo",
+  "garfio": "Ánima del Garfio",
+  "zapador": "Zapador",
+  "paladin": "Paladín del Alba",
+  "sacerdotisa": "Sacerdotisa de la Luz",
+  "ariete": "Ariete Bendito",
+  "gran_maestre": "El Gran Maestre"
  },
  "arena": {
   "door_x": 130,
@@ -273,6 +281,114 @@
    "ring_cd": 9.0,
    "ring_r": 320,
    "ring_stun": 1.4
+  },
+  "zapador": {
+   "hp": 45,
+   "speed": 72,
+   "dmg": 0,
+   "cd": 9.9,
+   "reach": 30,
+   "door_dmg": 20,
+   "ignore_block": true,
+   "explode": true,
+   "reward": 6,
+   "sprite": "campesino_v02",
+   "tint": [
+    0.75,
+    0.6,
+    0.55
+   ],
+   "scale": 0.95
+  },
+  "paladin": {
+   "hp": 220,
+   "speed": 30,
+   "dmg": 12,
+   "cd": 1.5,
+   "reach": 36,
+   "door_dmg": 6,
+   "armor": 0.6,
+   "burn_immune": true,
+   "reward": 14,
+   "elite": true,
+   "sprite": "escudero_elite",
+   "tint": [
+    1.25,
+    1.15,
+    0.8
+   ],
+   "scale": 1.12
+  },
+  "sacerdotisa": {
+   "hp": 100,
+   "speed": 34,
+   "dmg": 0,
+   "cd": 9.9,
+   "reach": 30,
+   "door_dmg": 0,
+   "support": true,
+   "pulse": false,
+   "heal": 0,
+   "heal_cd": 99.0,
+   "heal_radius": 0,
+   "follow_gap": 90,
+   "shield_cd": 6.0,
+   "shield": 35,
+   "shield_radius": 210,
+   "reward": 12,
+   "elite": true,
+   "sprite": "clerigo_v01",
+   "tint": [
+    0.8,
+    0.95,
+    1.3
+   ],
+   "scale": 1.08
+  },
+  "ariete": {
+   "hp": 900,
+   "speed": 16,
+   "dmg": 0,
+   "cd": 2.2,
+   "reach": 40,
+   "door_dmg": 30,
+   "ignore_block": true,
+   "unstoppable": true,
+   "reward": 40,
+   "elite": true
+  },
+  "gran_maestre": {
+   "hp": 2400,
+   "speed": 18,
+   "dmg": 30,
+   "cd": 1.6,
+   "reach": 46,
+   "door_dmg": 16,
+   "hero": true,
+   "boss": true,
+   "unstoppable": true,
+   "reward": 120,
+   "sprite": "inquisidor_elite",
+   "tint": [
+    1.3,
+    1.2,
+    0.85
+   ],
+   "scale": 1.45,
+   "judge_cd": 9.0,
+   "judge_wind": 1.5,
+   "judge_dmg": 40,
+   "summon_at": [
+    0.75,
+    0.5,
+    0.25
+   ],
+   "summon": [
+    "paladin",
+    "sacerdotisa",
+    "zapador",
+    "zapador"
+   ]
   }
  },
  "zones": {
@@ -351,21 +467,21 @@
     "id": "alacran",
     "type": "beast",
     "kind": "alacran",
-    "weight": 2,
+    "weight": 1,
     "desc": "Tanque de vanguardia: agarra a un enemigo y lo retiene."
    },
    {
     "id": "sapo",
     "type": "beast",
     "kind": "sapo",
-    "weight": 2,
+    "weight": 1,
     "desc": "Escupe brea desde atrás: daña y ralentiza."
    },
    {
     "id": "manta",
     "type": "beast",
     "kind": "manta",
-    "weight": 2,
+    "weight": 1,
     "desc": "Embosca por un carril: golpea a todos y aturde."
    },
    {
@@ -398,6 +514,27 @@
     "weight": 2,
     "title": "Pozo de esencia",
     "desc": "+30 de esencia permanente."
+   },
+   {
+    "id": "gargola",
+    "type": "beast",
+    "kind": "gargola",
+    "weight": 1,
+    "desc": "Tanque: herida, se vuelve piedra y devuelve el daño en una onda."
+   },
+   {
+    "id": "enjambre",
+    "type": "beast",
+    "kind": "enjambre",
+    "weight": 1,
+    "desc": "Desde atrás prende fuego a los más enteros. Combo con el Ojo."
+   },
+   {
+    "id": "garfio",
+    "type": "beast",
+    "kind": "garfio",
+    "weight": 1,
+    "desc": "Engancha a un apoyo o tirador lejano y lo arrastra a la vanguardia."
    }
   ]
  },
@@ -405,5 +542,52 @@
   "wave_base": 10,
   "wave_step": 5,
   "victory": 60
+ },
+ "gargola": {
+  "hp": 200,
+  "dmg": 10,
+  "cd": 1.2,
+  "speed": 80,
+  "leash": 200,
+  "reach": 38,
+  "stone_at": 0.35,
+  "stone_time": 2.5,
+  "stone_cd": 12.0,
+  "stone_heal": 0.1,
+  "shock_dmg": 20,
+  "shock_mult": 0.5,
+  "shock_r": 130,
+  "spot": "front"
+ },
+ "enjambre": {
+  "hp": 70,
+  "range": 560,
+  "cd": 5.5,
+  "targets": 2,
+  "swarm_dmg": 6,
+  "burn_dps": 5,
+  "burn_time": 3.0,
+  "spot": "rear"
+ },
+ "garfio": {
+  "hp": 150,
+  "dmg": 9,
+  "cd": 1.0,
+  "speed": 120,
+  "leash": 220,
+  "reach": 36,
+  "hook_cd": 7.0,
+  "hook_range": 560,
+  "hook_min": 120,
+  "hook_windup": 0.5,
+  "hook_stun": 1.0,
+  "hook_dmg": 10,
+  "spot": "front"
+ },
+ "wrath": {
+  "max": 5,
+  "hp": 0.3,
+  "dmg": 0.15,
+  "essence": 0.3
  }
 }

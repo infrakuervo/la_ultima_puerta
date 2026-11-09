@@ -97,7 +97,11 @@ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opt
 		ci.draw_circle(pos + Vector2(0, -h * 0.5 - lift), (h * 0.55 + 30.0 * glow), Color(1.0, 0.55, 0.2, 0.25 * glow))
 	var hh: float = h * squash * (1.0 - 0.08 * flash)
 	var rect: Rect2 = Rect2(pos.x - w * 0.5, pos.y - hh - lift + bob, w, hh)
-	var col: Color = Color(1, 1, 1, alpha).lerp(Color(2.6, 2.4, 2.1, alpha), flash)
+	var col: Color = Color(1, 1, 1, alpha)
+	if opts.has("tint"):
+		var tn: Color = opts["tint"]
+		col = Color(tn.r, tn.g, tn.b, alpha)
+	col = col.lerp(Color(2.6, 2.4, 2.1, alpha), flash)
 	ci.draw_texture_rect(tx, rect, false, col)
 	var scars: int = int(opts.get("scars", 0))
 	for i in scars:
@@ -178,6 +182,47 @@ static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float, 
 			ci.draw_arc(hover, 24.0 * s, 0.0, TAU, 24, OUTLINE, 2.0)
 			ci.draw_circle(hover + Vector2(6, 0) * s, 11.0 * s, Color(0.95, 0.92, 0.8, alpha))
 			ci.draw_circle(hover + Vector2(9, 0) * s, 5.0 * s, Color(0.1, 0.05, 0.02, alpha))
+		"gargola":
+			var stone: bool = bool(opts.get("stone", false))
+			var gcol: Color = Color(0.36, 0.33, 0.36, alpha) if not stone else Color(0.62, 0.6, 0.58, alpha)
+			gcol = gcol.lerp(Color(1, 1, 1, alpha), flash)
+			var gb: Vector2 = p if not stone else pos
+			# alas
+			_poly(ci, [[-6, -60], [-52, -96], [-44, -70], [-60, -62], [-30, -46]], gb, s, s, gcol.darkened(0.25))
+			_poly(ci, [[-30, 0], [-36, -40], [-20, -64], [6, -70], [28, -60], [36, -40], [30, 0], [16, 0], [12, -14], [-14, -14], [-18, 0]], gb, s, s, gcol)
+			_poly(ci, [[20, -64], [44, -70], [52, -58], [36, -48]], gb, s, s, gcol)
+			_poly(ci, [[2, -70], [-2, -88], [10, -72]], gb, s, s, gcol.darkened(0.3))
+			_poly(ci, [[22, -68], [24, -86], [30, -68]], gb, s, s, gcol.darkened(0.3))
+			if not stone:
+				_eye(ci, gb + Vector2(42, -62) * s, Color(1.0, 0.5, 0.15, alpha), 3.0 * s)
+				ci.draw_circle(gb + Vector2(0, -36) * s, 5.0 * s, Color(1.0, 0.4, 0.1, alpha * (0.6 + 0.4 * sin(t * 4.0))))
+			else:
+				for i in 3:
+					ci.draw_line(gb + Vector2(-14 + i * 12, -60) * s, gb + Vector2(-8 + i * 12, -30) * s, Color(0.3, 0.28, 0.3, alpha), 2.0)
+		"enjambre":
+			var hv: Vector2 = p + Vector2(0, -56) * s
+			ci.draw_circle(hv, 30.0 * s, Color(1.0, 0.4, 0.1, 0.12 * alpha))
+			for i in 14:
+				var a: float = t * (1.6 + 0.13 * i) + float(i) * 1.7
+				var rr: float = (12.0 + 14.0 * absf(sin(float(i) * 2.3 + t * 0.7))) * s
+				var fp: Vector2 = hv + Vector2(cos(a) * rr, sin(a * 1.3) * rr * 0.7)
+				var fc: Color = Color(1.0, 0.55 + 0.3 * sin(float(i)), 0.15, alpha).lerp(Color(1, 1, 1, alpha), flash)
+				ci.draw_circle(fp, 3.0 * s, fc)
+				ci.draw_line(fp, fp + Vector2(-cos(a), -sin(a) * 0.7) * 5.0 * s, Color(1.0, 0.8, 0.4, alpha * 0.5), 1.0)
+			ci.draw_circle(hv, 7.0 * s, Color(0.2, 0.05, 0.03, alpha))
+			ci.draw_circle(hv, 4.0 * s, Color(1.0, 0.7, 0.2, alpha))
+		"garfio":
+			var acol: Color = Color(0.45, 0.62, 0.7, 0.85 * alpha).lerp(Color(1, 1, 1, alpha), flash)
+			var sway: float = sin(t * 2.2) * 4.0
+			_poly(ci, [[-18, 0], [-24, -30], [-14, -62], [4, -74], [20, -62], [24, -34], [16, -12], [26, 0], [8, -6], [-4, 2]], p + Vector2(sway * 0.3, 0), s, s, acol)
+			ci.draw_circle(p + Vector2(6 + sway * 0.3, -78) * s, 10.0 * s, acol.lightened(0.15))
+			_eye(ci, p + Vector2(10 + sway * 0.3, -80) * s, Color(0.8, 1.0, 1.0, alpha), 2.5 * s)
+			# cadena y garfio
+			var hand: Vector2 = p + Vector2(24, -46) * s
+			for i in 5:
+				ci.draw_arc(hand + Vector2(6 + i * 7, sin(t * 3.0 + i) * 2.0) * s, 3.5 * s, 0.0, TAU, 8, Color(0.6, 0.6, 0.62, alpha), 1.5)
+			var hk: Vector2 = hand + Vector2(44, 0) * s
+			ci.draw_arc(hk + Vector2(0, 8) * s, 9.0 * s, -PI * 0.5, PI * 0.9, 10, Color(0.8, 0.8, 0.82, alpha), 3.0)
 	# cicatrices (Tizón conserva el nombre y suma marcas)
 	for i in mini(scars, 5):
 		var sx0: float = -10.0 + i * 9.0
@@ -192,6 +237,8 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 	var esp: String = String(opts.get("sprite", ""))
 	if esp != "":
 		var eo2: Dictionary = {"flash": flash, "scale": float(opts.get("scale", 1.0)), "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
+		if opts.has("tint"):
+			eo2["tint"] = opts["tint"]
 		if burning:
 			eo2["flash"] = maxf(flash, 0.12 + 0.08 * sin(t * 14.0))
 		if draw_sprite(ci, esp, pos, t, eo2):
@@ -252,6 +299,20 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 			ci.draw_circle(p + Vector2(0, -74), 8.0, skin)
 			ci.draw_line(p + Vector2(-26, -10), p + Vector2(-26, -70), Color(0.5, 0.4, 0.2), 3.0)
 			ci.draw_circle(p + Vector2(-26, -74), 9.0, Color(0.9, 0.8, 0.3))
+		"ariete":
+			var rp: Vector2 = pos
+			ci.draw_circle(rp + Vector2(0, 6), 46.0, Color(0, 0, 0, 0.3))
+			var wood: Color = Color(0.42, 0.28, 0.16).lerp(Color(1, 1, 1), flash)
+			_poly(ci, [[-60, -20], [-50, -70], [50, -70], [60, -20]], rp, 1.0, 1.0, Color(0.55, 0.5, 0.42).lerp(Color(1, 1, 1), flash))
+			_poly(ci, [[-90, -44], [70, -44], [70, -28], [-90, -28]], rp, 1.0, 1.0, wood)
+			_poly(ci, [[-112, -50], [-90, -54], [-90, -18], [-112, -22]], rp, 1.0, 1.0, Color(0.75, 0.7, 0.4).lerp(Color(1, 1, 1), flash))
+			for wx in [-38.0, 38.0]:
+				var rot: float = -t * 1.5
+				ci.draw_circle(rp + Vector2(wx, -10), 16.0, Color(0.3, 0.2, 0.12))
+				ci.draw_arc(rp + Vector2(wx, -10), 16.0, 0.0, TAU, 16, OUTLINE, 2.0)
+				ci.draw_line(rp + Vector2(wx, -10), rp + Vector2(wx, -10) + Vector2(cos(rot), sin(rot)) * 14.0, Color(0.6, 0.45, 0.25), 2.0)
+			ci.draw_line(rp + Vector2(0, -70), rp + Vector2(0, -110), Color(0.5, 0.4, 0.3), 3.0)
+			_poly(ci, [[0, -110], [26, -104], [0, -96]], rp, 1.0, 1.0, Color(0.95, 0.92, 0.8))
 		_:
 			ci.draw_circle(p + Vector2(0, -20), 12.0, Color(1, 0, 1))
 

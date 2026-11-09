@@ -129,7 +129,7 @@ func _rayo_pick(s) -> Dictionary:
 
 # --- entre oleadas ---------------------------------------------------------------
 
-const DRAFT_PREF: Dictionary = {"alacran": 3.0, "sapo": 2.5, "manta": 2.5, "sabueso": 2.0, "souls": 1.5, "door": 1.0, "essence": 0.6}
+const DRAFT_PREF: Dictionary = {"alacran": 3.0, "sapo": 2.5, "manta": 2.5, "gargola": 2.8, "enjambre": 2.4, "garfio": 2.4, "sabueso": 2.0, "souls": 1.5, "door": 1.0, "essence": 0.6}
 
 
 func prep(s) -> void:
@@ -141,6 +141,8 @@ func prep(s) -> void:
 			var o: Dictionary = s.draft[i]
 			var key: String = String(o["kind"]) if String(o["type"]) == "beast" else String(o["type"])
 			var sc: float = float(DRAFT_PREF.get(key, 1.5)) + rng.randf_range(0.0, 2.0)
+			if OS.get_environment("BAL_BAN").split(",").has(key):
+				sc -= 100.0
 			if String(o["type"]) == "door" and s.door_hp < s.door_max * 0.5:
 				sc += 3.0
 			if sc > bs:

@@ -74,6 +74,31 @@ func run() -> void:
 		await shot("ayuda")
 		main.menu.open = false
 		main.menu.panel = "main"
+	if want("asedios"):
+		main.menu.open = true
+		main.menu.panel = "siege"
+		await shot("asedios")
+		main.menu.open = false
+		main.menu.panel = "main"
+	if want("alba"):
+		s().set_siege(1, 2)
+		s().reset()
+		for k in ["gargola", "enjambre", "garfio", "alacran"]:
+			add_beast(k)
+		s().start_wave()
+		s().spawn_queue = [{"t": 99999.0, "lane": 0, "kind": "campesino"}]
+		var i: int = 0
+		for k in ["zapador", "paladin", "sacerdotisa", "ariete", "zapador", "paladin"]:
+			s()._spawn_enemy(k, i % 3)
+			s().enemies[-1]["x"] = 760.0 + 150.0 * float(i / 3)
+			i += 1
+		s()._spawn_enemy("gran_maestre", 1)
+		s().enemies[-1]["x"] = 1120.0
+		s().enemies[-1]["judge_t"] = 0.5
+		for j in 60:
+			main._process(1.0 / 30.0)
+		await shot("alba")
+		s().set_siege(0, 0)
 	if want("tutorial"):
 		main.menu.tut_step = 0
 		await shot("tutorial")

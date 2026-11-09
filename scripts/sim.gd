@@ -8,6 +8,9 @@ const TICK: float = 1.0 / 30.0
 var B: Dictionary = {}
 var WAVES: Array = []
 var ROUTES: Dictionary = {}
+var SIEGES: Array = []           # data/waves.json -> sieges: [{id, name, waves, unlock}]
+var siege_index: int = 0
+var wrath: int = 0               # nivel de Ira: enemigos más duros, más esencia
 var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 # Estado de la partida
@@ -50,7 +53,11 @@ func _init(seed_value: int = 1) -> void:
 	rng.seed = seed_value
 	B = load_json("res://data/balance.json")
 	var w: Dictionary = load_json("res://data/waves.json")
-	WAVES = w["waves"]
+	if w.has("sieges"):
+		SIEGES = w["sieges"]
+	else:
+		SIEGES = [{"id": "primer", "name": "Primer asedio", "waves": w["waves"]}]
+	WAVES = SIEGES[0]["waves"]
 	ROUTES = w["routes"]
 	var sk: Dictionary = load_json("res://data/skills.json")
 	BRANCHES = sk["branches"]
@@ -66,6 +73,29 @@ static func load_json(path: String) -> Variant:
 		push_error("No se pudo abrir " + path)
 		return {}
 	return JSON.parse_string(f.get_as_text())
+
+
+## Elige asedio y nivel de Ira para la próxima partida (llamar antes de reset()).
+func set_siege(i: int, wrath_level: int = 0) -> void:
+	siege_index = clampi(i, 0, SIEGES.size() - 1)
+	WAVES = SIEGES[siege_index]["waves"]
+	wrath = clampi(wrath_level, 0, int(B["wrath"]["max"]))
+
+
+func siege_id() -> String:
+	return String(SIEGES[siege_index]["id"])
+
+
+func siege_name() -> String:
+	return String(SIEGES[siege_index]["name"])
+
+
+func wrath_hp() -> float:
+	return 1.0 + float(B["wrath"]["hp"]) * float(wrath)
+
+
+func wrath_dmg() -> float:
+	return 1.0 + float(B["wrath"]["dmg"]) * float(wrath)
 
 
 func reset() -> void:
@@ -487,6 +517,8 @@ func step(dt: float) -> void:
 	while spawn_queue.size() > 0 and spawn_queue[0]["t"] <= wave_time:
 		var sp: Dictionary = spawn_queue.pop_front()
 		_spawn_enemy(sp["kind"], sp["lane"])
+		if sp.has("x"):
+			enemies[enemies.size() - 1]["x"] = float(sp["x"])
 	_update_zones(dt)
 	for c in creatures:
 		_update_creature(c, dt)
@@ -503,8 +535,10 @@ func _spawn_enemy(kind: String, lane: int) -> void:
 	var st: Dictionary = B["enemies"][kind]
 	var e: Dictionary = {
 		"id": next_id, "kind": kind, "lane": lane, "x": float(B["arena"]["spawn_x"]),
-		"hp": float(st["hp"]), "max_hp": float(st["hp"]),
-		"cd": rng.randf() * 0.6, "held": 0.0, "stun": 0.0,
+		"hp": float(st["hp"]) * wrath_hp(), "max_hp": float(st["hp"]) * wrath_hp(),
+		"cd": rng.randf() * 0.6, "held": 0.0, "stun": 0.0, "shield": 0.0, "summons": 0,
+		"judge_t": float(st.get("judge_cd", 0.0)) * 0.6, "judge_wind": 0.0, "judge_lane": -1,
+		"shield_t": float(st.get("shield_cd", 0.0)) * 0.5,
 		"burn_t": 0.0, "burn_dps": 0.0,
 		"pull_t": 0.0, "pull_x": 0.0, "pull_speed": 0.0, "fed": false,
 		"marked": false, "heal_t": float(st.get("heal_cd", 2.0)), "bell_t": float(st.get("bell_cd", 4.0)) * 0.7,
@@ -529,9 +563,15 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 	var mult: float = float(st.get("armor", 1.0)) if armored else 1.0
 	if armored:
 		mult *= _cover_mult(e)
-	e["hp"] -= amount * mult
+	var dealt: float = amount * mult
+	if float(e.get("shield", 0.0)) > 0.0:
+		var ab: float = minf(float(e["shield"]), dealt)
+		e["shield"] = float(e["shield"]) - ab
+		dealt -= ab
+	e["hp"] -= dealt
 	if armored:
 		events.append({"t": "hit", "x": e["x"], "lane": e["lane"], "id": e["id"], "amount": amount * mult, "y": epos(e).y})
+	_check_summon(e, st)
 	if e["hp"] <= 0.0:
 		e["dead"] = true
 		var reward: int = int(round(float(st["reward"]) * (1.0 + fmul("eco.reward"))))
@@ -579,6 +619,11 @@ func _creature_point(c: Dictionary) -> Vector2:
 
 func damage_creature(c: Dictionary, amount: float) -> void:
 	if c["dead"] or c["fallen"] or c["air"]:
+		return
+	amount *= wrath_dmg()
+	if c["state"] == "stone":
+		c["stored"] = float(c.get("stored", 0.0)) + amount
+		events.append({"t": "stone_absorb", "id": c["id"]})
 		return
 	c["hp"] -= amount
 	events.append({"t": "creature_hit", "id": c["id"], "amount": amount})
@@ -753,6 +798,12 @@ func _update_creature(c: Dictionary, dt: float) -> void:
 			_ai_trueno(c, dt)
 		"ojo":
 			_ai_ojo(c)
+		"gargola":
+			_ai_gargola(c, dt)
+		"enjambre":
+			_ai_enjambre(c)
+		"garfio":
+			_ai_garfio(c, dt)
 
 
 func _move_toward(c: Dictionary, tx: float, speed: float, dt: float) -> void:
@@ -1134,7 +1185,7 @@ func _trueno_land(c: Dictionary) -> void:
 
 func _ai_ojo(c: Dictionary) -> void:
 	var st: Dictionary = _stats("ojo")
-	var with_horno: bool = has_kind("horno")
+	var with_horno: bool = has_kind("horno") or has_kind("enjambre")
 	if has_kind("trueno"):
 		_ojo_update_mark(c)
 	else:
@@ -1257,6 +1308,7 @@ func _blocked_by_ally(e: Dictionary, gap: float) -> bool:
 
 
 func _hit_door(amount: float, e: Dictionary) -> void:
+	amount *= wrath_dmg()
 	door_hp -= amount
 	events.append({"t": "door_hit", "lane": e["lane"], "x": e["x"], "amount": amount})
 
@@ -1266,6 +1318,13 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 		return
 	var st: Dictionary = B["enemies"][e["kind"]]
 	e["cd"] = maxf(0.0, e["cd"] - dt)
+	if st.get("burn_immune", false):
+		e["burn_t"] = 0.0
+	if st.get("unstoppable", false):
+		e["held"] = 0.0
+		e["stun"] = 0.0
+		e["pull_t"] = 0.0
+		e["tar"] = 0.0
 	if e["burn_t"] > 0.0:
 		e["burn_t"] -= dt
 		damage_enemy(e, float(e["burn_dps"]) * dt, -1, false)
@@ -1297,6 +1356,19 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 				if absf(a["x"] - e["x"]) <= float(st["heal_radius"]):
 					a["hp"] = minf(a["max_hp"], a["hp"] + float(st["heal"]))
 			events.append({"t": "heal", "x": e["x"], "lane": e["lane"]})
+	if st.has("shield_cd") and e["stun"] <= 0.0:
+		e["shield_t"] -= dt
+		if e["shield_t"] <= 0.0:
+			e["shield_t"] = float(st["shield_cd"])
+			var n_sh: int = 0
+			for a3 in enemies:
+				if a3["dead"] or epos(a3).distance_to(epos(e)) > float(st["shield_radius"]):
+					continue
+				a3["shield"] = maxf(float(a3.get("shield", 0.0)), float(st["shield"]) * wrath_hp())
+				n_sh += 1
+			events.append({"t": "shield_pulse", "x": e["x"], "lane": e["lane"], "r": float(st["shield_radius"]), "n": n_sh})
+	if st.has("judge_cd"):
+		_boss_judgment(e, st, dt)
 	if st.get("bell", false) and e["stun"] <= 0.0:
 		e["bell_t"] -= dt
 		if e["bell_t"] <= 0.0:
@@ -1366,7 +1438,12 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 				_hit_door(float(st["door_dmg"]), e)
 			return
 	else:
-		var blocker: Dictionary = _blocker(e, float(st["reach"]))
+		var blocker: Dictionary = {} if st.get("ignore_block", false) else _blocker(e, float(st["reach"]))
+		if st.get("explode", false) and e["x"] - door_x <= float(st["reach"]) + 20.0:
+			_hit_door(float(st["door_dmg"]), e)
+			e["dead"] = true
+			events.append({"t": "explode", "x": e["x"], "lane": e["lane"], "id": e["id"], "y": epos(e).y})
+			return
 		if not blocker.is_empty():
 			if e["cd"] <= 0.0 and float(st["dmg"]) > 0.0:
 				e["cd"] = float(st["cd"])
@@ -1389,7 +1466,7 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 				continue
 			if a2["x"] < e["x"] and e["x"] - a2["x"] < float(st["follow_gap"]):
 				return
-	elif _blocked_by_ally(e, 20.0):
+	elif not st.get("ignore_block", false) and _blocked_by_ally(e, 20.0):
 		return
 	e["x"] -= float(st["speed"]) * dt * _haste_mult(e)
 
@@ -1424,6 +1501,159 @@ func _tajo_sweep(e: Dictionary, st: Dictionary) -> void:
 			damage_creature(c, float(st["sweep_dmg"]))
 			n += 1
 	events.append({"t": "sweep", "x": centre.x, "lane": e["lane"], "y": centre.y, "r": float(st["sweep_r"]), "hits": n})
+
+
+# --- Jefe y élites del segundo asedio -----------------------------------------------
+
+# Al bajar de cada umbral de vida, el jefe llama a su escolta junto a él.
+func _check_summon(e: Dictionary, st: Dictionary) -> void:
+	if e["dead"] or not st.has("summon_at"):
+		return
+	var marks: Array = st["summon_at"]
+	var i: int = int(e["summons"])
+	if i >= marks.size() or e["hp"] / e["max_hp"] > float(marks[i]):
+		return
+	e["summons"] = i + 1
+	var k: int = 0
+	for kind in st["summon"]:
+		spawn_queue.push_front({"t": wave_time, "lane": (int(e["lane"]) + k) % 3, "kind": String(kind), "x": float(e["x"]) + 50.0 + 30.0 * k})
+		k += 1
+	events.append({"t": "summon", "id": e["id"], "x": e["x"], "lane": e["lane"]})
+
+
+# Juicio: marca el carril con más criaturas y, tras un aviso, golpea a todas las de ese carril.
+func _boss_judgment(e: Dictionary, st: Dictionary, dt: float) -> void:
+	if e["judge_wind"] > 0.0:
+		e["judge_wind"] -= dt
+		if e["judge_wind"] <= 0.0:
+			var hit: int = 0
+			for c in creatures:
+				if c["dead"] or c["fallen"] or c["air"] or int(c["lane"]) != int(e["judge_lane"]):
+					continue
+				if float(c["x"]) < float(e["x"]):
+					damage_creature(c, float(st["judge_dmg"]))
+					hit += 1
+			events.append({"t": "judgment", "lane": e["judge_lane"], "x": e["x"], "hit": hit})
+		return
+	e["judge_t"] -= dt
+	if e["judge_t"] > 0.0:
+		return
+	var counts: Array = [0, 0, 0]
+	for c2 in creatures:
+		if not c2["dead"] and not c2["fallen"] and not c2["air"] and float(c2["x"]) < float(e["x"]):
+			counts[int(c2["lane"])] += 1
+	var best: int = int(e["lane"])
+	for l in 3:
+		if counts[l] > counts[best]:
+			best = l
+	e["judge_t"] = float(st["judge_cd"])
+	e["judge_wind"] = float(st["judge_wind"])
+	e["judge_lane"] = best
+	events.append({"t": "judgment_wind", "lane": best, "x": e["x"], "wind": float(st["judge_wind"]), "id": e["id"]})
+
+
+# --- Bestias del segundo pack ----------------------------------------------------
+
+# Gárgola de Ceniza: tanque que, herida, se vuelve piedra (inmune); al romperse devuelve lo encajado en una onda.
+func _ai_gargola(c: Dictionary, dt: float) -> void:
+	var st: Dictionary = _stats("gargola")
+	if c["state"] == "stone":
+		c["t"] += dt
+		if c["t"] < float(st["stone_time"]):
+			return
+		c["state"] = "home"
+		c["skill_cd"] = float(st["stone_cd"])
+		var dmg: float = float(st["shock_dmg"]) + float(c.get("stored", 0.0)) * float(st["shock_mult"])
+		var cp: Vector2 = _creature_point(c)
+		var n: int = 0
+		for e in enemies:
+			if not e["dead"] and epos(e).distance_to(cp) <= float(st["shock_r"]):
+				damage_enemy(e, dmg, c["id"])
+				n += 1
+		c["hp"] = minf(c["max_hp"], c["hp"] + c["max_hp"] * float(st["stone_heal"]))
+		c["stored"] = 0.0
+		events.append({"t": "stone_break", "id": c["id"], "x": c["x"], "lane": c["lane"], "r": float(st["shock_r"]), "hits": n})
+		return
+	_melee_step(c, st, dt, c["home_x"])
+	if c["skill_cd"] <= 0.0 and c["hp"] < c["max_hp"] * float(st["stone_at"]):
+		c["state"] = "stone"
+		c["t"] = 0.0
+		c["stored"] = 0.0
+		events.append({"t": "stone", "id": c["id"]})
+
+
+# Enjambre Ígneo: desde atrás manda moscas a los enemigos más enteros y les prende fuego.
+func _ai_enjambre(c: Dictionary) -> void:
+	if c["cd"] > 0.0:
+		return
+	var st: Dictionary = _stats("enjambre")
+	var cand: Array = []
+	for e in enemies:
+		if e["dead"]:
+			continue
+		var dx: float = e["x"] - c["x"]
+		if dx < 0.0 or dx > float(st["range"]):
+			continue
+		cand.append(e)
+	if cand.is_empty():
+		return
+	cand.sort_custom(func(a, b):
+		var ba: bool = a["burn_t"] > 0.0
+		var bb: bool = b["burn_t"] > 0.0
+		if ba != bb:
+			return bb
+		return a["hp"] > b["hp"])
+	var ids: Array = []
+	for i in mini(cand.size(), int(st["targets"])):
+		var t: Dictionary = cand[i]
+		damage_enemy(t, float(st["swarm_dmg"]), c["id"])
+		if not t["dead"] and not B["enemies"][t["kind"]].get("burn_immune", false):
+			t["burn_t"] = maxf(t["burn_t"], float(st["burn_time"]))
+			t["burn_dps"] = maxf(t["burn_dps"], float(st["burn_dps"]))
+		ids.append(t["id"])
+	c["cd"] = float(st["cd"])
+	events.append({"t": "swarm", "id": c["id"], "targets": ids})
+
+
+# Ánima del Garfio: engancha a un apoyo o tirador lejano y lo arrastra hasta la vanguardia.
+func _ai_garfio(c: Dictionary, dt: float) -> void:
+	var st: Dictionary = _stats("garfio")
+	if c["windup"] > 0.0:
+		c["windup"] -= dt
+		if c["windup"] <= 0.0:
+			var t: Dictionary = enemy_by_id(int(c["target"]))
+			if not t.is_empty() and not t["dead"] and not B["enemies"][t["kind"]].get("unstoppable", false):
+				t["lane"] = c["lane"]
+				t["pull_t"] = 0.5
+				t["pull_x"] = c["x"] + 46.0
+				t["pull_speed"] = absf(t["x"] - t["pull_x"]) / 0.5
+				t["stun"] = maxf(t["stun"], float(st["hook_stun"]))
+				damage_enemy(t, float(st["hook_dmg"]), c["id"])
+				events.append({"t": "hook", "id": c["id"], "target": t["id"], "lane": c["lane"], "from_x": c["x"]})
+		return
+	_melee_step(c, st, dt, c["home_x"])
+	if c["skill_cd"] > 0.0:
+		return
+	var best: Dictionary = {}
+	var best_sc: float = -1.0
+	for e in enemies:
+		if e["dead"] or absi(int(e["lane"]) - int(c["lane"])) > 1:
+			continue
+		var dx: float = e["x"] - c["x"]
+		if dx < float(st["hook_min"]) or dx > float(st["hook_range"]):
+			continue
+		if B["enemies"][e["kind"]].get("unstoppable", false):
+			continue
+		var sc: float = _support_priority(e["kind"]) * 10000.0 + e["x"]
+		if sc > best_sc:
+			best_sc = sc
+			best = e
+	if best.is_empty():
+		return
+	c["windup"] = float(st["hook_windup"])
+	c["target"] = best["id"]
+	c["skill_cd"] = float(st["hook_cd"])
+	events.append({"t": "hook_windup", "id": c["id"], "target": best["id"]})
 
 
 func _cleanup() -> void:
@@ -1619,6 +1849,7 @@ func draft_pick(i: int) -> bool:
 
 
 func _gain_essence(n: int) -> void:
+	n = int(round(float(n) * (1.0 + float(B["wrath"]["essence"]) * float(wrath))))
 	essence += n
 	events.append({"t": "essence", "n": n})
 

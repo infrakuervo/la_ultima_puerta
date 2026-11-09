@@ -17,219 +17,600 @@
    "promise": "Salta sobre la vanguardia hacia un apoyo y encadena descargas. Deja su hueco abierto hasta volver."
   }
  },
- "waves": [
+ "sieges": [
   {
-   "title": "Primera sangre",
-   "note": "Tizón y su Presa.",
-   "spawns": [
+   "id": "primer",
+   "name": "Primer asedio",
+   "desc": "Seis oleadas de campesinos, escudos y élites. El héroe llega en la quinta.",
+   "waves": [
     {
-     "lane": -1,
-     "kind": "campesino",
-     "count": 4,
-     "gap": 1.8
+     "title": "Primera sangre",
+     "note": "Tizón y su Presa.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 4,
+       "gap": 1.8
+      }
+     ]
+    },
+    {
+     "title": "Frentes cruzados",
+     "note": "Los humanos llegan sin orden, por cualquier frente.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 5,
+       "gap": 1.3
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 5,
+       "gap": 1.3,
+       "delay": 0.7
+      }
+     ]
+    },
+    {
+     "title": "La turba",
+     "note": "Catorce campesinos en un chorro: una Brasa bien puesta los barre.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 14,
+       "gap": 0.55
+      },
+      {
+       "lane": -1,
+       "kind": "capataz",
+       "count": 1,
+       "gap": 0,
+       "delay": 3.0
+      }
+     ]
+    },
+    {
+     "title": "Escudos y retaguardia",
+     "note": "Los apoyos van detrás de los escudos: el Rayo los alcanza.",
+     "after": "route",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 5,
+       "gap": 1.6
+      },
+      {
+       "lane": -1,
+       "kind": "clerigo",
+       "count": 1,
+       "gap": 0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 2,
+       "gap": 1.5,
+       "delay": 7.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 1,
+       "gap": 0,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "muro",
+       "count": 1,
+       "gap": 0,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "tirador",
+       "count": 1,
+       "gap": 0,
+       "delay": 11.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 0.8,
+       "delay": 4.0
+      }
+     ]
+    },
+    {
+     "title": "El héroe",
+     "note": "Derrótalo para conseguir su reliquia.",
+     "after": "forge",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "@hero",
+       "count": 1,
+       "gap": 0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 1.2,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 3,
+       "gap": 2.0,
+       "delay": 5.0
+      }
+     ]
+    },
+    {
+     "title": "Turba y retaguardia",
+     "note": "Prueba tu forma elegida.",
+     "loan_ojo": true,
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 12,
+       "gap": 0.7
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 6,
+       "gap": 2.0,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "clerigo",
+       "count": 1,
+       "gap": 0,
+       "delay": 8.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 6,
+       "gap": 1.3,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 1.0,
+       "delay": 12.0
+      },
+      {
+       "lane": -1,
+       "kind": "capataz",
+       "count": 1,
+       "gap": 0,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "muro",
+       "count": 1,
+       "gap": 0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "lumbrero",
+       "count": 1,
+       "gap": 0,
+       "delay": 10.0
+      },
+      {
+       "lane": -1,
+       "kind": "tajo",
+       "count": 1,
+       "gap": 0,
+       "delay": 13.0
+      },
+      {
+       "lane": -1,
+       "kind": "campana",
+       "count": 1,
+       "gap": 0,
+       "delay": 16.0
+      },
+      {
+       "lane": -1,
+       "kind": "tirador",
+       "count": 1,
+       "gap": 0,
+       "delay": 14.0
+      }
+     ]
     }
    ]
   },
   {
-   "title": "Frentes cruzados",
-   "note": "Los humanos llegan sin orden, por cualquier frente.",
-   "spawns": [
+   "id": "alba",
+   "name": "Segundo asedio: la Orden del Alba",
+   "desc": "Ocho oleadas: zapadores, paladines que no arden, escudos de luz, el Ariete y el Gran Maestre.",
+   "unlock": "primer",
+   "waves": [
     {
-     "lane": -1,
-     "kind": "campesino",
-     "count": 5,
-     "gap": 1.3
+     "title": "Vanguardia del Alba",
+     "note": "Llegan con estandartes blancos. Nada que no hayas visto... aún.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 0.8
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 4,
+       "gap": 1.6,
+       "delay": 4.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 2,
+       "gap": 1.5,
+       "delay": 8.0
+      }
+     ]
     },
     {
-     "lane": -1,
-     "kind": "campesino",
-     "count": 5,
-     "gap": 1.3,
-     "delay": 0.7
-    }
-   ]
-  },
-  {
-   "title": "La turba",
-   "note": "Catorce campesinos en un chorro: una Brasa bien puesta los barre.",
-   "spawns": [
-    {
-     "lane": -1,
-     "kind": "campesino",
-     "count": 14,
-     "gap": 0.55
+     "title": "Zapadores",
+     "note": "Los Zapadores no se paran ante tus bestias: corren a volar la Puerta. Rayo y Brasa.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 0.9
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 3,
+       "gap": 2.5,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 3,
+       "gap": 1.6,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 3,
+       "gap": 1.2,
+       "delay": 12.0
+      }
+     ]
     },
     {
-     "lane": -1,
-     "kind": "capataz",
-     "count": 1,
-     "gap": 0,
-     "delay": 3.0
-    }
-   ]
-  },
-  {
-   "title": "Escudos y retaguardia",
-   "note": "Los apoyos van detrás de los escudos: el Rayo los alcanza.",
-   "after": "route",
-   "spawns": [
-    {
-     "lane": -1,
-     "kind": "escudero",
-     "count": 5,
-     "gap": 1.6
+     "title": "Paladines",
+     "note": "El Paladín no arde. Deja que tus bestias lo muerdan y quema a los demás.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 4,
+       "gap": 1.4
+      },
+      {
+       "lane": -1,
+       "kind": "paladin",
+       "count": 2,
+       "gap": 4.0,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "clerigo",
+       "count": 2,
+       "gap": 3.0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 3,
+       "gap": 1.4,
+       "delay": 8.0
+      },
+      {
+       "lane": -1,
+       "kind": "capataz",
+       "count": 1,
+       "gap": 0,
+       "delay": 1.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 0.6,
+       "delay": 1.5
+      }
+     ]
     },
     {
-     "lane": -1,
-     "kind": "clerigo",
-     "count": 1,
-     "gap": 0,
-     "delay": 6.0
+     "title": "Escudos de luz",
+     "note": "La Sacerdotisa da escudos a quien tiene cerca. Tras esta oleada eliges heraldo.",
+     "after": "route",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 5,
+       "gap": 1.4
+      },
+      {
+       "lane": -1,
+       "kind": "sacerdotisa",
+       "count": 1,
+       "gap": 0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 4,
+       "gap": 1.3,
+       "delay": 7.0
+      },
+      {
+       "lane": -1,
+       "kind": "muro",
+       "count": 1,
+       "gap": 0,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "tirador",
+       "count": 1,
+       "gap": 0,
+       "delay": 10.0
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 2,
+       "gap": 2.0,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 0.7,
+       "delay": 2.0
+      }
+     ]
     },
     {
-     "lane": -1,
-     "kind": "ballestero",
-     "count": 2,
-     "gap": 1.5,
-     "delay": 7.0
+     "title": "El heraldo vuelve",
+     "note": "El heraldo regresa con escolta.",
+     "after": "forge",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "@hero",
+       "count": 1,
+       "gap": 1.0
+      },
+      {
+       "lane": -1,
+       "kind": "paladin",
+       "count": 1,
+       "gap": 0,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 0.8,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 3,
+       "gap": 2.0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 2,
+       "gap": 2.0,
+       "delay": 8.0
+      }
+     ]
     },
     {
-     "lane": -1,
-     "kind": "ballestero",
-     "count": 1,
-     "gap": 0,
-     "delay": 9.0
+     "title": "El Ariete",
+     "note": "El Ariete no se detiene ante nada: solo cuenta el daño. Que no llegue.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "ariete",
+       "count": 1,
+       "gap": 0,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 4,
+       "gap": 1.5
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 4,
+       "gap": 2.0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 3,
+       "gap": 1.4,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "lumbrero",
+       "count": 1,
+       "gap": 0,
+       "delay": 8.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 0.6,
+       "delay": 4.0
+      }
+     ]
     },
     {
-     "lane": -1,
-     "kind": "muro",
-     "count": 1,
-     "gap": 0,
-     "delay": 3.0
+     "title": "Coro de luz",
+     "note": "Toda la Orden a la vez: escudos, curas, campanas y hachas.",
+     "loan_ojo": true,
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 12,
+       "gap": 0.6
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 5,
+       "gap": 1.6,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "sacerdotisa",
+       "count": 2,
+       "gap": 4.0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "lumbrero",
+       "count": 1,
+       "gap": 0,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "paladin",
+       "count": 2,
+       "gap": 3.0,
+       "delay": 7.0
+      },
+      {
+       "lane": -1,
+       "kind": "muro",
+       "count": 1,
+       "gap": 0,
+       "delay": 4.0
+      },
+      {
+       "lane": -1,
+       "kind": "tajo",
+       "count": 1,
+       "gap": 0,
+       "delay": 12.0
+      },
+      {
+       "lane": -1,
+       "kind": "campana",
+       "count": 1,
+       "gap": 0,
+       "delay": 15.0
+      },
+      {
+       "lane": -1,
+       "kind": "tirador",
+       "count": 1,
+       "gap": 0,
+       "delay": 13.0
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 4,
+       "gap": 1.5,
+       "delay": 10.0
+      }
+     ]
     },
     {
-     "lane": -1,
-     "kind": "tirador",
-     "count": 1,
-     "gap": 0,
-     "delay": 11.0
-    },
-    {
-     "lane": -1,
-     "kind": "campesino",
-     "count": 6,
-     "gap": 0.8,
-     "delay": 4.0
-    }
-   ]
-  },
-  {
-   "title": "El héroe",
-   "note": "Derrótalo para conseguir su reliquia.",
-   "after": "forge",
-   "spawns": [
-    {
-     "lane": -1,
-     "kind": "@hero",
-     "count": 1,
-     "gap": 0
-    },
-    {
-     "lane": -1,
-     "kind": "campesino",
-     "count": 8,
-     "gap": 1.2,
-     "delay": 2.0
-    },
-    {
-     "lane": -1,
-     "kind": "escudero",
-     "count": 3,
-     "gap": 2.0,
-     "delay": 5.0
-    }
-   ]
-  },
-  {
-   "title": "Turba y retaguardia",
-   "note": "Prueba tu forma elegida.",
-   "loan_ojo": true,
-   "spawns": [
-    {
-     "lane": -1,
-     "kind": "campesino",
-     "count": 10,
-     "gap": 0.7
-    },
-    {
-     "lane": -1,
-     "kind": "escudero",
-     "count": 5,
-     "gap": 2.0,
-     "delay": 3.0
-    },
-    {
-     "lane": -1,
-     "kind": "clerigo",
-     "count": 1,
-     "gap": 0,
-     "delay": 8.0
-    },
-    {
-     "lane": -1,
-     "kind": "ballestero",
-     "count": 6,
-     "gap": 1.3,
-     "delay": 9.0
-    },
-    {
-     "lane": -1,
-     "kind": "campesino",
-     "count": 8,
-     "gap": 1.0,
-     "delay": 12.0
-    },
-    {
-     "lane": -1,
-     "kind": "capataz",
-     "count": 1,
-     "gap": 0,
-     "delay": 2.0
-    },
-    {
-     "lane": -1,
-     "kind": "muro",
-     "count": 1,
-     "gap": 0,
-     "delay": 6.0
-    },
-    {
-     "lane": -1,
-     "kind": "lumbrero",
-     "count": 1,
-     "gap": 0,
-     "delay": 10.0
-    },
-    {
-     "lane": -1,
-     "kind": "tajo",
-     "count": 1,
-     "gap": 0,
-     "delay": 13.0
-    },
-    {
-     "lane": -1,
-     "kind": "campana",
-     "count": 1,
-     "gap": 0,
-     "delay": 16.0
-    },
-    {
-     "lane": -1,
-     "kind": "tirador",
-     "count": 1,
-     "gap": 0,
-     "delay": 14.0
+     "title": "El Gran Maestre",
+     "note": "Juzga un carril entero: cuando lo marque, aparta a tus bestias o resiste. Llama a su escolta al sangrar.",
+     "spawns": [
+      {
+       "lane": 1,
+       "kind": "gran_maestre",
+       "count": 1,
+       "gap": 0,
+       "delay": 1.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 4,
+       "gap": 1.6,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 3,
+       "gap": 1.4,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 0.6,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "sacerdotisa",
+       "count": 1,
+       "gap": 0,
+       "delay": 10.0
+      }
+     ]
     }
    ]
   }

@@ -111,8 +111,27 @@ Informe: `godot --headless --path . res://tools/balance.tscn -- 120 10 8` (prime
 
 | Medida | Antes | Después |
 | --- | --- | --- |
-| Primera partida, bot torpe | 80% (Verdugo 65%, Inquisidor 95%) | 55% (Verdugo 48%, Inquisidor 64%), 120 partidas |
+| Primera partida, bot torpe | 80% (Verdugo 65%, Inquisidor 95%) | 55% (Verdugo 48%, Inquisidor 64%), 120 partidas; 58% tras el pack 2 |
 | Primera partida, bot hábil | 100% | 100% |
 | Árbol de 80 / 150 / 300 de esencia | 100% | 85% / 98% / 100% |
 
 Las derrotas se concentran en la oleada 6 y algunas en la 4; nadie pierde en las tres primeras.
+
+## Segundo asedio, Ira y bestias del pack 2
+
+**Asedios** (`data/waves.json` → `sieges`): el *Primer asedio* (6 oleadas) y el *Segundo asedio: la Orden del Alba* (8 oleadas), que se abre al ganar el primero. Se eligen en el menú (Jugar).
+Enemigos del Alba (`data/balance.json` → `enemies`):
+- **Zapador**: no se para ante las bestias; corre a la Puerta y revienta (20). Hay que matarlo con hechizos o al paso.
+- **Paladín del Alba**: acorazado y no arde.
+- **Sacerdotisa de la Luz**: cada 6 s da un escudo de 35 a quien tenga cerca.
+- **Ariete Bendito**: 900 de vida, imparable (no se deja agarrar, aturdir ni arrastrar) y no se para; 30 a la Puerta por golpe.
+- **El Gran Maestre** (jefe, oleada 8): 2400 de vida; cada 9 s marca el carril con más bestias y, tras 1,5 s de aviso, lo **juzga** (40 a cada bestia de ese carril); al bajar del 75/50/25% llama a su escolta.
+
+**Ira** (0-5): al ganar un asedio se abre el siguiente nivel de Ira en él. Cada nivel: enemigos +30% de vida, +15% de daño, y +30% de esencia (`balance.json` → `wrath`).
+
+**Bestias del pack 2** (en el draft, dibujadas por código en `scripts/art.gd`):
+- **Gárgola de Ceniza** (vanguardia): herida por debajo del 35%, se vuelve piedra 2,5 s (inmune); al romperse cura un 10% y suelta una onda de 20 + la mitad del daño encajado.
+- **Enjambre Ígneo** (retaguardia): cada 5,5 s quema a los dos enemigos más enteros a su alcance; con el Ojo, el combo de llamas funciona también sin Horno.
+- **Ánima del Garfio** (vanguardia): cada 7 s engancha a un apoyo o tirador lejano (carril propio o vecinos), lo arrastra a su carril y lo aturde 1 s.
+
+Equilibrio tras el contenido nuevo (bot torpe): primer asedio 58% en la primera partida (160 partidas); segundo asedio 0% sin árbol, 28% con 300 de esencia, 90% con 600. Ira 3 en el primer asedio: 47% con 600 de esencia, 93% con 1500; Ira 5: 40% con 1500, 100% con 3000.

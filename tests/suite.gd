@@ -29,6 +29,7 @@ func run() -> void:
 	test_beasts()
 	test_draft()
 	test_bugfixes()
+	test_content()
 	test_skills()
 	test_full_runs()
 	test_clumsy_bot()
@@ -1052,6 +1053,164 @@ func test_bugfixes() -> void:
 	# 4) El Trueno y la marca del Ojo también eligen a las élites de apoyo y a distancia.
 	var s4 = new_sim()
 	check(s4._support_priority("lumbrero") > s4._support_priority("tirador") and s4._support_priority("tirador") > 0.0, "Lumbrero y Tirador cuentan como apoyo y tirador")
+
+
+func test_content() -> void:
+	print("Contenido nuevo: bestias, segundo asedio, Ira")
+	var s0 = new_sim()
+	check(s0.SIEGES.size() >= 2 and s0.SIEGES[1]["waves"].size() >= 8, "hay segundo asedio con 8 oleadas")
+	var all_ok: bool = true
+	for sg in s0.SIEGES:
+		for w in sg["waves"]:
+			for g in w["spawns"]:
+				if String(g["kind"]) != "@hero" and not s0.B["enemies"].has(String(g["kind"])):
+					all_ok = false
+	check(all_ok, "todas las oleadas usan enemigos definidos")
+	for k in ["gargola", "enjambre", "garfio"]:
+		var inpool: bool = false
+		for o in s0.B["draft"]["pool"]:
+			if String(o.get("kind", "")) == k:
+				inpool = true
+		check(s0.B.has(k) and s0.label(k) != k and inpool, "%s existe, tiene nombre y está en el draft" % k)
+	# Gárgola: se vuelve piedra, no recibe daño y devuelve una onda
+	var s = new_sim()
+	s.creatures.clear()
+	var g: Dictionary = spawn_beast(s, "gargola", 1, 520.0)
+	to_combat(s)
+	g["hp"] = g["max_hp"] * (float(s.B["gargola"]["stone_at"]) - 0.1)
+	var en: Dictionary = add_enemy(s, "escudero", 1, 556.0)
+	en["hp"] = 2000.0
+	en["max_hp"] = 2000.0
+	var ev: Array = run_ticks(s, 3)
+	check(g["state"] == "stone" and ev.has("stone"), "herida, la Gárgola se vuelve piedra")
+	var hp_st: float = g["hp"]
+	s.damage_creature(g, 50.0)
+	check(g["hp"] == hp_st and float(g["stored"]) >= 50.0, "en piedra no pierde vida y guarda el daño")
+	var e_hp: float = en["hp"]
+	var ev2: Array = run_ticks(s, 80)
+	var want_sh: float = float(s.B["gargola"]["shock_dmg"]) + 50.0 * float(s.B["gargola"]["shock_mult"])
+	check(ev2.has("stone_break") and e_hp - en["hp"] >= want_sh * 0.6, "al romperse devuelve una onda (%.0f, onda %.0f)" % [e_hp - en["hp"], want_sh])
+	# Enjambre: prende fuego a los más enteros
+	var s2 = new_sim()
+	s2.creatures.clear()
+	spawn_beast(s2, "enjambre", 1, 300.0)
+	to_combat(s2)
+	var a1: Dictionary = add_enemy(s2, "escudero", 0, 700.0)
+	var a2: Dictionary = add_enemy(s2, "campesino", 2, 650.0)
+	for a in [a1, a2]:
+		a["stun"] = 99.0
+	var ev3: Array = run_ticks(s2, 3)
+	check(ev3.has("swarm") and a1["burn_t"] > 0.0 and a2["burn_t"] > 0.0, "el Enjambre quema a dos enemigos de cualquier carril")
+	# Garfio: arrastra a un apoyo lejano a su carril y delante
+	var s3 = new_sim()
+	s3.creatures.clear()
+	var gf: Dictionary = spawn_beast(s3, "garfio", 1, 560.0)
+	to_combat(s3)
+	var cl: Dictionary = add_enemy(s3, "clerigo", 0, 1000.0)
+	var cp: Dictionary = add_enemy(s3, "campesino", 1, 760.0)
+	cp["stun"] = 99.0
+	cl["stun"] = 0.0
+	var ev4: Array = run_ticks(s3, 40)
+	check(ev4.has("hook") and int(cl["lane"]) == 1 and float(cl["x"]) < 700.0, "el Garfio arrastra al clérigo a su carril (x %.0f)" % cl["x"])
+	# Zapador: no se para ante las bestias y revienta en la Puerta
+	var s4 = new_sim()
+	s4.creatures.clear()
+	spawn_beast(s4, "alacran", 1, 500.0)["cd"] = 999.0
+	to_combat(s4)
+	var z: Dictionary = add_enemy(s4, "zapador", 1, 700.0)
+	z["hp"] = 9999.0
+	z["max_hp"] = 9999.0
+	var door0: float = s4.door_hp
+	var ev5: Array = []
+	for i in 30 * 12:
+		s4.creatures[0]["presa_cd"] = 99.0
+		s4.creatures[0]["cd"] = 99.0
+		s4.step(Sim.TICK)
+		for e in s4.events:
+			ev5.append(String(e["t"]))
+		s4.events.clear()
+		if z["dead"]:
+			break
+	check(ev5.has("explode") and s4.door_hp <= door0 - float(s4.B["enemies"]["zapador"]["door_dmg"]) + 0.1, "el Zapador pasa entre las bestias y revienta en la Puerta")
+	# Paladín: no arde
+	var s5 = new_sim()
+	to_combat(s5)
+	var pal: Dictionary = add_enemy(s5, "paladin", 1, 900.0)
+	pal["burn_t"] = 3.0
+	pal["burn_dps"] = 50.0
+	var php: float = pal["hp"]
+	run_ticks(s5, 30)
+	check(pal["hp"] == php, "el Paladín no arde")
+	# Sacerdotisa: escudo que absorbe daño
+	var s6 = new_sim()
+	to_combat(s6)
+	var sac: Dictionary = add_enemy(s6, "sacerdotisa", 1, 900.0)
+	var esc: Dictionary = add_enemy(s6, "escudero", 1, 960.0)
+	sac["shield_t"] = 0.05
+	run_ticks(s6, 3)
+	check(float(esc["shield"]) > 0.0, "la Sacerdotisa da escudo a los cercanos")
+	var ehp: float = esc["hp"]
+	s6.damage_enemy(esc, 10.0, -1)
+	check(esc["hp"] == ehp, "el escudo absorbe el golpe")
+	# Ariete: imparable
+	var s7 = new_sim()
+	to_combat(s7)
+	var ar: Dictionary = add_enemy(s7, "ariete", 1, 900.0)
+	ar["stun"] = 3.0
+	ar["held"] = 3.0
+	var ax: float = ar["x"]
+	run_ticks(s7, 30)
+	check(float(ar["x"]) < ax, "el Ariete no se deja aturdir ni agarrar")
+	# Jefe: juicio sobre el carril con más bestias y escolta al sangrar
+	var s8 = new_sim()
+	s8.creatures.clear()
+	var b1: Dictionary = spawn_beast(s8, "alacran", 2, 500.0)
+	spawn_beast(s8, "sabueso", 2, 600.0)
+	to_combat(s8)
+	var boss: Dictionary = add_enemy(s8, "gran_maestre", 1, 1100.0)
+	boss["judge_t"] = 0.05
+	var bhp: float = b1["hp"]
+	var ev8: Array = run_ticks(s8, 60)
+	check(ev8.has("judgment_wind") and int(boss["judge_lane"]) == 2, "el Gran Maestre marca el carril con más bestias")
+	check(ev8.has("judgment") and b1["hp"] < bhp, "el Juicio golpea a las bestias de ese carril")
+	var n0: int = s8.enemies.size()
+	s8.damage_enemy(boss, boss["max_hp"] * 0.3, -1)
+	run_ticks(s8, 2)
+	check(s8.enemies.size() > n0, "al bajar del 75% llama a su escolta")
+	# Ira
+	var s9 = new_sim()
+	s9.set_siege(1, 2)
+	s9.reset()
+	check(s9.WAVES.size() == s9.SIEGES[1]["waves"].size() and s9.wrath == 2, "set_siege cambia oleadas e Ira")
+	to_combat(s9)
+	var w1: Dictionary = add_enemy(s9, "campesino", 1, 900.0)
+	check(absf(float(w1["max_hp"]) - 30.0 * s9.wrath_hp()) < 0.01 and s9.wrath_hp() > 1.0, "con Ira los enemigos tienen más vida")
+	s9.meta_mode = true
+	var e0: int = s9.essence
+	s9._gain_essence(100)
+	check(s9.essence - e0 > 100, "con Ira se gana más esencia (%d)" % (s9.essence - e0))
+	# el segundo asedio se puede jugar entero (Puerta invulnerable)
+	var s10 = Sim.new(77)
+	s10.set_siege(1, 0)
+	s10.reset()
+	var guard: int = 0
+	var bot = Bot.new(77, 1.0)
+	while s10.phase != "victory" and s10.phase != "defeat" and guard < 30 * 60 * 20:
+		guard += 1
+		match s10.phase:
+			"prep":
+				bot.prep(s10)
+				s10.start_wave()
+			"route":
+				s10.choose_route("verdugo")
+			"forge":
+				s10.give_relic()
+			"combat":
+				bot.combat_tick(s10, Sim.TICK)
+				s10.step(Sim.TICK)
+				s10.events.clear()
+				s10.door_hp = s10.door_max
+	check(s10.phase == "victory", "el segundo asedio se completa sin atascos (%s, oleada %d)" % [s10.phase, s10.wave_index + 1])
 
 
 func test_draft() -> void:

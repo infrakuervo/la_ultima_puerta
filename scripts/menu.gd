@@ -11,6 +11,8 @@ var panel: String = "main"       # main | options | help
 var opts: Dictionary = {"volumen": 0.8, "velocidad": 1, "temblor": true, "tutorial_hecho": false}
 var persist: bool = true
 var started: bool = false        # ya hay una partida empezada (Continuar)
+var sel_siege: int = 0
+var sel_wrath: int = 0
 
 # Tutorial
 var tut_step: int = -1
@@ -75,6 +77,13 @@ func buttons(m) -> Array:
 			out.append({"id": "back", "rect": Rect2(x, 590, 320, 58), "text": "Volver"})
 		"help":
 			out.append({"id": "back", "rect": Rect2(x, 600, 320, 58), "text": "Volver"})
+		"siege":
+			for i in m.sim.SIEGES.size():
+				out.append({"id": "sg:%d" % i, "rect": Rect2(150 + 500 * i, 200, 480, 230), "text": "", "card": true})
+			out.append({"id": "wr-", "rect": Rect2(x + 40, 470, 50, 50), "text": "−"})
+			out.append({"id": "wr+", "rect": Rect2(x + 230, 470, 50, 50), "text": "+"})
+			out.append({"id": "start", "rect": Rect2(x, 560, 320, 58), "text": "Empezar"})
+			out.append({"id": "back", "rect": Rect2(x, 630, 320, 50), "text": "Volver"})
 	return out
 
 
@@ -90,13 +99,30 @@ func press(m, p: Vector2) -> bool:
 
 
 func _do(m, id: String) -> void:
+	if id.begins_with("sg:"):
+		var si: int = int(id.substr(3))
+		if m.siege_unlocked(si):
+			sel_siege = si
+			sel_wrath = mini(sel_wrath, m.max_wrath(si))
+		return
 	match id:
 		"continue":
 			open = false
 			m.fade = 1.0
 		"new":
-			if started:
-				m._restart()
+			panel = "siege"
+			sel_siege = clampi(sel_siege, 0, m.sim.SIEGES.size() - 1)
+			if not m.siege_unlocked(sel_siege):
+				sel_siege = 0
+			sel_wrath = mini(sel_wrath, m.max_wrath(sel_siege))
+		"wr-":
+			sel_wrath = maxi(0, sel_wrath - 1)
+		"wr+":
+			sel_wrath = mini(m.max_wrath(sel_siege), sel_wrath + 1)
+		"start":
+			m.sim.set_siege(sel_siege, sel_wrath)
+			m._restart()
+			panel = "main"
 			open = false
 			started = true
 			m.speed = int(opts["velocidad"])
@@ -176,7 +202,35 @@ func draw(m) -> void:
 		]
 		for i in lines.size():
 			m._txt(lines[i], Vector2(0, 230 + 40 * i), 20, Color(0.92, 0.86, 0.8), HORIZONTAL_ALIGNMENT_CENTER, W)
+	elif panel == "siege":
+		m._txt("Elige asedio", Vector2(0, 160), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
+		for i in m.sim.SIEGES.size():
+			var sg: Dictionary = m.sim.SIEGES[i]
+			var r0: Rect2 = Rect2(150 + 500 * i, 200, 480, 230)
+			var un: bool = m.siege_unlocked(i)
+			var selc: bool = i == sel_siege
+			m.draw_rect(r0, Color(0.28, 0.11, 0.08) if selc else Color(0.14, 0.07, 0.06))
+			m.draw_rect(r0, Color(1.0, 0.85, 0.4) if selc else Color(0.6, 0.35, 0.22), false, 3.0 if selc else 2.0)
+			m._txt(String(sg["name"]), Vector2(r0.position.x, r0.position.y + 46), 24, Color(1.0, 0.9, 0.7) if un else Color(0.5, 0.45, 0.42), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
+			m._txt("%d oleadas" % sg["waves"].size(), Vector2(r0.position.x, r0.position.y + 80), 17, Color(0.85, 0.7, 0.6), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
+			m.draw_multiline_string(m.font, r0.position + Vector2(24, 120), String(sg.get("desc", "")), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x - 48, 17, -1, Color(0.85, 0.8, 0.75) if un else Color(0.45, 0.4, 0.4))
+			var sid: String = String(sg["id"])
+			var st_txt: String = ""
+			if not un:
+				st_txt = "Bloqueado: gana el %s" % String(m.sim.SIEGES[0]["name"]).to_lower()
+			elif m.siege_wins.has(sid):
+				st_txt = "Ganado (Ira %d)" % int(m.siege_wins[sid])
+			if st_txt != "":
+				m._txt(st_txt, Vector2(r0.position.x, r0.end.y - 18), 16, Color(0.7, 0.9, 1.0) if un else Color(1.0, 0.5, 0.4), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
+		var xw: float = W * 0.5 - 160.0
+		m._txt("Ira %d" % sel_wrath, Vector2(xw + 90, 505), 26, Color(1.0, 0.55, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 140.0)
+		var wtxt: String = "Sin Ira: el asedio tal cual." if sel_wrath == 0 else "Enemigos +%d%% de vida y +%d%% de daño; +%d%% de esencia." % [int(round(float(m.sim.B["wrath"]["hp"]) * 100.0 * sel_wrath)), int(round(float(m.sim.B["wrath"]["dmg"]) * 100.0 * sel_wrath)), int(round(float(m.sim.B["wrath"]["essence"]) * 100.0 * sel_wrath))]
+		m._txt(wtxt, Vector2(0, 545), 16, Color(0.85, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, W)
+		if m.max_wrath(sel_siege) == 0:
+			m._txt("Gana este asedio para abrir la Ira.", Vector2(0, 462), 15, Color(0.7, 0.6, 0.55), HORIZONTAL_ALIGNMENT_CENTER, W)
 	for b in buttons(m):
+		if b.get("card", false):
+			continue
 		var r: Rect2 = b["rect"]
 		var hov: bool = r.has_point(m.mouse_pos)
 		m.draw_rect(r, Color(0.36, 0.14, 0.09) if hov else Color(0.24, 0.09, 0.07))
