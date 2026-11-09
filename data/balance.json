@@ -352,7 +352,7 @@
     "type": "beast",
     "kind": "alacran",
     "weight": 3,
-    "desc": "Tanque que agarra a un enemigo 3 s."
+    "desc": "Tanque de vanguardia: agarra a un enemigo y lo retiene."
    },
    {
     "id": "sapo",

@@ -11,7 +11,7 @@ Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, c
 - [ ] Guardar los pasos como setup script de un entorno propio (el entorno actual es el Default; se propondrá al final para no bloquear el turno con una aprobación).
 
 ## Lista
-1. [ ] Comprobación visual
+1. [x] Comprobación visual — `tools/shots.tscn` hace 11 capturas (ver cabecera). Arreglado: bestiario con 7+ formas solapado (ahora 2 columnas), botones de victoria/derrota tapados por el velo, retrato y epitafio solapados, banner tapando tarjetas/árbol/rutas, tooltip cortado y con nombre repetido, etiquetas de élite cortadas, estados («agarrado») encima del nombre, texto de combate cortado, título del árbol encima de las ramas, criaturas de la forja encima del texto, icono vacío en recompensas (ahora +45, +40%, +30).
 2. [ ] Fallos
 3. [ ] Equilibrio (bot torpe)
 4. [ ] Pulido y sensación

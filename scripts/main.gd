@@ -675,15 +675,17 @@ func _draw() -> void:
 	_draw_hud()
 	_draw_lane_preview()
 	_draw_tree()
-	_draw_buttons()
 	_draw_draft()
 	_draw_overlays()
+	_draw_buttons()
+	if show_bestiary:
+		_draw_bestiary()
 	_draw_tooltip()
 	if flash_red > 0.0:
 		draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(1.0, 0.1, 0.05, flash_red * 0.3))
 	if flash_white > 0.0:
 		draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(1.0, 0.85, 0.6, flash_white * 0.6))
-	if banner_t > 0.0:
+	if banner_t > 0.0 and not _overlay_open():
 		var a: float = clampf(banner_t / 0.5, 0.0, 1.0)
 		draw_rect(Rect2(0, 300, SCREEN_W, 90), Color(0, 0, 0, 0.55 * a))
 		_txt(banner_text, Vector2(0, 360), 44, Color(1.0, 0.85, 0.5, a), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
@@ -926,21 +928,22 @@ func _draw_enemy(e: Dictionary) -> void:
 	var top: float = -118.0 if (kind == "verdugo" or kind == "inquisidor" or kind == "tajo" or kind == "campana") else -62.0
 	if elite:
 		top = -128.0 if (kind == "tajo" or kind == "campana") else -92.0
-		_txt(sim.label(kind), pos + Vector2(-70, top - 12), 14, Color(1.0, 0.85, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 140.0)
+		_txt(sim.label(kind), pos + Vector2(-100, top - 8), 13, Color(1.0, 0.85, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 200.0)
 	if e["hp"] < e["max_hp"] or bool(st.get("hero", false)) or elite:
 		_bar(pos + Vector2(-22, top), 44.0, float(e["hp"]) / float(e["max_hp"]), Color(0.9, 0.3, 0.3))
 	if e["burn_t"] > 0.0:
 		var fl: float = 6.0 + 4.0 * sin(clock * 14.0 + float(e["id"]))
 		draw_colored_polygon(PackedVector2Array([pos + Vector2(-8, -10), pos + Vector2(0, -10 - fl * 2.0), pos + Vector2(8, -10)]), Color(1.0, 0.5, 0.1, 0.8))
+	var stt: float = top - 26.0 if elite else top - 8.0
 	if e["held"] > 0.0:
 		draw_arc(pos + Vector2(0, -26), 26.0, 0.0, TAU, 20, Color(0.8, 0.8, 0.8), 3.0)
-		_txt("agarrado", pos + Vector2(-30, top - 8), 14, Color(0.85, 0.85, 0.9), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+		_txt("agarrado", pos + Vector2(-45, stt), 14, Color(0.85, 0.85, 0.9), HORIZONTAL_ALIGNMENT_CENTER, 90.0)
 	if e["stun"] > 0.0 and e["held"] <= 0.0:
-		_txt("retenido", pos + Vector2(-30, top - 8), 14, Color(0.95, 0.9, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+		_txt("retenido", pos + Vector2(-45, stt), 14, Color(0.95, 0.9, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 90.0)
 	if e["marked"]:
 		var r: float = 28.0 + 3.0 * sin(clock * 8.0)
 		draw_arc(pos + Vector2(0, -34), r, 0.0, TAU, 24, Color(0.6, 0.85, 1.0), 3.0)
-		_txt("MARCA", pos + Vector2(-30, top - 20), 15, Color(0.6, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+		_txt("MARCA", pos + Vector2(-30, stt - 12), 15, Color(0.6, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
 	if e["pull_t"] > 0.0:
 		draw_line(pos + Vector2(0, -30), Vector2(e["pull_x"], pos.y - 30), Color(1.0, 0.5, 0.2, 0.5), 2.0)
 
@@ -1058,7 +1061,7 @@ func _draw_hud() -> void:
 	elif sim.phase == "combat":
 		var left: int = sim.spawn_queue.size() + sim.enemies.size()
 		_txt("Quedan %d enemigos." % left, Vector2(340, 646), 17, Color(0.95, 0.85, 0.7))
-		_txt("Clic lanza el hechizo (mantén para repetir). Clic derecho o rueda cambia.", Vector2(340, 672), 14, Color(0.8, 0.7, 0.65), HORIZONTAL_ALIGNMENT_LEFT, 470.0)
+		_txt("Clic: lanza (mantén para repetir). Clic dcho. o rueda: cambia.", Vector2(340, 672), 14, Color(0.8, 0.7, 0.65), HORIZONTAL_ALIGNMENT_LEFT, 470.0)
 
 
 func _phase_hint() -> String:
@@ -1143,8 +1146,9 @@ func _draw_tree() -> void:
 	if not show_tree:
 		return
 	draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0.03, 0.01, 0.03, 0.93))
-	_txt("ÁRBOL DE HABILIDADES", Vector2(24, 100), 22, Color(1.0, 0.85, 0.55))
-	_txt("%d esencia" % sim.essence, Vector2(1040, 100), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_RIGHT, 216.0)
+	draw_rect(Rect2(0, 606, SCREEN_W, 30), Color(0.05, 0.02, 0.03))
+	_txt("ÁRBOL DE HABILIDADES", Vector2(24, 666), 24, Color(1.0, 0.85, 0.55))
+	_txt("%d esencia" % sim.essence, Vector2(1000, 666), 26, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_RIGHT, 256.0)
 	for ci in sim.BRANCHES.size():
 		var br: Dictionary = sim.BRANCHES[ci]
 		var bc: Color = _branch_color(String(br["id"]))
@@ -1242,7 +1246,9 @@ func _draw_draft() -> void:
 	if not _draft_active():
 		return
 	draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0, 0, 0, 0.72))
-	_txt("ELIGE UNA", Vector2(0, 130), 34, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+	draw_rect(Rect2(0, 606, SCREEN_W, 30), Color(0.05, 0.02, 0.03))
+	_txt("Elige una para continuar.", Vector2(0, 666), 20, Color(0.85, 0.75, 0.65), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+	_txt("ELIGE UNA RECOMPENSA", Vector2(0, 130), 34, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 	for i in sim.draft.size():
 		var o: Dictionary = sim.draft[i]
 		var r: Rect2 = _draft_rect(i)
@@ -1254,8 +1260,15 @@ func _draw_draft() -> void:
 		if beast:
 			Art.draw_creature(self, String(o["kind"]), Vector2(r.position.x + r.size.x * 0.5, r.position.y + 190), clock, {"scale": 1.5})
 		else:
-			draw_circle(Vector2(r.position.x + r.size.x * 0.5, r.position.y + 130), 46.0, Color(1.0, 0.6, 0.2, 0.25))
-			draw_arc(Vector2(r.position.x + r.size.x * 0.5, r.position.y + 130), 46.0, 0.0, TAU, 32, Color(1.0, 0.7, 0.3), 3.0)
+			var oc: Vector2 = Vector2(r.position.x + r.size.x * 0.5, r.position.y + 135)
+			var rcol: Color = {"souls": Color(0.55, 0.85, 1.0), "door": Color(1.0, 0.75, 0.3), "essence": Color(0.75, 0.55, 1.0)}.get(String(o["type"]), Color(1.0, 0.7, 0.3))
+			var pulse: float = 1.0 + 0.05 * sin(clock * 3.0 + float(i))
+			draw_circle(oc, 52.0 * pulse, Color(rcol.r, rcol.g, rcol.b, 0.18))
+			draw_arc(oc, 52.0 * pulse, 0.0, TAU, 40, rcol, 3.0)
+			var glyph: String = "+%d" % int(o["amount"])
+			if String(o["type"]) == "door":
+				glyph = "+%d%%" % int(round(float(o["amount"]) * 100.0))
+			_txt(glyph, Vector2(oc.x - 60, oc.y + 12), 32, rcol, HORIZONTAL_ALIGNMENT_CENTER, 120.0)
 		_txt(String(o["title"]), Vector2(r.position.x, r.position.y + 238), 24, Color(1.0, 0.92, 0.75), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 		draw_multiline_string(font, Vector2(r.position.x + 20, r.position.y + 268), String(o["desc"]), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 40.0, 17, -1, Color(0.85, 0.8, 0.75))
 
@@ -1316,25 +1329,27 @@ func _draw_overlays() -> void:
 		_txt("Has derrotado a %s" % String(r["hero_name"]), Vector2(card.position.x, card.position.y + 44), 26, Color(1.0, 0.5, 0.4), HORIZONTAL_ALIGNMENT_CENTER, card.size.x)
 		_txt(String(r["relic"]), Vector2(card.position.x, card.position.y + 92), 32, Color(1.0, 0.9, 0.5), HORIZONTAL_ALIGNMENT_CENTER, card.size.x)
 		_txt("Tizón conservará su nombre y su historia.", Vector2(card.position.x, card.position.y + 130), 18, Color(0.85, 0.8, 0.75), HORIZONTAL_ALIGNMENT_CENTER, card.size.x)
-		Art.draw_creature(self, "sabueso", Vector2(520, 330), clock, {"scars": int(sim.named_creature().get("scars", 0))})
-		_txt("->", Vector2(600, 320), 36, Color(1.0, 0.8, 0.4))
-		Art.draw_creature(self, String(r["form"]), Vector2(720, 330), clock, {"scale": 1.0})
+		Art.draw_creature(self, "sabueso", Vector2(520, 392), clock, {"scars": int(sim.named_creature().get("scars", 0))})
+		_txt("->", Vector2(600, 360), 36, Color(1.0, 0.8, 0.4))
+		Art.draw_creature(self, String(r["form"]), Vector2(730, 392), clock, {"scale": 1.0})
 	elif ph == "victory" or ph == "defeat":
 		draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0, 0, 0, 0.78))
 		var title: String = "LA PUERTA RESISTE" if ph == "victory" else "LA PUERTA CAE"
 		var tcol: Color = Color(1.0, 0.85, 0.5) if ph == "victory" else Color(1.0, 0.35, 0.3)
-		_txt(title, Vector2(0, 200), 56, tcol, HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt(title, Vector2(0, 168), 56, tcol, HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var sub: String = "Has defendido las %d oleadas." % sim.wave_count() if ph == "victory" else "Cayó en la oleada %d de %d." % [sim.defeat_wave, sim.wave_count()]
-		_txt(sub, Vector2(0, 250), 24, Color(0.9, 0.85, 0.8), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
-		_txt("Enemigos abatidos: %d    Puerta: %d / %d" % [sim.kills, int(ceil(sim.door_hp)), int(sim.door_max)], Vector2(0, 296), 22, Color(0.8, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt(sub, Vector2(0, 214), 24, Color(0.9, 0.85, 0.8), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt("Enemigos abatidos: %d    Puerta: %d / %d" % [sim.kills, int(ceil(sim.door_hp)), int(sim.door_max)], Vector2(0, 254), 22, Color(0.8, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var ep: String = sim.epitaph()
 		if ep != "":
-			_txt(ep, Vector2(0, 350), 26, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+			_txt(ep, Vector2(0, 296), 24, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var t: Dictionary = sim.named_creature()
 		if not t.is_empty():
-			Art.draw_creature(self, String(t["kind"]), Vector2(640, 440), clock, {"scars": int(t["scars"])})
-	if show_bestiary:
-		_draw_bestiary()
+			Art.draw_creature(self, String(t["kind"]), Vector2(640, 452), clock, {"scars": int(t["scars"])})
+
+
+func _overlay_open() -> bool:
+	return show_bestiary or show_tree or _draft_active() or sim.phase in ["route", "forge", "victory", "defeat"]
 
 
 func _draw_bestiary() -> void:
@@ -1344,15 +1359,17 @@ func _draw_bestiary() -> void:
 	draw_rect(rect, Color(0.85, 0.5, 0.25), false, 3.0)
 	_txt("Bestiario", Vector2(rect.position.x + 28, rect.position.y + 44), 32, Color(1.0, 0.85, 0.55))
 	_txt("(clic para cerrar)", Vector2(rect.end.x - 200, rect.position.y + 40), 15, Color(0.7, 0.6, 0.55))
-	var y: float = rect.position.y + 70.0
-	var row: float = minf(96.0, 380.0 / float(maxi(1, sim.seen_forms.size())))
-	var bs: float = row / 96.0 * 0.8
-	for f in sim.seen_forms:
-		var fk: String = String(f)
-		Art.draw_creature(self, fk, Vector2(rect.position.x + 90, y + row * 0.6), clock, {"scale": bs})
-		_txt(sim.label(fk), Vector2(rect.position.x + 180, y + 26), 24, Color(1.0, 0.9, 0.7))
-		draw_multiline_string(font, Vector2(rect.position.x + 180, y + 52), String(FORM_INFO.get(fk, "")), HORIZONTAL_ALIGNMENT_LEFT, 600.0, 17, -1, Color(0.85, 0.8, 0.75))
-		y += row
+	var n: int = sim.seen_forms.size()
+	var rows: int = maxi(1, int(ceil(float(n) / 2.0)))
+	var row: float = minf(140.0, 360.0 / float(rows))
+	var bs: float = clampf(row / 110.0, 0.45, 0.9)
+	for i in n:
+		var fk: String = String(sim.seen_forms[i])
+		var col: int = i % 2
+		var cell: Vector2 = Vector2(rect.position.x + 20.0 + 410.0 * float(col), rect.position.y + 66.0 + row * float(i / 2))
+		Art.draw_creature(self, fk, Vector2(cell.x + 55, cell.y + row * 0.5 + 22.0 * bs), clock, {"scale": bs})
+		_txt(sim.label(fk), Vector2(cell.x + 115, cell.y + 22), 20, Color(1.0, 0.9, 0.7))
+		draw_multiline_string(font, Vector2(cell.x + 115, cell.y + 42), String(FORM_INFO.get(fk, "")), HORIZONTAL_ALIGNMENT_LEFT, 280.0, 14, maxi(1, int((row - 30.0) / 17.0)), Color(0.85, 0.8, 0.75))
 	var t: Dictionary = sim.named_creature()
 	if not t.is_empty():
 		_txt("Tizón: %s, %d bajas, %d cicatrices." % [sim.label(String(t["kind"])), int(t["kills"]), int(t["scars"])], Vector2(rect.position.x + 28, rect.end.y - 24), 20, Color(1.0, 0.7, 0.55))
@@ -1365,7 +1382,10 @@ func _draw_tooltip() -> void:
 	var cid: int = _creature_at(mouse_pos)
 	if cid >= 0:
 		var c: Dictionary = sim.creature_by_id(cid)
-		lines.append("%s (%s)  Nivel %d" % [String(c["name"]), sim.label(String(c["kind"])), int(c["level"])])
+		var nm: String = String(c["name"])
+		if nm != sim.label(String(c["kind"])):
+			nm += " (%s)" % sim.label(String(c["kind"]))
+		lines.append("%s  Nivel %d" % [nm, int(c["level"])])
 		lines.append("Vida %d / %d    Bajas %d    Cicatrices %d" % [int(c["hp"]), int(c["max_hp"]), int(c["kills"]), int(c["scars"])])
 		lines.append(String(FORM_INFO.get(String(c["kind"]), "")))
 	else:
@@ -1376,13 +1396,20 @@ func _draw_tooltip() -> void:
 				break
 	if lines.is_empty():
 		return
-	var w: float = 520.0
-	var h: float = 12.0 + 24.0 * lines.size()
+	var w: float = 420.0
+	var hs: Array = []
+	var h: float = 12.0
+	for ln in lines:
+		var lh: float = font.get_multiline_string_size(String(ln), HORIZONTAL_ALIGNMENT_LEFT, w - 20.0, 16).y
+		hs.append(lh)
+		h += lh + 4.0
 	var p: Vector2 = Vector2(minf(mouse_pos.x + 16.0, SCREEN_W - w - 8.0), maxf(mouse_pos.y - h - 12.0, 84.0))
 	draw_rect(Rect2(p, Vector2(w, h)), Color(0, 0, 0, 0.85))
 	draw_rect(Rect2(p, Vector2(w, h)), Color(0.8, 0.45, 0.25), false, 2.0)
+	var yy: float = p.y + 6.0
 	for i in lines.size():
-		_txt(String(lines[i]), p + Vector2(10, 24 + 24 * i), 16, Color(0.95, 0.9, 0.85), HORIZONTAL_ALIGNMENT_LEFT, w - 20.0)
+		draw_multiline_string(font, Vector2(p.x + 10, yy + 16), String(lines[i]), HORIZONTAL_ALIGNMENT_LEFT, w - 20.0, 16, -1, Color(0.95, 0.9, 0.85))
+		yy += float(hs[i]) + 4.0
 
 
 const META_PATH: String = "user://meta.json"
