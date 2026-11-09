@@ -56,9 +56,9 @@ Fuera de alcance a propósito: Árbol del Abismo y Ceniza, Caballero del Alba, r
 ## Números clave (primera pasada, en `data/balance.json`)
 
 Almas iniciales 40; bonus por oleada 15; Sabueso 40, Ojo 60, subir nivel 30/45 (65/90 con «Más allá del límite»); las mejoras de hechizo ya van en el árbol.
-Puerta 180. Brasa inicial: 40 de daño en radio 75, cae a los 1,5 s, enfriamiento 6,5 s, quema; el árbol la acelera y la ensancha. Rayo: 38 de daño, enfriamiento 1,2 s, alcance 800; mejorado salta al 60% a un segundo blanco.
-Horno: inhala hasta 4 enemigos (alcance 300, enfriamiento 7 s), escupe 28 y quema 6/s durante 4 s.
-Trueno: salto cada 8 s (alcance 760), 40 al caer y descargas 20/15/10, vuelve a los 6 s.
+Puerta 130. Brasa inicial: 40 de daño en radio 75, cae a los 1,5 s, enfriamiento 6,5 s, quema; el árbol la acelera y la ensancha. Rayo: 38 de daño, enfriamiento 1,2 s, alcance 800; mejorado salta al 60% a un segundo blanco.
+Horno: inhala hasta 5 enemigos (alcance 460, enfriamiento 6 s), escupe 34 en 280 px y quema 8/s durante 4 s.
+Trueno: salto cada 10 s (alcance 760), 32 al caer y descargas 16/12/8, vuelve a los 6 s. Salta a apoyos y tiradores (élites incluidas).
 Ojo: 12 de daño, y sobre enemigos en llamas encadena a 3 más.
 
 ## Situaciones para probar a mano
@@ -86,11 +86,11 @@ Seis unidades con habilidad propia, en `data/balance.json` (campo `elite`) y `da
 - **Verdugo del Tajo Negro** (6): levanta el hacha y barre; hay que tumbarlo antes o ponerle un señuelo delante.
 - **Campana** (6): repique que aturde e interrumpe a las criaturas cercanas.
 
-Verificado con `tests/suite.gd`: 182 comprobaciones, 0 fallos; el bot gana 5/5 por ruta con élites (ideal, apunta perfecto).
+
 
 ## Progreso permanente
 
-El árbol se paga con **Esencia**, que se conserva entre partidas (`user://meta.json`, junto con los rangos comprados). Se gana al superar cada oleada (20 + 10×n) y +100 por victoria. Se compra entre oleadas y en las pantallas de victoria o derrota. Las almas quedan solo para Sabuesos, Ojos y niveles de bestia. Árbol completo: 6635 de Esencia (~15 partidas ganadas).
+El árbol se paga con **Esencia**, que se conserva entre partidas (`user://meta.json`, junto con los rangos comprados). Se gana al superar cada oleada (10 + 5×n) y +60 por victoria (`data/balance.json` → `meta`). Se compra entre oleadas y en las pantallas de victoria o derrota. Las almas quedan solo para Sabuesos, Ojos y niveles de bestia. Árbol completo: 6635 de Esencia.
 
 ## Bestias nuevas y elección tras cada oleada
 
@@ -101,3 +101,16 @@ Tras cada oleada superada se ofrecen **3 opciones al azar** (pool ponderado en `
 - **Manta del Umbral** (retaguardia): elige el carril con más enemigos, lo cruza en vuelo (intocable) golpeando y aturdiendo a todos, y vuelve.
 
 Arte: `art/LEEME_bestias.md` (diseños elegidos y alternativas en `art/alternativas/`).
+
+## Equilibrio (bot torpe)
+
+`tests/bot.gd` juega como una persona en su primera partida: reacciona tarde (decide cada ~0,45 s y lanza 0,3 s después sobre la posición vieja), apunta con error (~38 px), se adelanta a medias, se distrae un 18% de las veces, tarda en cambiar de hechizo y elige en el draft con preferencias medianas.
+Informe: `godot --headless --path . res://tools/balance.tscn -- 120 10 8` (primera partida, bot hábil de referencia y carreras acumulando esencia; `BAL_ESS=0,80,150` mide con árboles fijos).
+
+| Medida | Antes | Después |
+| --- | --- | --- |
+| Primera partida, bot torpe | 80% (Verdugo 65%, Inquisidor 95%) | 55% (Verdugo 48%, Inquisidor 64%), 120 partidas |
+| Primera partida, bot hábil | 100% | 100% |
+| Árbol de 80 / 150 / 300 de esencia | 100% | 85% / 98% / 100% |
+
+Las derrotas se concentran en la oleada 6 y algunas en la 4; nadie pierde en las tres primeras.

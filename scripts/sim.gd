@@ -1012,10 +1012,12 @@ func _horno_end(c: Dictionary) -> void:
 		e["fed"] = false
 
 
+# Apoyos (curan) primero y luego tiradores, élites incluidas, según los datos.
 func _support_priority(kind: String) -> float:
-	if kind == "clerigo":
+	var st: Dictionary = B["enemies"].get(kind, {})
+	if st.get("support", false):
 		return 2.0
-	if kind == "ballestero":
+	if st.get("ranged", false):
 		return 1.0
 	return 0.0
 
@@ -1454,7 +1456,7 @@ func _wave_cleared() -> void:
 	door_hp = minf(door_max, door_hp + door_max * fadd("door.regen"))
 	events.append({"t": "wave_clear", "wave": cleared})
 	if meta_mode:
-		_gain_essence(20 + 10 * cleared)
+		_gain_essence(int(B["meta"]["wave_base"]) + int(B["meta"]["wave_step"]) * cleared)
 	for c in creatures:
 		if c["fallen"]:
 			c["fallen"] = false
@@ -1467,7 +1469,7 @@ func _wave_cleared() -> void:
 	if wave_index >= WAVES.size():
 		phase = "victory"
 		if meta_mode:
-			_gain_essence(100)
+			_gain_essence(int(B["meta"]["victory"]))
 		events.append({"t": "victory"})
 		return
 	if draft_enabled:

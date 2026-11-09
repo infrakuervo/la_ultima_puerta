@@ -76,7 +76,7 @@
     {
      "lane": -1,
      "kind": "escudero",
-     "count": 4,
+     "count": 5,
      "gap": 1.6
     },
     {
@@ -113,6 +113,13 @@
      "count": 1,
      "gap": 0,
      "delay": 11.0
+    },
+    {
+     "lane": -1,
+     "kind": "campesino",
+     "count": 6,
+     "gap": 0.8,
+     "delay": 4.0
     }
    ]
   },
@@ -130,9 +137,16 @@
     {
      "lane": -1,
      "kind": "campesino",
-     "count": 4,
+     "count": 8,
      "gap": 1.2,
      "delay": 2.0
+    },
+    {
+     "lane": -1,
+     "kind": "escudero",
+     "count": 3,
+     "gap": 2.0,
+     "delay": 5.0
     }
    ]
   },
@@ -150,7 +164,7 @@
     {
      "lane": -1,
      "kind": "escudero",
-     "count": 3,
+     "count": 5,
      "gap": 2.0,
      "delay": 3.0
     },
@@ -164,14 +178,14 @@
     {
      "lane": -1,
      "kind": "ballestero",
-     "count": 3,
+     "count": 6,
      "gap": 1.3,
      "delay": 9.0
     },
     {
      "lane": -1,
      "kind": "campesino",
-     "count": 4,
+     "count": 8,
      "gap": 1.0,
      "delay": 12.0
     },
@@ -209,6 +223,13 @@
      "count": 1,
      "gap": 0,
      "delay": 16.0
+    },
+    {
+     "lane": -1,
+     "kind": "tirador",
+     "count": 1,
+     "gap": 0,
+     "delay": 14.0
     }
    ]
   }

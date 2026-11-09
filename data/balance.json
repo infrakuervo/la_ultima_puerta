@@ -33,7 +33,7 @@
   ]
  },
  "door": {
-  "hp": 180
+  "hp": 130
  },
  "economy": {
   "start_souls": 40,
@@ -63,20 +63,20 @@
   "presa_windup": 0.35
  },
  "horno": {
-  "hp": 220,
+  "hp": 260,
   "dmg": 8,
   "cd": 1.0,
   "speed": 90,
   "leash": 300,
   "reach": 40,
-  "inhale_cd": 7.0,
+  "inhale_cd": 6.0,
   "inhale_time": 0.6,
-  "inhale_range": 300,
-  "inhale_max": 4,
+  "inhale_range": 460,
+  "inhale_max": 5,
   "fill_timeout": 3.0,
-  "spit_range": 240,
-  "spit_dmg": 28,
-  "burn_dps": 6,
+  "spit_range": 280,
+  "spit_dmg": 34,
+  "burn_dps": 8,
   "burn_time": 4.0,
   "minor_dmg": 10,
   "minor_burn_time": 2.0,
@@ -89,16 +89,16 @@
   "speed": 210,
   "leash": 320,
   "reach": 36,
-  "jump_cd": 8.0,
+  "jump_cd": 10.0,
   "crouch_time": 0.5,
   "jump_time": 0.7,
   "jump_range": 760,
   "min_gap": 160,
-  "land_dmg": 40,
+  "land_dmg": 32,
   "chain_dmg": [
-   20,
-   15,
-   10
+   16,
+   12,
+   8
   ],
   "chain_range": 150,
   "return_after": 6.0
@@ -151,27 +151,27 @@
    "reach": 30,
    "door_dmg": 0,
    "support": true,
-   "heal": 12,
+   "heal": 8,
    "heal_cd": 2.0,
    "heal_radius": 170,
    "follow_gap": 90,
    "reward": 8
   },
   "verdugo": {
-   "hp": 450,
+   "hp": 430,
    "speed": 28,
-   "dmg": 28,
+   "dmg": 22,
    "cd": 1.4,
    "reach": 42,
    "door_dmg": 8,
    "hero": true,
-   "execute": 0.25,
+   "execute": 0.12,
    "reward": 30
   },
   "inquisidor": {
-   "hp": 400,
+   "hp": 430,
    "speed": 30,
-   "dmg": 18,
+   "dmg": 20,
    "cd": 1.4,
    "reach": 42,
    "door_dmg": 7,
@@ -234,7 +234,7 @@
    "door_dmg": 0,
    "support": true,
    "pulse": true,
-   "heal": 22,
+   "heal": 15,
    "heal_cd": 4.5,
    "heal_radius": 230,
    "follow_gap": 90,
@@ -254,7 +254,7 @@
    "elite": true,
    "sprite": "verdugo_elite",
    "scale": 1.0,
-   "sweep_dmg": 34,
+   "sweep_dmg": 26,
    "sweep_wind": 0.9,
    "sweep_cd": 7.0,
    "sweep_r": 120
@@ -351,35 +351,35 @@
     "id": "alacran",
     "type": "beast",
     "kind": "alacran",
-    "weight": 3,
+    "weight": 2,
     "desc": "Tanque de vanguardia: agarra a un enemigo y lo retiene."
    },
    {
     "id": "sapo",
     "type": "beast",
     "kind": "sapo",
-    "weight": 3,
+    "weight": 2,
     "desc": "Escupe brea desde atrás: daña y ralentiza."
    },
    {
     "id": "manta",
     "type": "beast",
     "kind": "manta",
-    "weight": 3,
+    "weight": 2,
     "desc": "Embosca por un carril: golpea a todos y aturde."
    },
    {
     "id": "sabueso",
     "type": "beast",
     "kind": "sabueso",
-    "weight": 2,
+    "weight": 1,
     "desc": "Otro Sabueso de Escoria, gratis."
    },
    {
     "id": "almas",
     "type": "souls",
     "amount": 45,
-    "weight": 1,
+    "weight": 2,
     "title": "Cosecha",
     "desc": "+45 almas."
    },
@@ -387,7 +387,7 @@
     "id": "puerta",
     "type": "door",
     "amount": 0.4,
-    "weight": 1,
+    "weight": 2,
     "title": "Remiendo",
     "desc": "Repara el 40% de la Puerta."
    },
@@ -395,10 +395,15 @@
     "id": "esencia",
     "type": "essence",
     "amount": 30,
-    "weight": 1,
+    "weight": 2,
     "title": "Pozo de esencia",
     "desc": "+30 de esencia permanente."
    }
   ]
+ },
+ "meta": {
+  "wave_base": 10,
+  "wave_step": 5,
+  "victory": 60
  }
 }

@@ -3,6 +3,7 @@ extends Node
 ## Sale con código 0 si todo pasa y 1 si algo falla. También imprime un informe de equilibrio.
 
 const Sim = preload("res://scripts/sim.gd")
+const Bot = preload("res://tests/bot.gd")
 
 var failures: int = 0
 var checks: int = 0
@@ -30,6 +31,7 @@ func run() -> void:
 	test_bugfixes()
 	test_skills()
 	test_full_runs()
+	test_clumsy_bot()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -777,6 +779,26 @@ func test_full_runs() -> void:
 			print(ln)
 
 
+func test_clumsy_bot() -> void:
+	print("Bot torpe (primera partida, árbol vacío, draft activo)")
+	var wins: int = 0
+	var n: int = 12
+	var lost_early: int = 0
+	for i in n:
+		var s = Sim.new(1000 + i)
+		s.meta_mode = true
+		s.draft_enabled = true
+		s.essence = 0
+		s.reset()
+		var r: Dictionary = Bot.new(1000 + i, 0.0).play(s)
+		if r["phase"] == "victory":
+			wins += 1
+		elif int(r["wave"]) <= 3:
+			lost_early += 1
+	check(wins >= 3 and wins <= 10, "el bot torpe gana a veces, no siempre (%d/%d)" % [wins, n])
+	check(lost_early == 0, "nadie pierde en las tres primeras oleadas (%d)" % lost_early)
+
+
 # --- interfaz con el ratón ----------------------------------------------------
 
 func test_ui_smoke() -> void:
@@ -874,7 +896,8 @@ func test_meta() -> void:
 	s2.enemies.clear()
 	s2.spawn_queue.clear()
 	s2._check_end()
-	check(s2.essence == 30, "superar la oleada 1 da 30 de esencia (%d)" % s2.essence)
+	var want_e: int = int(s2.B["meta"]["wave_base"]) + int(s2.B["meta"]["wave_step"])
+	check(s2.essence == want_e, "superar la oleada 1 da %d de esencia (%d)" % [want_e, s2.essence])
 	check(before >= 0, "esencia coherente")
 
 
@@ -997,6 +1020,9 @@ func test_bugfixes() -> void:
 	for i in 30:
 		s3.step(Sim.TICK)
 	check(hurt["hp"] == 10.0, "el Lumbrero aturdido no cura (vida %.0f)" % hurt["hp"])
+	# 4) El Trueno y la marca del Ojo también eligen a las élites de apoyo y a distancia.
+	var s4 = new_sim()
+	check(s4._support_priority("lumbrero") > s4._support_priority("tirador") and s4._support_priority("tirador") > 0.0, "Lumbrero y Tirador cuentan como apoyo y tirador")
 
 
 func test_draft() -> void:
