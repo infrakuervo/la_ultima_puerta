@@ -5,6 +5,8 @@ extends Node2D
 const Sim = preload("res://scripts/sim.gd")
 const Art = preload("res://scripts/art.gd")
 const SoundBank = preload("res://scripts/sound_bank.gd")
+const Juice = preload("res://scripts/juice.gd")
+const Menu = preload("res://scripts/menu.gd")
 
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
@@ -45,7 +47,11 @@ var warns: Array = []
 var mut_anim: Dictionary = {}
 var banner_text: String = ""
 var banner_t: float = 0.0
-var shake: float = 0.0
+var banner_dur: float = 1.0
+var juice = Juice.new()
+var menu = Menu.new()
+var fade: float = 0.0
+var last_phase: String = ""
 var flash_red: float = 0.0
 var flash_white: float = 0.0
 var font: Font = null
@@ -65,6 +71,13 @@ func _ready() -> void:
 		add_child(p)
 		players.append(p)
 	_load_bestiary()
+	if Engine.has_meta("sin_persistencia"):
+		menu.persist = false
+		menu.open = false
+		menu.started = true
+	menu.load_options()
+	menu.apply(self)
+	speed = int(menu.opts["velocidad"])
 
 
 # ----------------------------------------------------------------------------
@@ -75,7 +88,17 @@ func _process(delta: float) -> void:
 	delta = minf(delta, 0.1)
 	clock += delta
 	mouse_pos = get_global_mouse_position()
-	if sim.phase == "combat":
+	fade = maxf(0.0, fade - delta * 2.5)
+	if menu.open:
+		juice.update(delta)
+		queue_redraw()
+		return
+	if sim.phase != last_phase:
+		if last_phase != "" and sim.phase != "combat":
+			fade = maxf(fade, 0.45)
+		last_phase = sim.phase
+	menu.tut_update(delta)
+	if sim.phase == "combat" and juice.hitstop <= 0.0:
 		accum += delta * float(speed)
 		var guard: int = 0
 		while accum >= Sim.TICK and guard < 12:
@@ -111,7 +134,7 @@ func _update_fx(delta: float) -> void:
 		if mut_anim[k] > 1.9:
 			mut_anim.erase(k)
 	banner_t = maxf(0.0, banner_t - delta)
-	shake = maxf(0.0, shake - delta * 18.0)
+	juice.update(delta)
 	flash_red = maxf(0.0, flash_red - delta * 2.5)
 	flash_white = maxf(0.0, flash_white - delta * 1.6)
 
@@ -184,6 +207,7 @@ func _handle_events() -> void:
 
 func _on_event(ev: Dictionary) -> void:
 	var t: String = ev["t"]
+	menu.tut_event(self, ev)
 	match t:
 		"placed":
 			_play("click")
@@ -205,18 +229,24 @@ func _on_event(ev: Dictionary) -> void:
 			if hero:
 				banner_text = "Llega %s" % String(sim.ROUTES[sim.route]["hero_name"])
 				banner_t = 2.2
+				banner_dur = 2.2
 			else:
 				banner_text = "Oleada %d: %s" % [int(ev["wave"]), String(w["title"])]
 				banner_t = 1.6
+				banner_dur = 1.6
 		"brasa_cast":
 			_play("brasa_cast")
 		"brasa_land":
 			_play("horno_spit")
-			shake = maxf(shake, 3.0)
+			juice.burst(ev["p"], 26, Color(1.0, 0.5, 0.15), 260.0, 0.7, 3.0, 380.0, 120.0)
+			if int(ev["hits"]) >= 3:
+				juice.stop(0.06)
+			juice.add_trauma(0.21)
 			_add_fx({"type": "ring", "p": ev["p"], "r0": 10.0, "r1": float(ev["r"]), "col": Color(1.0, 0.55, 0.2, 0.9), "ttl": 0.45})
 			_add_fx({"type": "disc", "p": ev["p"], "r": float(ev["r"]), "col": Color(1.0, 0.5, 0.15, 0.35), "ttl": 0.5})
 		"rayo":
 			_play("rayo")
+			juice.burst(ev["to"] + Vector2(0, -30), 8, Color(0.7, 0.9, 1.0), 240.0, 0.25, 2.0, 200.0)
 			_add_fx({"type": "bolt", "a": ev["from"], "b": ev["to"], "col": Color(0.75, 0.9, 1.0), "ttl": 0.18})
 			_add_fx({"type": "ring", "p": ev["to"], "r0": 4.0, "r1": 26.0, "col": Color(0.75, 0.9, 1.0, 0.9), "ttl": 0.2})
 		"rayo_chain":
@@ -229,21 +259,35 @@ func _on_event(ev: Dictionary) -> void:
 			_play("bite", 0.06)
 		"hit":
 			_play("hit", 0.05)
-			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 28), "r0": 4.0, "r1": 16.0, "col": Color(1, 1, 1, 0.8), "ttl": 0.15})
+			var hp0: Vector2 = Vector2(ev["x"], float(ev.get("y", _lane_y(int(ev["lane"])))) - 34)
+			_add_fx({"type": "ring", "p": hp0, "r0": 4.0, "r1": 16.0, "col": Color(1, 1, 1, 0.8), "ttl": 0.15})
+			juice.flash(int(ev.get("id", -1)))
+			juice.burst(hp0, 4, Color(1.0, 0.85, 0.5), 160.0, 0.3, 2.0, 400.0)
+			juice.number(hp0 + Vector2(0, -30), float(ev.get("amount", 0.0)), int(ev.get("id", -1)))
 		"kill":
 			_play("kill", 0.04)
-			_float(Vector2(ev["x"], _lane_y(int(ev["lane"])) - 60), "+%d" % int(ev["reward"]), Color(0.7, 0.95, 1.0))
+			var kp: Vector2 = Vector2(ev["x"], float(ev.get("y", _lane_y(int(ev["lane"])))) - 30)
+			_float(kp + Vector2(30, -8), "+%d" % int(ev["reward"]), Color(0.6, 0.9, 1.0, 0.85), 0.8)
+			var kst: Dictionary = sim.B["enemies"].get(String(ev.get("kind", "")), {})
+			var big: bool = kst.get("elite", false) or kst.get("hero", false) or kst.get("boss", false)
+			juice.burst(kp, 18 if big else 9, Color(0.25, 0.12, 0.1), 220.0, 0.6, 3.5, 500.0)
+			juice.burst(kp, 10 if big else 4, Color(1.0, 0.55, 0.2), 180.0, 0.8, 2.5, -40.0, 60.0)
+			if big:
+				juice.stop(0.09)
+				juice.add_trauma(0.35)
+				_play("big_kill")
 		"presa_windup":
 			_play("presa_windup")
 			_warn({"type": "presa", "eid": int(ev["target"]), "ttl": 0.4})
 		"presa":
-			_play("presa")
+			var pc: Dictionary = sim.creature_by_id(int(ev["id"]))
+			_play("alacran_grab" if not pc.is_empty() and pc["kind"] == "alacran" else "presa")
 		"horno_inhale":
 			_play("horno_inhale")
 			_warn({"type": "inhale", "cid": int(ev["id"]), "ttl": float(sim.B["horno"]["inhale_time"]) + 0.2})
 		"horno_spit":
 			_play("horno_spit")
-			shake = maxf(shake, 4.0)
+			juice.add_trauma(0.28)
 			_add_fx({"type": "fire", "x0": ev["x0"], "x1": ev["x1"], "y": _lane_y(int(ev["lane"])), "ttl": 0.7})
 			if not bool(ev["minor"]):
 				_float(Vector2((float(ev["x0"]) + float(ev["x1"])) * 0.5, _lane_y(int(ev["lane"])) - 90), "LLAMARADA", Color(1.0, 0.6, 0.2), 1.1)
@@ -256,7 +300,7 @@ func _on_event(ev: Dictionary) -> void:
 			_float(Vector2(ev["from_x"], _lane_y(int(ev["from_lane"])) - 100), "Hueco abierto", Color(1.0, 0.5, 0.4), 1.4)
 		"trueno_land":
 			_play("trueno_land")
-			shake = maxf(shake, 6.0)
+			juice.add_trauma(0.42)
 			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 10.0, "r1": 150.0, "col": Color(0.7, 0.85, 1.0), "ttl": 0.45})
 		"ojo_shot":
 			_play("ojo_shot", 0.08)
@@ -282,50 +326,68 @@ func _on_event(ev: Dictionary) -> void:
 			_play("shot", 0.08)
 			_add_fx({"type": "line", "a": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 30), "b": Vector2(ev["tx"], _lane_y(int(ev["lane"])) - 30), "col": Color(0.8, 0.8, 0.8), "w": 2.0, "ttl": 0.1})
 		"aim":
-			_play("presa_windup")
+			_play("tirador_aim")
 			_warn({"type": "aim", "eid": int(ev["id"]), "range": float(ev["range"]), "ttl": float(ev["aim"])})
 		"tirador_shot":
-			_play("shot")
-			shake = maxf(shake, 3.0)
+			_play("tirador_shot")
+			juice.add_trauma(0.21)
 			_add_fx({"type": "line", "a": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 30), "b": Vector2(ev["tx"], _lane_y(int(ev["lane"])) - 30), "col": Color(1.0, 0.9, 0.6), "w": 6.0, "ttl": 0.25})
 		"sweep_wind":
-			_play("presa_windup")
+			_play("tajo_wind")
 			_warn({"type": "sweep", "eid": int(ev["id"]), "ttl": float(ev["wind"])})
 		"sweep":
-			_play("trueno_land")
-			shake = maxf(shake, 7.0)
+			_play("tajo_sweep")
+			juice.stop(0.05)
+			juice.add_trauma(0.49)
 			_add_fx({"type": "ring", "p": Vector2(ev["x"], ev["y"]), "r0": 10.0, "r1": float(ev["r"]), "col": Color(1.0, 0.35, 0.2, 0.9), "ttl": 0.4})
 			_add_fx({"type": "disc", "p": Vector2(ev["x"], ev["y"]), "r": float(ev["r"]), "col": Color(1.0, 0.3, 0.15, 0.3), "ttl": 0.4})
 		"ring":
-			_play("bell")
-			shake = maxf(shake, 3.0)
+			_play("campana_ring")
+			juice.add_trauma(0.21)
 			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 20.0, "r1": float(ev["r"]), "col": Color(0.95, 0.85, 0.3, 0.9), "ttl": 0.6})
 			_float(Vector2(ev["x"], _lane_y(int(ev["lane"])) - 120), "REPIQUE", Color(0.95, 0.85, 0.3), 1.1)
 		"sapo_windup":
-			_play("presa_windup")
+			_play("sapo_windup")
 			_warn({"type": "presa", "eid": int(ev["target"]), "ttl": float(sim.B["sapo"]["windup"])})
 		"sapo_spit":
-			_play("horno_spit")
+			_play("sapo_spit")
 			var sp: Vector2 = Vector2(ev["x"], ev["y"])
 			_add_fx({"type": "line", "a": Vector2(ev["from_x"], _lane_y(int(ev["lane"])) - 40), "b": sp, "col": Color(0.25, 0.15, 0.1), "w": 6.0, "ttl": 0.25})
 			_add_fx({"type": "ring", "p": sp, "r0": 8.0, "r1": float(sim.B["sapo"]["tar_radius"]), "col": Color(0.3, 0.2, 0.1, 0.9), "ttl": 0.4})
 		"manta_dive":
-			_play("trueno_crouch")
+			_play("manta_dive")
 		"manta_glide":
-			_play("trueno_jump")
+			_play("manta_glide")
 			_add_fx({"type": "line", "a": Vector2(0, _lane_y(int(ev["lane"])) - 20), "b": Vector2(SCREEN_W, _lane_y(int(ev["lane"])) - 20), "col": Color(0.7, 0.5, 0.9, 0.5), "w": 2.0, "ttl": 0.5})
 		"draft":
 			banner_text = "Elige una recompensa"
 			banner_t = 1.4
+			banner_dur = 1.4
+		"creature_hit":
+			juice.flash(1000000 + int(ev["id"]))
+			var chp: Vector2 = _creature_pos_by_id(int(ev["id"]))
+			if chp.x > 0.0:
+				juice.burst(chp + Vector2(0, -40), 3, Color(0.8, 0.15, 0.1), 140.0, 0.35, 2.5, 500.0)
+				if float(ev.get("amount", 0.0)) >= 15.0:
+					juice.number(chp + Vector2(0, -90), float(ev["amount"]), -1, Color(1.0, 0.4, 0.35))
+		"elite_spawn":
+			var ek: String = String(ev["kind"])
+			if sim.B["enemies"][ek].get("hero", false) or sim.B["enemies"][ek].get("boss", false):
+				_play("horn")
+			else:
+				_play("elite")
+				_float(Vector2(1150, _lane_y(int(ev["lane"])) - 120), "¡%s!" % sim.label(ek), Color(1.0, 0.8, 0.35), 1.8)
 		"draft_pick":
 			_play("level")
 			_save_meta()
 		"heal_pulse":
-			_play("heal", 0.2)
+			_play("lumbrero")
+			juice.burst(Vector2(ev["x"], _lane_y(int(ev["lane"])) - 40), 14, Color(0.6, 1.0, 0.7), 90.0, 1.0, 2.5, -60.0)
 			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 10.0, "r1": float(ev["r"]), "col": Color(0.6, 1.0, 0.7, 0.8), "ttl": 0.5})
 		"door_hit":
 			_play("door_hit", 0.1)
-			shake = maxf(shake, 5.0)
+			juice.burst(Vector2(140, _lane_y(int(ev["lane"])) - 40), 6, Color(0.5, 0.3, 0.2), 200.0, 0.5, 3.0, 600.0)
+			juice.add_trauma(0.35)
 			flash_red = 0.5
 			_float(Vector2(120, _lane_y(int(ev["lane"])) - 40), "-%d" % int(ev["amount"]), Color(1.0, 0.3, 0.3))
 		"execute":
@@ -347,6 +409,7 @@ func _on_event(ev: Dictionary) -> void:
 			flash_white = 0.7
 			banner_text = "%s se convierte en %s" % [String(ev["name"]), sim.label(String(ev["form"]))]
 			banner_t = 2.4
+			banner_dur = 2.4
 			_save_bestiary()
 		"form_seen":
 			_save_bestiary()
@@ -398,6 +461,15 @@ func _save_bestiary() -> void:
 # ----------------------------------------------------------------------------
 
 func _input(event: InputEvent) -> void:
+	if menu.open:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			menu.press(self, event.position)
+		elif event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode == KEY_ESCAPE and menu.started:
+				menu.toggle(self)
+			elif (event.keycode == KEY_SPACE or event.keycode == KEY_ENTER) and menu.panel == "main":
+				menu._do(self, "continue" if menu.started and sim.phase != "victory" and sim.phase != "defeat" else "new")
+		return
 	if event is InputEventMouseButton:
 		var mb: InputEventMouseButton = event
 		if mb.button_index == MOUSE_BUTTON_LEFT:
@@ -424,8 +496,12 @@ func _input(event: InputEvent) -> void:
 			elif k.keycode == KEY_T:
 				_toggle_tree()
 			elif k.keycode == KEY_ESCAPE:
-				show_tree = false
-				show_bestiary = false
+				if show_tree or show_bestiary:
+					show_tree = false
+					show_bestiary = false
+				else:
+					holding = false
+					menu.toggle(self)
 			elif k.keycode == KEY_1:
 				spell = "brasa"
 			elif k.keycode == KEY_2:
@@ -496,6 +572,7 @@ func _restart() -> void:
 	dragging = false
 	accum = 0.0
 	banner_t = 0.0
+	banner_dur = 0.0
 	_play("click")
 
 
@@ -667,9 +744,7 @@ func _txt(s: String, pos: Vector2, size: int, col: Color, align: int = HORIZONTA
 
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(0.08, 0.03, 0.04))
-	var sh: Vector2 = Vector2.ZERO
-	if shake > 0.0:
-		sh = Vector2(randf_range(-shake, shake), randf_range(-shake, shake))
+	var sh: Vector2 = juice.offset()
 	draw_set_transform(sh, 0.0, Vector2.ONE)
 	_draw_arena()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
@@ -688,8 +763,13 @@ func _draw() -> void:
 		draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(1.0, 0.85, 0.6, flash_white * 0.6))
 	if banner_t > 0.0 and not _overlay_open():
 		var a: float = clampf(banner_t / 0.5, 0.0, 1.0)
+		var slide: float = (1.0 - clampf((banner_dur - banner_t) / 0.25, 0.0, 1.0)) * 60.0
 		draw_rect(Rect2(0, 300, SCREEN_W, 90), Color(0, 0, 0, 0.55 * a))
-		_txt(banner_text, Vector2(0, 360), 44, Color(1.0, 0.85, 0.5, a), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt(banner_text, Vector2(slide, 360), 44, Color(1.0, 0.85, 0.5, a), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+	menu.tut_draw(self)
+	menu.draw(self)
+	if fade > 0.0:
+		draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(0, 0, 0, clampf(fade, 0.0, 1.0)))
 
 
 func _draw_arena() -> void:
@@ -722,6 +802,7 @@ func _draw_arena_rest(painted: bool) -> void:
 	if not painted:
 		var door_rect: Rect2 = Rect2(40, _lane_y(0) - 70, 90, _lane_y(2) - _lane_y(0) + 140)
 		Art.draw_door(draw_ctx(), door_rect, clampf(sim.door_hp / sim.door_max, 0.0, 1.0), 0.0)
+	juice.draw_back(self)
 	_draw_demon()
 	# zonas de despliegue: solo se resaltan al colocar
 	if sim.phase == "prep":
@@ -769,6 +850,7 @@ func _draw_arena_rest(painted: bool) -> void:
 			_draw_enemy(it["e"])
 	_draw_brasas()
 	_draw_fx_and_warns()
+	juice.draw_front(self, font)
 	if sim.phase == "combat":
 		_draw_aim()
 
@@ -885,7 +967,8 @@ func _draw_creature(c: Dictionary) -> void:
 	var opts: Dictionary = {"scale": scale_v, "scars": c["scars"], "hambre": c["hambre"], "crouch": crouch,
 		"fallen": c["fallen"], "glow": glow, "flash": 0.0}
 	if c["stun"] > 0.0:
-		opts["flash"] = 0.25
+		opts["flash"] = 0.15
+	opts["flash"] = maxf(float(opts["flash"]), juice.flash_of(1000000 + int(c["id"])))
 	if selected_id == int(c["id"]):
 		draw_arc(pos + Vector2(0, -34), 52.0, 0.0, TAU, 28, Color(1.0, 0.9, 0.4, 0.8), 3.0)
 	Art.draw_creature(self, kind, pos, clock + float(c["id"]), opts)
@@ -913,7 +996,8 @@ func _draw_enemy(e: Dictionary) -> void:
 	var pos: Vector2 = sim.epos(e)
 	var kind: String = e["kind"]
 	var variant: int = 0 if bool(sim.B["enemies"][kind].get("hero", false)) else int(float(e["bump"]) * 4.0) % 4
-	var opts: Dictionary = {"burning": e["burn_t"] > 0.0, "bump": e["bump"], "flash": 0.0, "variant": variant}
+	var hfl: float = juice.flash_of(int(e["id"]))
+	var opts: Dictionary = {"burning": e["burn_t"] > 0.0, "bump": e["bump"], "flash": hfl, "variant": variant}
 	var elite: bool = bool(sim.B["enemies"][kind].get("elite", false))
 	if elite:
 		opts["sprite"] = String(sim.B["enemies"][kind]["sprite"])

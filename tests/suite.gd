@@ -809,6 +809,10 @@ func test_ui_smoke() -> void:
 		return
 	Engine.set_meta("sin_persistencia", true)
 	var m = packed.instantiate()
+	var script_ok: bool = m.get_script() != null and m.has_method("_buttons")
+	check(script_ok, "el script de la vista compila")
+	if not script_ok:
+		return
 	get_tree().root.add_child(m)
 	await get_tree().process_frame
 	check(m.sim != null, "la vista crea la simulación")
@@ -852,6 +856,23 @@ func test_ui_smoke() -> void:
 	check(m.show_tree, "clic fuera de los nodos no cierra ni coloca nada")
 	m._on_press(Vector2(640, 660))
 	check(not m.show_tree, "el botón Cerrar árbol lo cierra")
+	# menú y opciones
+	m.menu.toggle(m)
+	check(m.menu.open, "Esc abre el menú")
+	var phase_before: String = m.sim.phase
+	m._process(0.5)
+	check(m.sim.phase == phase_before, "con el menú abierto el juego no avanza")
+	m.menu.panel = "options"
+	var v0: float = float(m.menu.opts["volumen"])
+	for b in m.menu.buttons(m):
+		if b["id"] == "vol-":
+			m._input(_click(b["rect"].get_center()))
+	check(float(m.menu.opts["volumen"]) < v0, "el botón − baja el volumen")
+	m.menu.panel = "main"
+	for b2 in m.menu.buttons(m):
+		if b2["id"] == "continue":
+			m._input(_click(b2["rect"].get_center()))
+	check(not m.menu.open, "Continuar vuelve a la partida")
 	m.show_tree = true
 	m.queue_redraw()
 	await get_tree().process_frame
@@ -862,6 +883,14 @@ func test_ui_smoke() -> void:
 	m.queue_free()
 
 
+
+
+func _click(p: Vector2) -> InputEventMouseButton:
+	var ev: InputEventMouseButton = InputEventMouseButton.new()
+	ev.button_index = MOUSE_BUTTON_LEFT
+	ev.pressed = true
+	ev.position = p
+	return ev
 
 
 func test_meta() -> void:

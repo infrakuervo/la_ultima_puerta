@@ -64,6 +64,20 @@ func add_beast(kind: String) -> void:
 
 
 func run() -> void:
+	if want("menu"):
+		main.menu.open = true
+		main.menu.panel = "main"
+		await shot("menu")
+		main.menu.panel = "options"
+		await shot("opciones")
+		main.menu.panel = "help"
+		await shot("ayuda")
+		main.menu.open = false
+		main.menu.panel = "main"
+	if want("tutorial"):
+		main.menu.tut_step = 0
+		await shot("tutorial")
+		main.menu.tut_step = -1
 	if want("prep"):
 		await shot("prep")
 	if want("bestias"):
@@ -80,6 +94,24 @@ func run() -> void:
 		for i in 90:
 			s().step(1.0 / 30.0)
 		await shot("combate2")
+	if want("impacto"):
+		s().reset()
+		s().wave_index = 2
+		s().start_wave()
+		var shot_done: bool = false
+		for i in 400:
+			if s().brasa_cd <= 0.0 and not s().enemies.is_empty():
+				s().cast_brasa(s().epos(s().enemies[0]) + Vector2(-60, 0))
+			if s().rayo_cd <= 0.0 and not s().enemies.is_empty():
+				s().cast_rayo(s().epos(s().enemies[-1]))
+			main._process(1.0 / 30.0)
+			for ev in []:
+				pass
+			if i > 200 and main.juice.particles.size() > 40 and not shot_done:
+				shot_done = true
+				await shot("impacto")
+		if not shot_done:
+			await shot("impacto")
 	if want("draft"):
 		s().reset()
 		s().draft_enabled = true

@@ -15,7 +15,8 @@ godot --path C:\ruta\a\la_ultima_puerta
 Controles:
 - Entre oleadas: arrastra una bestia a la retaguardia (muro de atrás, zona izquierda) o a la vanguardia (cerca de los enemigos). Clic en una bestia para seleccionarla y **Subir nivel**.
 - En combate: clic en la arena lanza el hechizo activo en el cursor; mantener el botón lo repite en cuanto se recarga. Cambia de hechizo con clic derecho, rueda, teclas 1/2 o los botones de abajo. Pulsar la interfaz no lanza nada.
-- Botones: **Árbol** (T), **Iniciar oleada** (Espacio), **Velocidad** x1/x2 (F), **Bestiario** (B).
+- Botones: **Árbol** (T), **Iniciar oleada** (Espacio), **Velocidad** x1/x2 (F), **Bestiario** (B). **Esc** abre el menú (pausa).
+- Menú principal con Jugar/Continuar, «Cómo se juega» y Opciones (volumen, velocidad inicial, temblor de pantalla, repetir tutorial; se guardan en `user://opciones.json`). La primera partida trae un tutorial breve.
 Pantalla 1280x720 con GL Compatibility.
 
 ## Pruebas automáticas
@@ -37,7 +38,8 @@ Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tsc
 ## Estructura
 
 - `scripts/sim.gd`: toda la lógica, sin dibujo ni sonido (tick fijo de 1/30 s).
-- `scripts/main.gd`: vista, ratón y avisos. `scripts/art.gd`: siluetas provisionales. `scripts/sound_bank.gd`: sonidos procedurales.
+- `scripts/main.gd`: vista, ratón y avisos. `scripts/art.gd`: sprites y siluetas. `scripts/sound_bank.gd`: sonidos procedurales (con capas para élites y bestias nuevas).
+- `scripts/juice.gd`: partículas, números de daño, destello al golpear, temblor suave y pausa breve en los golpes grandes. `scripts/menu.gd`: menú, opciones y tutorial.
 - `data/balance.json`: costes, vidas, daños, tiempos, casillas. `data/waves.json`: oleadas, rutas y textos. Todo se edita sin tocar código.
 - `user://bestiario.json`: bestiario sencillo (formas vistas y registro de Tizón).
 

@@ -514,6 +514,8 @@ func _spawn_enemy(kind: String, lane: int) -> void:
 	}
 	next_id += 1
 	enemies.append(e)
+	if st.get("elite", false) or st.get("hero", false) or st.get("boss", false):
+		events.append({"t": "elite_spawn", "kind": kind, "id": e["id"], "lane": lane})
 
 
 func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = true) -> void:
@@ -529,7 +531,7 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 		mult *= _cover_mult(e)
 	e["hp"] -= amount * mult
 	if armored:
-		events.append({"t": "hit", "x": e["x"], "lane": e["lane"]})
+		events.append({"t": "hit", "x": e["x"], "lane": e["lane"], "id": e["id"], "amount": amount * mult, "y": epos(e).y})
 	if e["hp"] <= 0.0:
 		e["dead"] = true
 		var reward: int = int(round(float(st["reward"]) * (1.0 + fmul("eco.reward"))))
@@ -538,7 +540,7 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 		var c: Dictionary = creature_by_id(src)
 		if not c.is_empty():
 			c["kills"] += 1
-		events.append({"t": "kill", "x": e["x"], "lane": e["lane"], "reward": reward, "id": e["id"]})
+		events.append({"t": "kill", "x": e["x"], "lane": e["lane"], "reward": reward, "id": e["id"], "kind": e["kind"], "y": epos(e).y})
 
 
 # El Muro de Marfil protege al aliado que camina justo detrás de él.
@@ -579,7 +581,7 @@ func damage_creature(c: Dictionary, amount: float) -> void:
 	if c["dead"] or c["fallen"] or c["air"]:
 		return
 	c["hp"] -= amount
-	events.append({"t": "creature_hit", "id": c["id"]})
+	events.append({"t": "creature_hit", "id": c["id"], "amount": amount})
 	if c["hp"] <= 0.0:
 		c["hp"] = 0.0
 		if c["named"]:

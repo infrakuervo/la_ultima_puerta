@@ -5,6 +5,8 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 ## Arquitectura
 - `scripts/sim.gd`: toda la lógica, sin dibujo. Tick fijo 1/30 s; la vista lee `events`.
 - `scripts/main.gd`: vista, ratón y sonido (modo inmediato en `_draw()`). `scripts/art.gd`: sprites y siluetas de reserva.
+- `scripts/juice.gd` (partículas, números, destellos, trauma de cámara, hitstop) y `scripts/menu.gd` (menú, opciones, tutorial) son ayudantes de la vista; reciben `main` y dibujan con él. La simulación no sabe nada de ellos.
+- Eventos de la simulación usados por la vista: `hit` y `kill` llevan `id`, `amount`/`kind` e `y`; `elite_spawn` al aparecer élites y héroes.
 - Datos: `data/balance.json` (bestias, enemigos, élites, economía, `draft.pool`), `data/waves.json`, `data/skills.json` (árbol, efectos `fx` con `mul`/`add`).
 - Arena abierta con zonas de retaguardia y vanguardia; oleadas desordenadas por frentes al azar; Brasa (área con retraso, apuntada con el ratón) y Rayo.
 
@@ -21,6 +23,5 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 - `*.uid` e `*.import` están en `.gitignore` para no chocar con la copia local del usuario.
 
 ## Pendiente
-- Sonidos propios para élites y bestias nuevas (ahora reutilizan los existentes).
 - Dificultad con tiradas reales; actualizar la descripción del PR #1.
 - Llegarán más packs de bestias.

@@ -17,7 +17,7 @@ Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, c
    Antes: primera partida 80% (Verdugo 65 / Inquisidor 95), con árbol 100% desde la 2.ª partida. Después: 55% (48 / 64) en 120 partidas; árbol 80→85%, 150→98%.
    Cambios (todo JSON salvo la esencia, que pasa a `balance.json` → `meta`): Puerta 180→130; oleadas 4-6 más cargadas; Horno más fuerte y de más alcance; Trueno algo más débil; curas de clérigo/Lumbrero y barrido del Tajo rebajados; Verdugo menos letal (ejecuta al 12%); draft con menos bestias (2/2/2/1) y más recompensas (2); esencia 10+5n y 60 por victoria.
    La causa de la diferencia entre rutas era el héroe Verdugo ejecutando bestias en la oleada 5. Nota: la curva con árbol sube rápido; el segundo asedio (punto 5) debe ser el reto siguiente.
-4. [ ] Pulido y sensación
+4. [x] Pulido y sensación — `scripts/juice.gd`: destello y aplastamiento al recibir golpe, chispas/ceniza/ascuas, números de daño que se suman, temblor por trauma con ruido (opción para quitarlo), pausa breve al matar élites/héroes, Brasa con 3+ impactos y barrido del Tajo; ascuas de ambiente; banner que entra deslizando y fundido a negro en cambios de fase. Sonidos por capas propios (Capataz/élite al aparecer, Lumbrero, Tirador apunta/dispara, Tajo carga/barre, Campana, Alacrán, Sapo, Manta, muerte grande). `scripts/menu.gd`: menú principal (Esc), Cómo se juega, Opciones guardadas y tutorial de la primera partida (5 pasos con resaltado).
 5. [ ] Más contenido
 6. [ ] Versión web (gh-pages)
 7. [ ] Cierre

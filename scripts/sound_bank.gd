@@ -38,6 +38,20 @@ func _init() -> void:
 	streams["level"] = make(420.0, 900.0, 0.25, 0.45, 0, 0.0, 0.1)
 	streams["win"] = make(400.0, 800.0, 1.1, 0.5, 1, 0.0, 0.0)
 	streams["lose"] = make(220.0, 40.0, 1.3, 0.7, 2, 0.3, 0.0)
+	# Capas (f0, f1, dur, vol, onda, ruido, ataque, retardo): élites, bestias nuevas y golpes grandes.
+	streams["big_kill"] = mix([[90.0, 30.0, 0.5, 0.8, 3, 0.6, 0.0, 0.0], [300.0, 80.0, 0.3, 0.5, 2, 0.1, 0.0, 0.0]])
+	streams["elite"] = mix([[110.0, 98.0, 0.7, 0.55, 1, 0.05, 0.15, 0.0], [165.0, 147.0, 0.7, 0.35, 1, 0.0, 0.15, 0.0]])
+	streams["lumbrero"] = mix([[880.0, 880.0, 0.6, 0.3, 0, 0.0, 0.05, 0.0], [1320.0, 1320.0, 0.6, 0.22, 0, 0.0, 0.05, 0.08], [1760.0, 1760.0, 0.5, 0.15, 0, 0.0, 0.05, 0.16]])
+	streams["tirador_aim"] = mix([[180.0, 260.0, 0.12, 0.4, 2, 0.3, 0.0, 0.0], [190.0, 280.0, 0.12, 0.4, 2, 0.3, 0.0, 0.2], [200.0, 300.0, 0.12, 0.4, 2, 0.3, 0.0, 0.4], [210.0, 320.0, 0.12, 0.4, 2, 0.3, 0.0, 0.6]])
+	streams["tirador_shot"] = mix([[900.0, 120.0, 0.18, 0.6, 2, 0.2, 0.0, 0.0], [200.0, 60.0, 0.25, 0.5, 3, 0.7, 0.0, 0.0]])
+	streams["tajo_wind"] = mix([[60.0, 240.0, 0.8, 0.5, 3, 0.9, 0.7, 0.0], [70.0, 110.0, 0.8, 0.3, 2, 0.0, 0.7, 0.0]])
+	streams["tajo_sweep"] = mix([[500.0, 70.0, 0.35, 0.7, 3, 0.9, 0.05, 0.0], [120.0, 40.0, 0.45, 0.6, 2, 0.2, 0.0, 0.05]])
+	streams["campana_ring"] = mix([[220.0, 218.0, 1.6, 0.6, 4, 0.0, 0.0, 0.0], [110.0, 109.0, 1.6, 0.4, 4, 0.0, 0.0, 0.0], [70.0, 40.0, 0.4, 0.5, 3, 0.8, 0.0, 0.0]])
+	streams["alacran_grab"] = mix([[1800.0, 900.0, 0.05, 0.5, 3, 0.9, 0.0, 0.0], [1600.0, 800.0, 0.05, 0.5, 3, 0.9, 0.0, 0.09], [140.0, 70.0, 0.25, 0.5, 2, 0.2, 0.0, 0.1]])
+	streams["sapo_windup"] = mix([[90.0, 150.0, 0.5, 0.5, 0, 0.0, 0.3, 0.0], [95.0, 160.0, 0.5, 0.3, 2, 0.0, 0.3, 0.0]])
+	streams["sapo_spit"] = mix([[260.0, 70.0, 0.3, 0.6, 0, 0.3, 0.0, 0.0], [120.0, 50.0, 0.4, 0.5, 3, 0.6, 0.0, 0.12]])
+	streams["manta_dive"] = mix([[700.0, 300.0, 0.4, 0.35, 0, 0.2, 0.3, 0.0], [710.0, 310.0, 0.4, 0.25, 0, 0.2, 0.3, 0.03]])
+	streams["manta_glide"] = mix([[200.0, 1200.0, 0.5, 0.45, 3, 0.85, 0.2, 0.0], [300.0, 600.0, 0.5, 0.25, 0, 0.0, 0.2, 0.0]])
 
 
 static func make(f0: float, f1: float, dur: float, vol: float, wave: int, noise_mix: float, attack: float) -> AudioStreamWAV:
@@ -80,3 +94,34 @@ static func make(f0: float, f1: float, dur: float, vol: float, wave: int, noise_
 	w.stereo = false
 	w.data = data
 	return w
+
+
+## Mezcla varias capas; cada una: [f0, f1, dur, vol, onda, ruido, ataque, retardo].
+static func mix(layers: Array) -> AudioStreamWAV:
+	var total: float = 0.0
+	for l in layers:
+		total = maxf(total, float(l[2]) + float(l[7]))
+	var n: int = int(RATE * total)
+	var acc: PackedFloat32Array = PackedFloat32Array()
+	acc.resize(n)
+	for l in layers:
+		var w: AudioStreamWAV = make(float(l[0]), float(l[1]), float(l[2]), float(l[3]), int(l[4]), float(l[5]), float(l[6]))
+		var off: int = int(RATE * float(l[7]))
+		var cnt: int = w.data.size() / 2
+		for i in cnt:
+			if off + i < n:
+				acc[off + i] += float(w.data.decode_s16(i * 2)) / 32000.0
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(n * 2)
+	var peak: float = 0.0
+	for i in n:
+		peak = maxf(peak, absf(acc[i]))
+	var g: float = 1.0 if peak <= 0.95 else 0.95 / peak
+	for i in n:
+		data.encode_s16(i * 2, int(clampf(acc[i] * g, -1.0, 1.0) * 32000.0))
+	var out: AudioStreamWAV = AudioStreamWAV.new()
+	out.format = AudioStreamWAV.FORMAT_16_BITS
+	out.mix_rate = RATE
+	out.stereo = false
+	out.data = data
+	return out

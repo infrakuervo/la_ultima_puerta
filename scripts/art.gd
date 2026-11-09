@@ -95,9 +95,9 @@ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opt
 	var glow: float = float(opts.get("glow", 0.0))
 	if glow > 0.0:
 		ci.draw_circle(pos + Vector2(0, -h * 0.5 - lift), (h * 0.55 + 30.0 * glow), Color(1.0, 0.55, 0.2, 0.25 * glow))
-	var hh: float = h * squash
+	var hh: float = h * squash * (1.0 - 0.08 * flash)
 	var rect: Rect2 = Rect2(pos.x - w * 0.5, pos.y - hh - lift + bob, w, hh)
-	var col: Color = Color(1, 1, 1, alpha).lerp(Color(1.6, 1.5, 1.3, alpha), flash)
+	var col: Color = Color(1, 1, 1, alpha).lerp(Color(2.6, 2.4, 2.1, alpha), flash)
 	ci.draw_texture_rect(tx, rect, false, col)
 	var scars: int = int(opts.get("scars", 0))
 	for i in scars:
@@ -193,7 +193,7 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 	if esp != "":
 		var eo2: Dictionary = {"flash": flash, "scale": float(opts.get("scale", 1.0)), "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
 		if burning:
-			eo2["flash"] = maxf(flash, 0.25 + 0.15 * sin(t * 14.0))
+			eo2["flash"] = maxf(flash, 0.12 + 0.08 * sin(t * 14.0))
 		if draw_sprite(ci, esp, pos, t, eo2):
 			return
 		kind = esp.get_slice("_", 0)
