@@ -1,11 +1,11 @@
 # La Última Puerta
 
-Prototipo (Godot 4.4, GDScript) de «Primer asedio»: defiendes la última puerta del Infierno lanzando hechizos con el ratón (Brasa y Rayo) y criando bestias que mutan y suben de nivel.
+Prototipo (Godot 4.7, GDScript) de «Primer asedio»: defiendes la última puerta del Infierno lanzando hechizos con el ratón (Brasa y Rayo) y criando bestias que mutan y suben de nivel.
 Se juega entero con el ratón, de la oleada 1 a la victoria o la derrota, y se reinicia desde la pantalla de resultados.
 
 ## Cómo ejecutarlo
 
-1. Instala Godot 4.4 (estándar, no .NET).
+1. Instala Godot 4.7.x (estándar, no .NET).
 2. Abre `project.godot` desde el gestor de proyectos y pulsa F5, o desde PowerShell:
 
 ```powershell
@@ -20,9 +20,17 @@ Pantalla 1280x720 con GL Compatibility.
 
 ## Pruebas automáticas
 
+Desde la raíz del repo (la primera orden importa los recursos y solo hace falta una vez):
+
 ```powershell
-godot --headless --path C:\ruta\a\la_ultima_puerta --script res://tests/run_tests.gd
+godot --headless --editor --import --path .
 ```
+
+```powershell
+godot --headless --path . res://tests/run_scene.tscn
+```
+
+Debe terminar con `FIN_SUITE fallos=0`.
 
 Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tscn` desde el editor (la salida va al registro del juego). Comprueba: datos, combate de la oleada 1, Presa, Brasa, Rayo, niveles, vuelta de Tizón con cicatriz, flujo de ruta y reliquia (ambas rutas), Horno, Trueno y su hueco, Ojo (combo y marca), préstamo del Ojo, economía, partidas completas automáticas de las dos rutas (Puerta invulnerable) y un recorrido por la interfaz con el ratón. Al final imprime un informe de equilibrio (5 semillas por ruta).
 
