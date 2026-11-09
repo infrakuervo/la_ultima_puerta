@@ -3,6 +3,10 @@
 Prototipo (Godot 4.7, GDScript) de «Primer asedio»: defiendes la última puerta del Infierno lanzando hechizos con el ratón (Brasa y Rayo) y criando bestias que mutan y suben de nivel.
 Se juega entero con el ratón, de la oleada 1 a la victoria o la derrota, y se reinicia desde la pantalla de resultados.
 
+## Jugar en el navegador
+
+**https://infrakuervo.github.io/la_ultima_puerta/** (versión web, GL Compatibility sin hilos; se actualiza con `tools/publish_web.sh`).
+
 ## Cómo ejecutarlo
 
 1. Instala Godot 4.7.x (estándar, no .NET).
@@ -135,3 +139,13 @@ Enemigos del Alba (`data/balance.json` → `enemies`):
 - **Ánima del Garfio** (vanguardia): cada 7 s engancha a un apoyo o tirador lejano (carril propio o vecinos), lo arrastra a su carril y lo aturde 1 s.
 
 Equilibrio tras el contenido nuevo (bot torpe): primer asedio 58% en la primera partida (160 partidas); segundo asedio 0% sin árbol, 28% con 300 de esencia, 90% con 600. Ira 3 en el primer asedio: 47% con 600 de esencia, 93% con 1500; Ira 5: 40% con 1500, 100% con 3000.
+
+## Versión web
+
+`export_presets.cfg` trae el preset **Web** (sin hilos, para GitHub Pages; incluye `data/*.json` y excluye `tests/`, `tools/` y `art/alternativas/`). Hacen falta las plantillas de exportación de Godot 4.7.2 (basta con `web_nothreads_release.zip` y `web_nothreads_debug.zip`).
+
+```powershell
+godot --headless --path . --export-release "Web" build/web/index.html
+```
+
+`tools/publish_web.sh` exporta y publica `build/web` en la rama `gh-pages`.

@@ -24,6 +24,9 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 - `tools/balance.tscn` (informe de equilibrio), `tools/debug_run.tscn` (línea de tiempo de una partida), `tools/shots.tscn` (capturas con xvfb-run).
 - `*.uid` e `*.import` están en `.gitignore` para no chocar con la copia local del usuario.
 
+## Versión web
+- https://infrakuervo.github.io/la_ultima_puerta/ — republicar con `tools/publish_web.sh` tras cada cambio importante. `export_presets.cfg` sí se versiona.
+
 ## Pendiente
 - Dificultad con tiradas reales; actualizar la descripción del PR #1.
 - Más packs de bestias y asedios (el patrón está arriba).

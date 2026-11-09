@@ -1,9 +1,9 @@
 # Godot 4
 .godot/
 *.translation
-export_presets.cfg
 .import/
 # Local
 *.tmp
 *.uid
 *.import
+build/

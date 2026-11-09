@@ -8,6 +8,7 @@ Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, c
   `https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip`.
 - Pruebas: `godot --headless --editor --import --path .` (una vez) y `godot --headless --path . res://tests/run_scene.tscn` → `FIN_SUITE fallos=0` (≈4 s).
 - Capturas: `xvfb-run` ya instalado (apt `xvfb`).
+- Plantillas web 4.7.2 en `~/.local/share/godot/export_templates/4.7.2.stable/` (solo las dos `web_nothreads_*`).
 - [ ] Guardar los pasos como setup script de un entorno propio (el entorno actual es el Default; se propondrá al final para no bloquear el turno con una aprobación).
 
 ## Lista
@@ -19,7 +20,7 @@ Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, c
    La causa de la diferencia entre rutas era el héroe Verdugo ejecutando bestias en la oleada 5. Nota: la curva con árbol sube rápido; el segundo asedio (punto 5) debe ser el reto siguiente.
 4. [x] Pulido y sensación — `scripts/juice.gd`: destello y aplastamiento al recibir golpe, chispas/ceniza/ascuas, números de daño que se suman, temblor por trauma con ruido (opción para quitarlo), pausa breve al matar élites/héroes, Brasa con 3+ impactos y barrido del Tajo; ascuas de ambiente; banner que entra deslizando y fundido a negro en cambios de fase. Sonidos por capas propios (Capataz/élite al aparecer, Lumbrero, Tirador apunta/dispara, Tajo carga/barre, Campana, Alacrán, Sapo, Manta, muerte grande). `scripts/menu.gd`: menú principal (Esc), Cómo se juega, Opciones guardadas y tutorial de la primera partida (5 pasos con resaltado).
 5. [x] Más contenido — pack 2 de bestias (Gárgola de Ceniza, Enjambre Ígneo, Ánima del Garfio; siluetas por código), segundo asedio «la Orden del Alba» de 8 oleadas con Zapador, Paladín, Sacerdotisa, Ariete y jefe Gran Maestre (Juicio por carril y escolta), selección de asedio en el menú, desbloqueo al ganar, y niveles de Ira 0-5 para rejugar. Equilibrio: asedio 1 58%; asedio 2 28%/90% con 300/600 de esencia; Ira escala bien con el árbol. Pruebas en `test_content`.
-6. [ ] Versión web (gh-pages)
+6. [x] Versión web — https://infrakuervo.github.io/la_ultima_puerta/ (rama `gh-pages`). Preset `Web` en `export_presets.cfg` (sin hilos). Plantillas: solo `web_nothreads_*.zip`, sacadas del .tpz con peticiones por rangos (`/tmp/claude-0/py/remotezip.py`, ver nota de entorno). Republicar: `tools/publish_web.sh`. Probada en Chromium sin cabeza (menú, tutorial, combate).
 7. [ ] Cierre
 
 ## Notas
