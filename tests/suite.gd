@@ -25,6 +25,8 @@ func run() -> void:
 	test_economy()
 	test_elites()
 	test_meta()
+	test_beasts()
+	test_draft()
 	test_skills()
 	test_full_runs()
 	await test_ui_smoke()
@@ -873,3 +875,131 @@ func test_meta() -> void:
 	s2._check_end()
 	check(s2.essence == 30, "superar la oleada 1 da 30 de esencia (%d)" % s2.essence)
 	check(before >= 0, "esencia coherente")
+
+
+func spawn_beast(s, kind: String, lane: int, x: float) -> Dictionary:
+	var c: Dictionary = s._new_creature(kind, {"x": x, "lane": lane})
+	s.creatures.append(c)
+	return c
+
+
+func test_beasts() -> void:
+	print("Bestias nuevas")
+	for k in ["alacran", "sapo", "manta"]:
+		var s0 = new_sim()
+		check(s0.B.has(k) and s0.label(k) != k, "%s existe y tiene nombre" % k)
+		check(FileAccess.file_exists("res://art/sprites/%s.png" % k), "%s tiene sprite" % k)
+	# Alacrán
+	var s = new_sim()
+	s.creatures.clear()
+	var a: Dictionary = spawn_beast(s, "alacran", 1, 520.0)
+	to_combat(s)
+	var e1: Dictionary = add_enemy(s, "escudero", 1, 560.0)
+	e1["hp"] = 5000.0
+	e1["max_hp"] = 5000.0
+	var hp0: float = e1["hp"]
+	var ev: Array = run_ticks(s, 60)
+	check(ev.has("presa"), "el Alacrán agarra al enemigo")
+	check(e1["held"] > 1.5 and e1["held"] <= 3.0, "lo sujeta unos 3 s (%.1f)" % e1["held"])
+	check(hp0 - e1["hp"] >= 28.0, "la pinza hace daño al agarrar (%d)" % int(hp0 - e1["hp"]))
+	# Sapo
+	var s2 = new_sim()
+	s2.creatures.clear()
+	var sp: Dictionary = spawn_beast(s2, "sapo", 1, 300.0)
+	to_combat(s2)
+	var g1: Dictionary = add_enemy(s2, "campesino", 1, 600.0)
+	var g2: Dictionary = add_enemy(s2, "campesino", 1, 630.0)
+	for g in [g1, g2]:
+		g["hp"] = 500.0
+		g["max_hp"] = 500.0
+		g["stun"] = 99.0
+	var far: Dictionary = add_enemy(s2, "campesino", 0, 1100.0)
+	far["stun"] = 99.0
+	var ev2: Array = run_ticks(s2, 45)
+	check(ev2.has("sapo_windup") and ev2.has("sapo_spit"), "el Sapo avisa y escupe")
+	check(g1["hp"] < 500.0 and g2["hp"] < 500.0, "la brea daña a todo el grupo")
+	check(far["hp"] == float(far["max_hp"]), "no toca a quien está lejos")
+	check(g1["tar"] > 0.0 and not s2.tar_pools.is_empty(), "queda un charco y los alcanzados van pegajosos")
+	g1["stun"] = 0.0
+	var m0: float = s2._haste_mult(g1)
+	check(m0 < 1.0, "la brea ralentiza (x%.2f)" % m0)
+	# Manta
+	var s3 = new_sim()
+	s3.creatures.clear()
+	var mt: Dictionary = spawn_beast(s3, "manta", 1, 330.0)
+	to_combat(s3)
+	var h1: Dictionary = add_enemy(s3, "escudero", 2, 500.0)
+	var h2: Dictionary = add_enemy(s3, "escudero", 2, 560.0)
+	var h3: Dictionary = add_enemy(s3, "escudero", 0, 520.0)
+	for h in [h1, h2, h3]:
+		h["hp"] = 500.0
+		h["max_hp"] = 500.0
+		h["stun"] = 0.0
+	var air_seen: bool = false
+	var evs: Array = []
+	for i in 120:
+		s3.step(Sim.TICK)
+		for e in s3.events:
+			evs.append(String(e["t"]))
+		s3.events.clear()
+		if mt["air"]:
+			air_seen = true
+		h1["x"] = 500.0
+		h2["x"] = 560.0
+		h3["x"] = 520.0
+	check(evs.has("manta_dive") and evs.has("manta_glide"), "la Manta avisa y se lanza")
+	check(air_seen, "es intocable mientras vuela")
+	check(h1["hp"] < 500.0 and h2["hp"] < 500.0, "golpea a todos los del carril")
+	check(h3["hp"] == 500.0, "no toca otros carriles")
+	check(mt["state"] == "home" and mt["lane"] == 1 and not mt["air"], "vuelve a su sitio (%s)" % mt["state"])
+
+
+func test_draft() -> void:
+	print("Elección tras la oleada")
+	var s = new_sim()
+	s.draft_enabled = true
+	s.door_hp = 100000.0
+	s.door_max = 100000.0
+	s.start_wave()
+	for i in 4000:
+		s.step(Sim.TICK)
+		s.events.clear()
+		for e in s.enemies.duplicate():
+			s.damage_enemy(e, 99999.0)
+		if s.phase != "combat":
+			break
+	check(s.phase == "prep" and s.draft.size() == 3, "tras la oleada se ofrecen 3 opciones (fase %s, oleada %d, opciones %d, almas %d)" % [s.phase, s.wave_index, s.draft.size(), s.souls])
+	if s.draft.size() < 1:
+		return
+	var ids: Array = []
+	for o in s.draft:
+		ids.append(o["id"])
+	var uniq: bool = true
+	for i in ids.size():
+		if ids.count(ids[i]) > 1:
+			uniq = false
+	check(uniq, "las tres son distintas")
+	check(not s.start_wave(), "no se puede iniciar sin elegir")
+	var n0: int = s.creatures.size()
+	var souls0: int = s.souls
+	var first: Dictionary = s.draft[0]
+	check(s.draft_pick(0), "se elige una")
+	check(s.draft.is_empty(), "la elección se consume")
+	if first["type"] == "beast":
+		check(s.creatures.size() == n0 + 1 and s.creatures[s.creatures.size() - 1]["kind"] == first["kind"], "la bestia entra en la partida")
+	elif first["type"] == "souls":
+		check(s.souls == souls0 + int(first["amount"]), "las almas se suman")
+	check(s.start_wave(), "tras elegir se puede iniciar")
+	var s2 = new_sim()
+	s2.draft_enabled = false
+	s2.start_wave()
+	s2.door_hp = 100000.0
+	s2.door_max = 100000.0
+	for i in 4000:
+		s2.step(Sim.TICK)
+		s2.events.clear()
+		for e in s2.enemies.duplicate():
+			s2.damage_enemy(e, 99999.0)
+		if s2.phase != "combat":
+			break
+	check(s2.draft.is_empty(), "sin el modo, no hay elección")

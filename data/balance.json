@@ -18,7 +18,10 @@
   "tirador": "Tirador de Cerrojo",
   "lumbrero": "Lumbrero del Alba",
   "tajo": "Verdugo del Tajo Negro",
-  "campana": "Inquisidor de la Gran Campana"
+  "campana": "Inquisidor de la Gran Campana",
+  "alacran": "Alacrán de la Fosa",
+  "sapo": "Sapo de Brea",
+  "manta": "Manta del Umbral"
  },
  "arena": {
   "door_x": 130,
@@ -303,5 +306,99 @@
    "stun": 0.0,
    "chain_count": 1
   }
+ },
+ "alacran": {
+  "hp": 190,
+  "dmg": 12,
+  "cd": 1.2,
+  "speed": 100,
+  "leash": 260,
+  "reach": 38,
+  "presa_cd": 9.0,
+  "presa_time": 3.0,
+  "presa_range": 110,
+  "presa_windup": 0.5,
+  "grab_dmg": 28,
+  "spot": "front"
+ },
+ "sapo": {
+  "hp": 90,
+  "range": 520,
+  "min_range": 120,
+  "cd": 5.0,
+  "windup": 0.7,
+  "tar_dmg": 16,
+  "tar_radius": 85,
+  "tar_time": 3.5,
+  "slow": 0.5,
+  "spot": "rear"
+ },
+ "manta": {
+  "hp": 80,
+  "swoop_cd": 7.0,
+  "windup": 0.5,
+  "speed": 560,
+  "sweep_len": 520,
+  "hit_dmg": 26,
+  "hit_stun": 0.4,
+  "min_targets": 1,
+  "spot": "rear"
+ },
+ "draft": {
+  "count": 3,
+  "pool": [
+   {
+    "id": "alacran",
+    "type": "beast",
+    "kind": "alacran",
+    "weight": 3,
+    "desc": "Tanque que agarra a un enemigo 3 s."
+   },
+   {
+    "id": "sapo",
+    "type": "beast",
+    "kind": "sapo",
+    "weight": 3,
+    "desc": "Escupe brea desde atrás: daña y ralentiza."
+   },
+   {
+    "id": "manta",
+    "type": "beast",
+    "kind": "manta",
+    "weight": 3,
+    "desc": "Embosca por un carril: golpea a todos y aturde."
+   },
+   {
+    "id": "sabueso",
+    "type": "beast",
+    "kind": "sabueso",
+    "weight": 2,
+    "desc": "Otro Sabueso de Escoria, gratis."
+   },
+   {
+    "id": "almas",
+    "type": "souls",
+    "amount": 45,
+    "weight": 1,
+    "title": "Cosecha",
+    "desc": "+45 almas."
+   },
+   {
+    "id": "puerta",
+    "type": "door",
+    "amount": 0.4,
+    "weight": 1,
+    "title": "Remiendo",
+    "desc": "Repara el 40% de la Puerta."
+   },
+   {
+    "id": "esencia",
+    "type": "essence",
+    "amount": 30,
+    "weight": 1,
+    "title": "Pozo de esencia",
+    "desc": "+30 de esencia permanente."
+   }
+  ]
  }
 }

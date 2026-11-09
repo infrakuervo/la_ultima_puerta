@@ -25,8 +25,9 @@ const SPRITE_H: Dictionary = {
 	"sabueso": 78.0, "horno": 100.0, "trueno": 120.0, "ojo": 90.0, "demonio": 190.0,
 	"campesino": 90.0, "escudero": 96.0, "ballestero": 90.0, "clerigo": 108.0,
 	"verdugo": 140.0, "inquisidor": 150.0,
+	"alacran": 86.0, "sapo": 76.0, "manta": 62.0,
 }
-const SPRITE_LIFT: Dictionary = {"ojo": 44.0}
+const SPRITE_LIFT: Dictionary = {"ojo": 44.0, "manta": 26.0}
 static var _tex_cache: Dictionary = {}
 
 

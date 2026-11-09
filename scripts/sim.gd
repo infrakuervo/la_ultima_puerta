@@ -29,6 +29,9 @@ var next_id: int = 1
 var brasa_cd: float = 0.0
 var rayo_cd: float = 0.0
 var pending_brasas: Array = []
+var tar_pools: Array = []        # charcos de brea del Sapo: {p, r, t}
+var draft_enabled: bool = false  # tras cada oleada se elige 1 de 3
+var draft: Array = []
 var meta_mode: bool = false      # árbol permanente: se paga con esencia y se conserva entre partidas
 var essence: int = 0
 var skills: Dictionary = {}      # id de habilidad -> rango comprado
@@ -86,6 +89,8 @@ func reset() -> void:
 	brasa_cd = 0.0
 	rayo_cd = 0.0
 	pending_brasas.clear()
+	tar_pools.clear()
+	draft.clear()
 	kills = 0
 	wave_time = 0.0
 	var tizon: Dictionary = _new_creature("sabueso", {"x": 520.0, "lane": 1})
@@ -393,7 +398,7 @@ func give_relic() -> bool:
 
 
 func start_wave() -> bool:
-	if phase != "prep":
+	if phase != "prep" or not draft.is_empty():
 		return false
 	spawn_queue = _build_spawns(WAVES[wave_index])
 	enemies.clear()
@@ -403,6 +408,7 @@ func start_wave() -> bool:
 	brasa_cd = 0.0
 	rayo_cd = 0.0
 	pending_brasas.clear()
+	tar_pools.clear()
 	for c in creatures:
 		_reset_combat_state(c)
 	events.append({"t": "wave_start", "wave": wave_index + 1})
@@ -551,6 +557,8 @@ func _cover_mult(e: Dictionary) -> float:
 # La turba corre más cerca de un Capataz.
 func _haste_mult(e: Dictionary) -> float:
 	var best: float = 1.0
+	if float(e.get("tar", 0.0)) > 0.0:
+		best = float(B["sapo"]["slow"])
 	for m in enemies:
 		if m["dead"] or m["id"] == e["id"]:
 			continue
@@ -581,6 +589,16 @@ func damage_creature(c: Dictionary, amount: float) -> void:
 
 
 func _update_zones(dt: float) -> void:
+	var pools: Array = []
+	for tp in tar_pools:
+		tp["t"] -= dt
+		if tp["t"] <= 0.0:
+			continue
+		pools.append(tp)
+		for e in enemies:
+			if not e["dead"] and epos(e).distance_to(tp["p"]) <= tp["r"]:
+				e["tar"] = maxf(float(e.get("tar", 0.0)), 0.5)
+	tar_pools = pools
 	var keep: Array = []
 	for z in zones:
 		z["t"] -= dt
@@ -719,7 +737,13 @@ func _update_creature(c: Dictionary, dt: float) -> void:
 		return
 	match c["kind"]:
 		"sabueso":
-			_ai_sabueso(c, dt)
+			_ai_presa(c, dt, "sabueso")
+		"alacran":
+			_ai_presa(c, dt, "alacran")
+		"sapo":
+			_ai_sapo(c, dt)
+		"manta":
+			_ai_manta(c, dt)
 		"horno":
 			_ai_horno(c, dt)
 		"trueno":
@@ -782,8 +806,8 @@ func _is_hero(kind: String) -> bool:
 	return bool(B["enemies"][kind].get("hero", false))
 
 
-func _ai_sabueso(c: Dictionary, dt: float) -> void:
-	var st: Dictionary = _stats("sabueso")
+func _ai_presa(c: Dictionary, dt: float, kind: String) -> void:
+	var st: Dictionary = _stats(kind)
 	if c["windup"] > 0.0:
 		c["windup"] -= dt
 		if c["windup"] <= 0.0:
@@ -793,6 +817,8 @@ func _ai_sabueso(c: Dictionary, dt: float) -> void:
 				if _is_hero(t["kind"]):
 					hold *= 0.5
 				t["held"] = hold
+				if st.has("grab_dmg"):
+					damage_enemy(t, float(st["grab_dmg"]) * dmg_mult(c), c["id"])
 				if fadd("special.presa_dmg") > 0.0:
 					damage_enemy(t, float(st["dmg"]) * fadd("special.presa_dmg"), c["id"])
 				events.append({"t": "presa", "id": c["id"], "target": t["id"]})
@@ -805,6 +831,105 @@ func _ai_sabueso(c: Dictionary, dt: float) -> void:
 		c["windup"] = float(st["presa_windup"])
 		c["target"] = tgt["id"]
 		events.append({"t": "presa_windup", "id": c["id"], "target": tgt["id"]})
+
+
+func _ai_sapo(c: Dictionary, dt: float) -> void:
+	var st: Dictionary = _stats("sapo")
+	if c["windup"] > 0.0:
+		c["windup"] -= dt
+		if c["windup"] <= 0.0:
+			_sapo_land(c, st)
+		return
+	if c["cd"] > 0.0:
+		return
+	var best: Dictionary = {}
+	var best_n: int = 0
+	for e in enemies:
+		if e["dead"]:
+			continue
+		var d: float = e["x"] - c["x"]
+		if d < float(st["min_range"]) or d > float(st["range"]):
+			continue
+		var n: int = 0
+		for o in enemies:
+			if not o["dead"] and epos(o).distance_to(epos(e)) <= float(st["tar_radius"]):
+				n += 1
+		if n > best_n:
+			best_n = n
+			best = e
+	if best.is_empty():
+		return
+	c["target"] = best["id"]
+	c["windup"] = float(st["windup"])
+	c["cd"] = float(st["cd"])
+	events.append({"t": "sapo_windup", "id": c["id"], "target": best["id"]})
+
+
+func _sapo_land(c: Dictionary, st: Dictionary) -> void:
+	var t: Dictionary = enemy_by_id(int(c["target"]))
+	var p: Vector2 = epos(t) if not t.is_empty() and not t["dead"] else Vector2(c["x"] + 300.0, lane_y(int(c["lane"])))
+	var hit: int = 0
+	for e in enemies:
+		if e["dead"] or epos(e).distance_to(p) > float(st["tar_radius"]):
+			continue
+		hit += 1
+		damage_enemy(e, float(st["tar_dmg"]) * dmg_mult(c), c["id"])
+		if not e["dead"]:
+			e["tar"] = float(st["tar_time"])
+	tar_pools.append({"p": p, "r": float(st["tar_radius"]), "t": float(st["tar_time"])})
+	events.append({"t": "sapo_spit", "id": c["id"], "x": p.x, "y": p.y, "from_x": c["x"], "lane": c["lane"], "hit": hit})
+
+
+func _ai_manta(c: Dictionary, dt: float) -> void:
+	var st: Dictionary = _stats("manta")
+	match c["state"]:
+		"home":
+			if c["skill_cd"] > 0.0:
+				return
+			var best_lane: int = -1
+			var best_n: int = 0
+			for lane in 3:
+				var n: int = 0
+				for e in enemies:
+					if not e["dead"] and e["lane"] == lane and e["x"] >= c["home_x"] and e["x"] <= c["home_x"] + float(st["sweep_len"]):
+						n += 1
+				if n > best_n:
+					best_n = n
+					best_lane = lane
+			if best_lane < 0 or best_n < int(st["min_targets"]):
+				return
+			c["target"] = best_lane
+			c["state"] = "dive"
+			c["windup"] = float(st["windup"])
+			events.append({"t": "manta_dive", "id": c["id"], "lane": best_lane})
+		"dive":
+			c["windup"] -= dt
+			if c["windup"] <= 0.0:
+				c["state"] = "glide"
+				c["air"] = true
+				c["lane"] = int(c["target"])
+				c["hit"] = []
+				events.append({"t": "manta_glide", "id": c["id"], "lane": c["lane"]})
+		"glide":
+			c["x"] += float(st["speed"]) * dt
+			for e in enemies:
+				if e["dead"] or e["lane"] != c["lane"] or c["hit"].has(e["id"]):
+					continue
+				if absf(e["x"] - c["x"]) <= 34.0:
+					c["hit"].append(e["id"])
+					damage_enemy(e, float(st["hit_dmg"]) * dmg_mult(c), c["id"])
+					if not e["dead"]:
+						e["stun"] = maxf(e["stun"], float(st["hit_stun"]))
+			if c["x"] >= c["home_x"] + float(st["sweep_len"]):
+				c["state"] = "back"
+		"back":
+			c["x"] -= float(st["speed"]) * dt
+			if c["x"] <= c["home_x"]:
+				c["x"] = c["home_x"]
+				c["lane"] = c["home_lane"]
+				c["air"] = false
+				c["state"] = "home"
+				c["skill_cd"] = float(st["swoop_cd"])
 
 
 func _ai_horno(c: Dictionary, dt: float) -> void:
@@ -1143,6 +1268,8 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 			return
 	if e["held"] > 0.0:
 		e["held"] -= dt
+	if float(e.get("tar", 0.0)) > 0.0:
+		e["tar"] = float(e["tar"]) - dt
 	if e["stun"] > 0.0:
 		e["stun"] -= dt
 	if st.get("support", false):
@@ -1342,6 +1469,8 @@ func _wave_cleared() -> void:
 			_gain_essence(100)
 		events.append({"t": "victory"})
 		return
+	if draft_enabled:
+		make_draft()
 	var after: String = String(w.get("after", "prep"))
 	if after == "route":
 		phase = "route"
@@ -1419,6 +1548,69 @@ func _stats(kind: String) -> Dictionary:
 			d[key] = float(v) * f + a
 	_stat_cache[kind] = d
 	return d
+
+
+## Elección tras cada oleada: 3 opciones al azar (ponderadas) del pool de data/balance.json.
+func make_draft() -> void:
+	draft.clear()
+	var cfg: Dictionary = B["draft"]
+	var cands: Array = []
+	for o in cfg["pool"]:
+		if _draft_ok(o):
+			cands.append(o)
+	while draft.size() < int(cfg["count"]) and not cands.is_empty():
+		var tot: float = 0.0
+		for o in cands:
+			tot += float(o.get("weight", 1))
+		var r: float = rng.randf() * tot
+		var idx: int = cands.size() - 1
+		for i in cands.size():
+			r -= float(cands[i].get("weight", 1))
+			if r <= 0.0:
+				idx = i
+				break
+		var o: Dictionary = cands[idx]
+		cands.remove_at(idx)
+		var title: String = label(String(o["kind"])) if o["type"] == "beast" else String(o.get("title", o["id"]))
+		draft.append({"id": o["id"], "type": o["type"], "kind": o.get("kind", ""), "title": title, "desc": String(o.get("desc", "")), "amount": float(o.get("amount", 0))})
+	if not draft.is_empty():
+		events.append({"t": "draft"})
+
+
+func _draft_ok(o: Dictionary) -> bool:
+	match String(o["type"]):
+		"beast":
+			var st: Dictionary = B[String(o["kind"])]
+			return not find_spot(String(st.get("spot", "front"))).is_empty()
+		"door":
+			return door_hp < door_max
+		"essence":
+			return meta_mode
+	return true
+
+
+func draft_pick(i: int) -> bool:
+	if phase != "prep" or i < 0 or i >= draft.size():
+		return false
+	var o: Dictionary = draft[i]
+	match String(o["type"]):
+		"beast":
+			var kind: String = String(o["kind"])
+			var spot: Dictionary = find_spot(String(B[kind].get("spot", "front")))
+			if spot.is_empty():
+				return false
+			var nc: Dictionary = _new_creature(kind, spot)
+			creatures.append(nc)
+			_note_seen(kind)
+		"souls":
+			souls += int(o["amount"])
+		"door":
+			door_hp = minf(door_max, door_hp + door_max * float(o["amount"]))
+		"essence":
+			_gain_essence(int(o["amount"]))
+	events.append({"t": "draft_pick", "id": o["id"]})
+	draft.clear()
+	return true
 
 
 func _gain_essence(n: int) -> void:

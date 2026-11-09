@@ -16,6 +16,9 @@ const FORM_INFO: Dictionary = {
 	"sabueso": "Muerde y, de vez en cuando, agarra a un enemigo (Presa) para que no avance.",
 	"horno": "Inhala hasta 4 enemigos de su carril y los escupe en llamas. Quema el suelo.",
 	"trueno": "Salta sobre la vanguardia a un apoyo (clérigo/ballestero) y encadena descargas. Deja su hueco abierto.",
+	"alacran": "Tanque. Atrapa a un invasor con la pinza 3 s y le hace daño: no avanza.",
+	"sapo": "Desde atrás escupe brea sobre el grupo: daña y ralentiza a quien pisa el charco.",
+	"manta": "Embosca: planea por el carril con más enemigos, golpea a todos y los aturde. Intocable mientras vuela.",
 	"ojo": "Dispara desde atrás. Sobre enemigos en llamas encadena el disparo. Marca el objetivo del Trueno.",
 }
 
@@ -53,6 +56,7 @@ func _ready() -> void:
 	sim = Sim.new(int(Time.get_ticks_usec() % 1000000))
 	if not Engine.has_meta("sin_persistencia"):
 		sim.meta_mode = true
+		sim.draft_enabled = true
 		_load_meta()
 		sim.reset()
 	sound = SoundBank.new()
@@ -140,7 +144,7 @@ func _enemy_pos(id: int) -> Vector2:
 
 func _creature_pos(c: Dictionary) -> Vector2:
 	var y: float = _lane_y(int(c["lane"]))
-	if c["air"]:
+	if c["air"] and c["kind"] != "manta":
 		var k: float = clampf(float(c["t"]) / float(sim.B["trueno"]["jump_time"]), 0.0, 1.0)
 		y = lerpf(_lane_y(int(c["from_lane"])), _lane_y(int(c["to_lane"])), k) - sin(k * PI) * 130.0
 	return Vector2(c["x"], y)
@@ -297,6 +301,24 @@ func _on_event(ev: Dictionary) -> void:
 			shake = maxf(shake, 3.0)
 			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 20.0, "r1": float(ev["r"]), "col": Color(0.95, 0.85, 0.3, 0.9), "ttl": 0.6})
 			_float(Vector2(ev["x"], _lane_y(int(ev["lane"])) - 120), "REPIQUE", Color(0.95, 0.85, 0.3), 1.1)
+		"sapo_windup":
+			_play("presa_windup")
+			_warn({"type": "presa", "eid": int(ev["target"]), "ttl": float(sim.B["sapo"]["windup"])})
+		"sapo_spit":
+			_play("horno_spit")
+			var sp: Vector2 = Vector2(ev["x"], ev["y"])
+			_add_fx({"type": "line", "a": Vector2(ev["from_x"], _lane_y(int(ev["lane"])) - 40), "b": sp, "col": Color(0.25, 0.15, 0.1), "w": 6.0, "ttl": 0.25})
+			_add_fx({"type": "ring", "p": sp, "r0": 8.0, "r1": float(sim.B["sapo"]["tar_radius"]), "col": Color(0.3, 0.2, 0.1, 0.9), "ttl": 0.4})
+		"manta_dive":
+			_play("trueno_crouch")
+		"manta_glide":
+			_play("trueno_jump")
+			_add_fx({"type": "line", "a": Vector2(0, _lane_y(int(ev["lane"])) - 20), "b": Vector2(SCREEN_W, _lane_y(int(ev["lane"])) - 20), "col": Color(0.7, 0.5, 0.9, 0.5), "w": 2.0, "ttl": 0.5})
+		"draft":
+			banner_text = "Elige una recompensa"
+			banner_t = 1.4
+		"draft_pick":
+			_play("level")
 		"heal_pulse":
 			_play("heal", 0.2)
 			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 10.0, "r1": float(ev["r"]), "col": Color(0.6, 1.0, 0.7, 0.8), "ttl": 0.5})
@@ -409,7 +431,17 @@ func _input(event: InputEvent) -> void:
 				spell = "rayo"
 
 
+func _draft_active() -> bool:
+	return sim.phase == "prep" and not sim.draft.is_empty()
+
+
+func _draft_rect(i: int) -> Rect2:
+	return Rect2(100.0 + float(i) * 370.0, 170.0, 340.0, 330.0)
+
+
 func _toggle_tree() -> void:
+	if _draft_active():
+		return
 	if sim.phase == "prep" or sim.phase == "victory" or sim.phase == "defeat":
 		show_tree = not show_tree
 		_play("click")
@@ -467,6 +499,11 @@ func _restart() -> void:
 
 
 func _buttons() -> Array:
+	if _draft_active():
+		var dout: Array = []
+		for i in sim.draft.size():
+			dout.append({"id": "draft:%d" % i, "rect": _draft_rect(i), "text": "", "sub": "", "on": true})
+		return dout
 	if show_tree:
 		if sim.phase != "prep" and sim.phase != "victory" and sim.phase != "defeat":
 			show_tree = false
@@ -513,6 +550,9 @@ func _buttons() -> Array:
 
 
 func _do_button(id: String) -> void:
+	if id.begins_with("draft:"):
+		sim.draft_pick(int(id.substr(6)))
+		return
 	if id.begins_with("sk:"):
 		if sim.buy_skill(id.substr(3)):
 			_play("level")
@@ -636,6 +676,7 @@ func _draw() -> void:
 	_draw_lane_preview()
 	_draw_tree()
 	_draw_buttons()
+	_draw_draft()
 	_draw_overlays()
 	_draw_tooltip()
 	if flash_red > 0.0:
@@ -692,6 +733,14 @@ func _draw_arena_rest(painted: bool) -> void:
 			var fx0: float = float(z["x0"]) + k * 26.0 + 10.0
 			var h: float = 12.0 + 8.0 * sin(clock * 9.0 + k)
 			draw_colored_polygon(PackedVector2Array([Vector2(fx0 - 7, zy + 18), Vector2(fx0, zy + 18 - h), Vector2(fx0 + 7, zy + 18)]), Color(1.0, 0.5, 0.15, 0.7 * za))
+	for tp in sim.tar_pools:
+		var ta: float = clampf(float(tp["t"]) / 1.0, 0.0, 1.0)
+		var pp: Vector2 = tp["p"]
+		var rr: float = float(tp["r"])
+		draw_set_transform(pp, 0.0, Vector2(1.0, 0.45))
+		draw_circle(Vector2.ZERO, rr, Color(0.12, 0.07, 0.04, 0.55 * ta))
+		draw_arc(Vector2.ZERO, rr, 0.0, TAU, 28, Color(0.5, 0.3, 0.12, 0.8 * ta), 2.0)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# hueco del Trueno
 	for c in sim.creatures:
 		if c["kind"] == "trueno" and not c["dead"] and c["state"] != "home":
@@ -1189,10 +1238,32 @@ func _draw_skill_tip(id: String) -> void:
 		_txt(String(lines[i]), p + Vector2(10, 22 + 22 * i), 15, col, HORIZONTAL_ALIGNMENT_LEFT, w - 20.0)
 
 
+func _draw_draft() -> void:
+	if not _draft_active():
+		return
+	draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0, 0, 0, 0.72))
+	_txt("ELIGE UNA", Vector2(0, 130), 34, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+	for i in sim.draft.size():
+		var o: Dictionary = sim.draft[i]
+		var r: Rect2 = _draft_rect(i)
+		var hov: bool = r.has_point(mouse_pos)
+		draw_rect(r, Color(0.2, 0.09, 0.07) if not hov else Color(0.33, 0.15, 0.1))
+		draw_rect(r, Color(1.0, 0.85, 0.4) if hov else Color(0.8, 0.45, 0.25), false, 3.0)
+		var beast: bool = String(o["type"]) == "beast"
+		_txt("BESTIA" if beast else "RECOMPENSA", Vector2(r.position.x, r.position.y + 30), 15, Color(0.75, 0.6, 0.5), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		if beast:
+			Art.draw_creature(self, String(o["kind"]), Vector2(r.position.x + r.size.x * 0.5, r.position.y + 190), clock, {"scale": 1.5})
+		else:
+			draw_circle(Vector2(r.position.x + r.size.x * 0.5, r.position.y + 130), 46.0, Color(1.0, 0.6, 0.2, 0.25))
+			draw_arc(Vector2(r.position.x + r.size.x * 0.5, r.position.y + 130), 46.0, 0.0, TAU, 32, Color(1.0, 0.7, 0.3), 3.0)
+		_txt(String(o["title"]), Vector2(r.position.x, r.position.y + 238), 24, Color(1.0, 0.92, 0.75), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		draw_multiline_string(font, Vector2(r.position.x + 20, r.position.y + 268), String(o["desc"]), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 40.0, 17, -1, Color(0.85, 0.8, 0.75))
+
+
 func _draw_buttons() -> void:
 	for b in _buttons():
 		var id: String = String(b["id"])
-		if id.begins_with("sk:"):
+		if id.begins_with("sk:") or id.begins_with("draft:"):
 			continue
 		if id == "route_verdugo" or id == "route_inquisidor":
 			continue
@@ -1273,13 +1344,15 @@ func _draw_bestiary() -> void:
 	draw_rect(rect, Color(0.85, 0.5, 0.25), false, 3.0)
 	_txt("Bestiario", Vector2(rect.position.x + 28, rect.position.y + 44), 32, Color(1.0, 0.85, 0.55))
 	_txt("(clic para cerrar)", Vector2(rect.end.x - 200, rect.position.y + 40), 15, Color(0.7, 0.6, 0.55))
-	var y: float = rect.position.y + 80.0
+	var y: float = rect.position.y + 70.0
+	var row: float = minf(96.0, 380.0 / float(maxi(1, sim.seen_forms.size())))
+	var bs: float = row / 96.0 * 0.8
 	for f in sim.seen_forms:
 		var fk: String = String(f)
-		Art.draw_creature(self, fk, Vector2(rect.position.x + 90, y + 56), clock, {"scale": 0.8})
+		Art.draw_creature(self, fk, Vector2(rect.position.x + 90, y + row * 0.6), clock, {"scale": bs})
 		_txt(sim.label(fk), Vector2(rect.position.x + 180, y + 26), 24, Color(1.0, 0.9, 0.7))
 		draw_multiline_string(font, Vector2(rect.position.x + 180, y + 52), String(FORM_INFO.get(fk, "")), HORIZONTAL_ALIGNMENT_LEFT, 600.0, 17, -1, Color(0.85, 0.8, 0.75))
-		y += 96.0
+		y += row
 	var t: Dictionary = sim.named_creature()
 	if not t.is_empty():
 		_txt("Tizón: %s, %d bajas, %d cicatrices." % [sim.label(String(t["kind"])), int(t["kills"]), int(t["scars"])], Vector2(rect.position.x + 28, rect.end.y - 24), 20, Color(1.0, 0.7, 0.55))

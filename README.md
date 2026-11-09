@@ -78,8 +78,18 @@ Seis unidades con habilidad propia, en `data/balance.json` (campo `elite`) y `da
 - **Verdugo del Tajo Negro** (6): levanta el hacha y barre; hay que tumbarlo antes o ponerle un señuelo delante.
 - **Campana** (6): repique que aturde e interrumpe a las criaturas cercanas.
 
-Verificado con `tests/suite.gd`: 155 comprobaciones, 0 fallos; el bot gana 5/5 por ruta con élites (ideal, apunta perfecto).
+Verificado con `tests/suite.gd`: 182 comprobaciones, 0 fallos; el bot gana 5/5 por ruta con élites (ideal, apunta perfecto).
 
 ## Progreso permanente
 
 El árbol se paga con **Esencia**, que se conserva entre partidas (`user://meta.json`, junto con los rangos comprados). Se gana al superar cada oleada (20 + 10×n) y +100 por victoria. Se compra entre oleadas y en las pantallas de victoria o derrota. Las almas quedan solo para Sabuesos, Ojos y niveles de bestia. Árbol completo: 6635 de Esencia (~15 partidas ganadas).
+
+## Bestias nuevas y elección tras cada oleada
+
+Tras cada oleada superada se ofrecen **3 opciones al azar** (pool ponderado en `data/balance.json` → `draft.pool`): bestias nuevas gratis (Alacrán de la Fosa, Sapo de Brea, Manta del Umbral, Sabueso) o recompensas (almas, reparar la Puerta, esencia). Hay que elegir una antes de iniciar la siguiente oleada. Para añadir un pack nuevo: entrada de la bestia en `balance.json` (con `spot`: front/rear), su `_ai_*` en `sim.gd`, sprite en `art/sprites/` y una línea en el pool.
+
+- **Alacrán** (vanguardia): tanque; agarra a un invasor 3 s y le hace 28 de daño.
+- **Sapo de Brea** (retaguardia): escupe brea sobre el grupo más denso; daña y ralentiza a la mitad mientras pisan el charco.
+- **Manta del Umbral** (retaguardia): elige el carril con más enemigos, lo cruza en vuelo (intocable) golpeando y aturdiendo a todos, y vuelve.
+
+Arte: `art/LEEME_bestias.md` (diseños elegidos y alternativas en `art/alternativas/`).
