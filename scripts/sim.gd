@@ -556,9 +556,10 @@ func _cover_mult(e: Dictionary) -> float:
 
 # La turba corre más cerca de un Capataz.
 func _haste_mult(e: Dictionary) -> float:
-	var best: float = 1.0
+	var slow: float = 1.0
 	if float(e.get("tar", 0.0)) > 0.0:
-		best = float(B["sapo"]["slow"])
+		slow = float(B["sapo"]["slow"])
+	var best: float = 1.0
 	for m in enemies:
 		if m["dead"] or m["id"] == e["id"]:
 			continue
@@ -567,7 +568,7 @@ func _haste_mult(e: Dictionary) -> float:
 			continue
 		if epos(m).distance_to(epos(e)) <= float(ms["haste_radius"]):
 			best = maxf(best, float(ms["haste"]))
-	return best
+	return best * slow
 
 
 func _creature_point(c: Dictionary) -> Vector2:
@@ -818,7 +819,7 @@ func _ai_presa(c: Dictionary, dt: float, kind: String) -> void:
 					hold *= 0.5
 				t["held"] = hold
 				if st.has("grab_dmg"):
-					damage_enemy(t, float(st["grab_dmg"]) * dmg_mult(c), c["id"])
+					damage_enemy(t, float(st["grab_dmg"]), c["id"])
 				if fadd("special.presa_dmg") > 0.0:
 					damage_enemy(t, float(st["dmg"]) * fadd("special.presa_dmg"), c["id"])
 				events.append({"t": "presa", "id": c["id"], "target": t["id"]})
@@ -873,7 +874,7 @@ func _sapo_land(c: Dictionary, st: Dictionary) -> void:
 		if e["dead"] or epos(e).distance_to(p) > float(st["tar_radius"]):
 			continue
 		hit += 1
-		damage_enemy(e, float(st["tar_dmg"]) * dmg_mult(c), c["id"])
+		damage_enemy(e, float(st["tar_dmg"]), c["id"])
 		if not e["dead"]:
 			e["tar"] = float(st["tar_time"])
 	tar_pools.append({"p": p, "r": float(st["tar_radius"]), "t": float(st["tar_time"])})
@@ -917,7 +918,7 @@ func _ai_manta(c: Dictionary, dt: float) -> void:
 					continue
 				if absf(e["x"] - c["x"]) <= 34.0:
 					c["hit"].append(e["id"])
-					damage_enemy(e, float(st["hit_dmg"]) * dmg_mult(c), c["id"])
+					damage_enemy(e, float(st["hit_dmg"]), c["id"])
 					if not e["dead"]:
 						e["stun"] = maxf(e["stun"], float(st["hit_stun"]))
 			if c["x"] >= c["home_x"] + float(st["sweep_len"]):
@@ -1272,7 +1273,7 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 		e["tar"] = float(e["tar"]) - dt
 	if e["stun"] > 0.0:
 		e["stun"] -= dt
-	if st.get("support", false):
+	if st.get("support", false) and e["stun"] <= 0.0:
 		e["heal_t"] -= dt
 		if e["heal_t"] <= 0.0 and st.get("pulse", false):
 			e["heal_t"] = float(st["heal_cd"])

@@ -12,7 +12,7 @@ Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, c
 
 ## Lista
 1. [x] Comprobación visual — `tools/shots.tscn` hace 11 capturas (ver cabecera). Arreglado: bestiario con 7+ formas solapado (ahora 2 columnas), botones de victoria/derrota tapados por el velo, retrato y epitafio solapados, banner tapando tarjetas/árbol/rutas, tooltip cortado y con nombre repetido, etiquetas de élite cortadas, estados («agarrado») encima del nombre, texto de combate cortado, título del árbol encima de las ramas, criaturas de la forja encima del texto, icono vacío en recompensas (ahora +45, +40%, +30).
-2. [ ] Fallos
+2. [x] Fallos — corregidos con pruebas (`test_bugfixes`): pinza del Alacrán, brea del Sapo y golpe de la Manta multiplicaban el nivel/cicatrices/manada dos veces; el Capataz anulaba la ralentización de la brea (ahora se multiplican); los apoyos aturdidos seguían curando. En la vista: la esencia elegida en el draft no se guardaba hasta la siguiente oleada.
 3. [ ] Equilibrio (bot torpe)
 4. [ ] Pulido y sensación
 5. [ ] Más contenido

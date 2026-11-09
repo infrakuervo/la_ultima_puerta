@@ -27,6 +27,7 @@ func run() -> void:
 	test_meta()
 	test_beasts()
 	test_draft()
+	test_bugfixes()
 	test_skills()
 	test_full_runs()
 	await test_ui_smoke()
@@ -952,6 +953,50 @@ func test_beasts() -> void:
 	check(h1["hp"] < 500.0 and h2["hp"] < 500.0, "golpea a todos los del carril")
 	check(h3["hp"] == 500.0, "no toca otros carriles")
 	check(mt["state"] == "home" and mt["lane"] == 1 and not mt["air"], "vuelve a su sitio (%s)" % mt["state"])
+
+
+func test_bugfixes() -> void:
+	print("Fallos corregidos")
+	# 1) El daño especial de las bestias nuevas aplica el multiplicador de nivel una sola vez.
+	var s = new_sim()
+	s.creatures.clear()
+	var a: Dictionary = spawn_beast(s, "alacran", 1, 520.0)
+	a["level"] = 3
+	to_combat(s)
+	var e1: Dictionary = add_enemy(s, "campesino", 1, 560.0)
+	e1["hp"] = 5000.0
+	e1["max_hp"] = 5000.0
+	e1["stun"] = 99.0
+	a["cd"] = 99.0
+	var expect: float = float(s.B["alacran"]["grab_dmg"]) * s.dmg_mult(a)
+	var hp0: float = e1["hp"]
+	for i in 30:
+		s.step(Sim.TICK)
+		a["cd"] = 99.0
+		if e1["held"] > 0.0:
+			break
+	check(absf((hp0 - e1["hp"]) - expect) < 0.5, "la pinza de un Alacrán nivel 3 hace %.0f (esperado %.0f)" % [hp0 - e1["hp"], expect])
+	# 2) La brea sigue frenando junto a un Capataz (se combinan).
+	var s2 = new_sim()
+	to_combat(s2)
+	var g: Dictionary = add_enemy(s2, "campesino", 1, 800.0)
+	add_enemy(s2, "capataz", 1, 860.0)
+	g["tar"] = 2.0
+	var m: float = s2._haste_mult(g)
+	var want: float = float(s2.B["sapo"]["slow"]) * float(s2.B["enemies"]["capataz"]["haste"])
+	check(absf(m - want) < 0.01, "brea con Capataz: x%.2f (esperado x%.2f)" % [m, want])
+	# 3) Un Lumbrero aturdido no cura.
+	var s3 = new_sim()
+	s3.creatures.clear()
+	to_combat(s3)
+	var lu: Dictionary = add_enemy(s3, "lumbrero", 1, 900.0)
+	var hurt: Dictionary = add_enemy(s3, "escudero", 1, 950.0)
+	hurt["hp"] = 10.0
+	lu["heal_t"] = 0.1
+	lu["stun"] = 5.0
+	for i in 30:
+		s3.step(Sim.TICK)
+	check(hurt["hp"] == 10.0, "el Lumbrero aturdido no cura (vida %.0f)" % hurt["hp"])
 
 
 func test_draft() -> void:

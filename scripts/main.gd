@@ -319,6 +319,7 @@ func _on_event(ev: Dictionary) -> void:
 			banner_t = 1.4
 		"draft_pick":
 			_play("level")
+			_save_meta()
 		"heal_pulse":
 			_play("heal", 0.2)
 			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 10.0, "r1": float(ev["r"]), "col": Color(0.6, 1.0, 0.7, 0.8), "ttl": 0.5})
