@@ -26,8 +26,13 @@ El cuadro es ancho porque el rayo y la bola de fuego salen hacia la derecha; en 
 ## Vídeo
 - `art/video/intro_demonio.ogv`: el demonio se gira hacia la cámara delante de la puerta. 1280 × 720, Theora, sin sonido, 8 s. Para la intro o el menú (VideoStreamPlayer).
 
+## Cómo se usan en el juego
+- Datos de cada clip en `data/anim.json`: `fps`, `loop` (bucle) u `hold` (se queda en el último), `start` (primer fotograma que se reproduce), `impact` (fotograma del golpe), `hand` (píxel de la mano en el impacto), y por personaje `height` (alto en pantalla del cuadro entero) y `anchor` (píxel de los pies). Un clip puede tener su propio `height`/`anchor` (el mordisco del Horno).
+- Velocidades: rayo a 24 fps desde el fotograma 5 (el destello llega a los 0,08 s), brasa a 22 fps desde el 8, golpe a 16, mordisco de Tizón a 22 desde el 3, Horno 12-18.
+- Para añadir un clip: carpeta con `01.png`, `02.png`… (mismo encuadre que los otros del personaje) y su entrada en el JSON. Si el encuadre cambia, medir alto y pies frente al sprite fijo (capturas con `tools/shots.tscn` → `demonio` / `animacion`).
+
 ## Pendiente
-- Peso: unos 41 MB en total (demonio y Tizón ya reducidos a 240 px de alto). Para la versión web quizá convenga bajar a 8 fps o empaquetar en hojas de sprites.
+- Peso: 41 MB en PNG, pero la versión web los importa como WebP con pérdida (`tools/anim_lossy.sh`) y el `.pck` queda en ~14 MB. No hace falta bajar fps.
 - Embestida del Horno: repetir con fondo verde (el clip magenta no se puede recortar).
 - Efectos sobre negro (explosión de Brasa, impacto de Rayo): aún no hechos.
 - Tizón: falta el reposo.

@@ -81,6 +81,13 @@ Ver la descripción del PR: qué se ha ejecutado y qué no.
 Pack de la Fosa en `art/` (fondo y 11 sprites, reducidos a ~1,6x su tamaño en pantalla). Si falta algún PNG se usa la silueta provisional de `scripts/art.gd`.
 Cada enemigo común aparece con una de tres variantes de aspecto (sorteada al salir; los héroes no varían).
 
+### Animaciones
+
+- Por fotogramas (`art/anim/`, vídeos de Google Flow recortados; ver `art/anim/LEEME.md`): el demonio (reposo, Rayo, Brasa, golpe, victoria y derrota; también en el menú y en las pantallas finales), Tizón y los Sabuesos (carrera y mordisco) y el Horno (reposo, carrera y mordisco). Los datos de cada clip están en `data/anim.json` (fps, bucle, fotograma de impacto, mano, alto y pies); `scripts/anim.gd` los carga cuando hacen falta. Si falta una carpeta o un fotograma se usa el sprite fijo.
+- Por código para todos los demás (`scripts/poses.gd`): respiración, trote, embestida al atacar y retroceso al recibir.
+- Intro en vídeo (`art/video/intro_demonio.ogv`) al abrir el juego; se salta con clic o tecla y se quita en Opciones.
+- Versión web: `tools/publish_web.sh` importa los fotogramas como WebP con pérdida (`tools/anim_lossy.sh`), así el `.pck` pesa ~14 MB.
+
 ## Élites
 
 Seis unidades con habilidad propia, en `data/balance.json` (campo `elite`) y `data/waves.json`:

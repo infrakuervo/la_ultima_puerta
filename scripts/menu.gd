@@ -178,6 +178,9 @@ func draw(m) -> void:
 	m.draw_rect(Rect2(0, 0, 1280, 720), Color(0.04, 0.0, 0.02, 0.55))
 	m.juice.draw_back(m)
 	if panel == "main":
+		# el demonio en reposo (animado si hay fotogramas) guarda el menú
+		m.draw_circle(Vector2(215, 520), 150.0, Color(1.0, 0.4, 0.12, 0.07))
+		m.draw_demon_at(Vector2(215, 640), 1.55)
 		m._txt("LA ÚLTIMA PUERTA", Vector2(0, 190), 72, Color(1.0, 0.72, 0.38), HORIZONTAL_ALIGNMENT_CENTER, W)
 		m._txt("Defiende la puerta del Infierno. Cría bestias. Que no pase nadie.", Vector2(0, 240), 22, Color(0.9, 0.78, 0.7), HORIZONTAL_ALIGNMENT_CENTER, W)
 		if m.sim.meta_mode:

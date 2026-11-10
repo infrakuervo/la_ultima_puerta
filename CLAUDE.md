@@ -5,6 +5,7 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 ## Arquitectura
 - `scripts/sim.gd`: toda la lógica, sin dibujo. Tick fijo 1/30 s; la vista lee `events`.
 - `scripts/main.gd`: vista, ratón y sonido (modo inmediato en `_draw()`). `scripts/art.gd`: sprites y siluetas de reserva.
+- Animación (solo vista): `scripts/anim.gd` (fotogramas de `art/anim/`, datos en `data/anim.json`, carga perezosa, sin fotogramas → sprite fijo) y `scripts/poses.gd` (respiración/trote/embestida/retroceso por código y reproductores de las bestias con fotogramas). `main.gd` dibuja cada unidad con `_draw_posed`: sombra plana y cuerpo con `draw_set_transform(arena_offset + ...)` (esa función sustituye la transformación: siempre componer el temblor). Para un clip nuevo: carpeta con 01.png… + entrada en `data/anim.json` + `play()` en el evento que toque.
 - `scripts/juice.gd` (partículas, números, destellos, trauma de cámara, hitstop) y `scripts/menu.gd` (menú, opciones, tutorial) son ayudantes de la vista; reciben `main` y dibujan con él. La simulación no sabe nada de ellos.
 - Eventos de la simulación usados por la vista: `hit` y `kill` llevan `id`, `amount`/`kind` e `y`; `elite_spawn` al aparecer élites y héroes.
 - Datos: `data/balance.json` (bestias, enemigos, élites, economía, `draft.pool`), `data/waves.json`, `data/skills.json` (árbol, efectos `fx` con `mul`/`add`).
@@ -21,6 +22,7 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 ## Pruebas y herramientas
 - `godot --headless --editor --import --path .` (una vez) y `godot --headless --path . res://tests/run_scene.tscn` → `FIN_SUITE fallos=0`. (`--script res://tests/run_tests.gd` no funciona.)
 - `tests/bot.gd`: bot torpe (reacción lenta, puntería con error, draft mediano). Objetivo de equilibrio: ~40-60% en la primera partida; hoy 55%.
+- Capturas útiles: `tools/shots.tscn -- <dir> demonio|animacion|intro|victoria|derrota`.
 - `tools/balance.tscn` (informe de equilibrio), `tools/debug_run.tscn` (línea de tiempo de una partida), `tools/shots.tscn` (capturas con xvfb-run).
 - `*.uid` e `*.import` están en `.gitignore` para no chocar con la copia local del usuario.
 

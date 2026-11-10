@@ -154,6 +154,7 @@ func _process(delta: float) -> void:
 	fade = maxf(0.0, fade - delta * 2.5)
 	if menu.open:
 		juice.update(delta)
+		demon_anim.update(delta)
 		queue_redraw()
 		return
 	if sim.phase != last_phase:
