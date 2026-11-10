@@ -666,8 +666,8 @@
     "_doc": "Cada oleada aparece en un punto al azar del campo (se ve al preparar): cura a los humanos dentro (heal, fracción de vida por s) y quema a las bestias dentro (burn). r crece en la última oleada (boss_r).",
     "r": 110,
     "boss_r": 150,
-    "heal": 0.035,
-    "burn": 0.045,
+    "heal": 0.025,
+    "burn": 0.035,
     "x0": 470,
     "x1": 980
    },
@@ -725,7 +725,7 @@
      "spawns": [
       {
        "kind": "flagelante",
-       "count": 12,
+       "count": 10,
        "lane": -1
       },
       {
@@ -784,7 +784,7 @@
      "spawns": [
       {
        "kind": "escudero",
-       "count": 6,
+       "count": 5,
        "lane": -1
       },
       {
@@ -807,7 +807,7 @@
       },
       {
        "kind": "flagelante",
-       "count": 10,
+       "count": 8,
        "lane": -1,
        "delay": 8.0
       },
@@ -831,7 +831,7 @@
       },
       {
        "kind": "flagelante",
-       "count": 10,
+       "count": 8,
        "lane": -1,
        "delay": 2.0
       },
@@ -855,7 +855,7 @@
      "spawns": [
       {
        "kind": "purificador",
-       "count": 5,
+       "count": 4,
        "lane": -1
       },
       {
@@ -872,7 +872,7 @@
       },
       {
        "kind": "flagelante",
-       "count": 12,
+       "count": 10,
        "lane": -1,
        "delay": 6.0
       },
@@ -891,7 +891,7 @@
      "spawns": [
       {
        "kind": "flagelante",
-       "count": 14,
+       "count": 12,
        "lane": -1
       },
       {
@@ -902,7 +902,7 @@
       },
       {
        "kind": "purificador",
-       "count": 4,
+       "count": 3,
        "lane": -1,
        "delay": 4.0
       },
@@ -955,7 +955,7 @@
       },
       {
        "kind": "flagelante",
-       "count": 10,
+       "count": 8,
        "lane": -1,
        "delay": 6.0
       }

@@ -22,6 +22,7 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
   - `remix_enabled`: oleadas remezcladas por partida (`waves.json` → `remix` por asedio; el grupo principal conserva su tipo).
   - `augurs_enabled`: dos augurios antes de cada oleada desde la 2 (`balance.json` → `augurs`, efectos con `augur_fx(k)`); `week_augur` para el reto semanal.
   - Draft con `rarity` y dones (`type: boon`, `fx` como el árbol, se suman en `_fx_totals`); `unlock: true` = solo si `Sim.unlocked` lo tiene (logros).
+  - Santuario (asedio con `sanctuary`, la Inquisición): `_place_sanctuary()` al preparar y `_update_sanctuary()` cada 0,5 s.
   - La Grieta: asedio con `endless`; `_gen_wave(i)` genera oleadas tras las del asedio base; no hay victoria, récord en `records.grieta`.
   - Árbol con inflación (`meta.inflation`): cada rango comprado encarece los demás.
 - Logros (`data/logros.json` + `scripts/logros.gd`) y música procedural (`scripts/music.gd`, `AudioStreamGenerator` en modo stream, buses `Musica`/`Efectos`) son de la vista.

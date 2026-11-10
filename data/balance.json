@@ -394,9 +394,9 @@
    ]
   },
   "flagelante": {
-   "hp": 45,
-   "speed": 62,
-   "dmg": 6,
+   "hp": 36,
+   "speed": 56,
+   "dmg": 5,
    "cd": 1.1,
    "reach": 30,
    "door_dmg": 4,
@@ -412,8 +412,8 @@
   "purificador": {
    "hp": 75,
    "speed": 34,
-   "dmg": 13,
-   "cd": 2.2,
+   "dmg": 10,
+   "cd": 2.5,
    "range": 340,
    "ranged": true,
    "door_dmg": 3,
@@ -428,7 +428,7 @@
    "scale": 1.05
   },
   "gran_inquisidor": {
-   "hp": 2600,
+   "hp": 2300,
    "speed": 20,
    "dmg": 28,
    "cd": 1.5,

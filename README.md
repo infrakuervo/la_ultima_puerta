@@ -43,6 +43,7 @@ Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tsc
 
 - **Cada partida es distinta:** las oleadas se remezclan (mismo presupuesto, otra composición) y antes de cada oleada eliges un **augurio** de riesgo/recompensa o ninguno.
 - **Draft con rareza:** además de bestias y recompensas salen **dones** raros y épicos que duran toda la partida y empujan a una build (fuego, rayo, bestias, almas, Puerta). Algunos se abren con **logros**.
+- **Tercer asedio, la Inquisición:** cada oleada aparece un santuario que cura a los humanos y quema a tus bestias.
 - **La Grieta:** modo sin fin con oleadas generadas que no paran de crecer; guarda tu récord.
 - **Reto semanal:** misma semilla para todos durante la semana, con un augurio fijo y récord propio.
 - **Logros y estadísticas** en el menú; **música procedural** que sube con el combate (volumen aparte de los efectos); velocidad x1/x2/x3.

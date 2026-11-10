@@ -693,6 +693,9 @@ func _update_sanctuary(dt: float) -> void:
 	var p: Vector2 = sanctuary["p"]
 	var r: float = float(sanctuary["r"])
 	for e in enemies:
+		var est: Dictionary = B["enemies"][e["kind"]]
+		if est.get("boss", false) or est.get("hero", false):
+			continue   # el santuario no cura a héroes ni jefes (sería un muro)
 		if not e["dead"] and epos(e).distance_to(p) <= r and float(e["hp"]) < float(e["max_hp"]):
 			e["hp"] = minf(float(e["max_hp"]), float(e["hp"]) + float(e["max_hp"]) * float(sd["heal"]) * step_t)
 			events.append({"t": "sanct_heal", "id": e["id"]})
