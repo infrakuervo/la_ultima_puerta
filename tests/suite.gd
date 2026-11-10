@@ -1347,6 +1347,21 @@ func test_procedural() -> void:
 	s.augurs_enabled = true
 	s.reset()
 	check(s.augur_offer.is_empty(), "no hay augurio antes de la primera oleada")
+	var locked_seen: bool = false
+	for i in 40:
+		s.wave_index = 2
+		s._offer_augurs()
+		locked_seen = locked_seen or s.augur_offer.has("eclipse") or s.augur_offer.has("pacto")
+	check(not locked_seen, "los augurios de logro no salen sin el logro")
+	s.unlocked = ["eclipse"]
+	var open_seen: bool = false
+	for i2 in 60:
+		s._offer_augurs()
+		open_seen = open_seen or s.augur_offer.has("eclipse")
+	check(open_seen, "con el logro sale Eclipse")
+	s.unlocked = []
+	s.wave_index = 0
+	s.augur_offer.clear()
 	to_combat(s)
 	s.enemies.clear()
 	s.spawn_queue.clear()

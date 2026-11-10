@@ -258,7 +258,8 @@ func draw(m) -> void:
 			m._txt(String(l["name"]), p0 + Vector2(54, 24), 18, Color(1.0, 0.9, 0.7) if have else Color(0.65, 0.58, 0.55))
 			var d: String = String(l["desc"])
 			if l.has("unlock"):
-				d += "  Abre: %s." % String(m.sim.draft_def(String(l["unlock"])).get("title", ""))
+				var ud: Dictionary = m.sim.draft_def(String(l["unlock"]))
+				d += "  Abre: %s." % (String(ud.get("title", "")) if not ud.is_empty() else "augurio " + String(m.sim.augur_def(String(l["unlock"])).get("name", "")))
 			m._txt(d, p0 + Vector2(54, 45), 14, Color(0.85, 0.8, 0.75) if have else Color(0.55, 0.5, 0.48), HORIZONTAL_ALIGNMENT_LEFT, 480.0)
 	elif panel == "siege":
 		m._txt("Elige asedio", Vector2(0, 160), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)

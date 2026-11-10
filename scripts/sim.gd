@@ -809,6 +809,8 @@ func _offer_augurs() -> void:
 		return
 	var pool: Array = []
 	for a in B.get("augurs", {}).get("list", []):
+		if bool(a.get("unlock", false)) and not unlocked.has(String(a["id"])):
+			continue
 		if wave_index + 1 >= int(a.get("min_wave", 2)):
 			pool.append(a)
 	var n: int = int(B["augurs"].get("offer", 2))

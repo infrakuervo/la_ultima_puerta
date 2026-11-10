@@ -926,7 +926,7 @@
   "essence": 0.3
  },
  "augurs": {
-  "_doc": "Augurios: antes de cada oleada (desde la 2) se ofrecen dos; el jugador puede elegir uno o ninguno (Calma). fx: enemy_hp, enemy_speed, count (comunes), extra_elite, one_front, door_dmg, spell_cd, reward (almas por baja), souls (almas al acabar), essence (esencia de la oleada).",
+  "_doc": "Augurios: antes de cada oleada (desde la 2) se ofrecen dos; el jugador puede elegir uno o ninguno (Calma). fx: enemy_hp, enemy_speed, count (comunes), extra_elite, one_front, door_dmg, spell_cd, reward (almas por baja), souls (almas al acabar), essence (esencia de la oleada). unlock: true = solo sale si un logro lo abrió (Sim.unlocked).",
   "offer": 2,
   "list": [
    {
@@ -998,6 +998,30 @@
     "fx": {
      "spell_cd": 0.25,
      "essence": 0.6
+    }
+   },
+   {
+    "id": "eclipse",
+    "name": "Eclipse",
+    "desc": "+60% de enemigos comunes con +30% de vida. Esencia x2 en esta oleada.",
+    "weight": 1.5,
+    "unlock": true,
+    "fx": {
+     "count": 0.6,
+     "enemy_hp": 0.3,
+     "essence": 1.0
+    }
+   },
+   {
+    "id": "pacto",
+    "name": "Pacto de sangre",
+    "desc": "La Puerta recibe el doble de daño. Almas por baja x2,5 y +40 almas al acabar.",
+    "weight": 1.5,
+    "unlock": true,
+    "fx": {
+     "door_dmg": 1.0,
+     "reward": 1.5,
+     "souls": 40
     }
    }
   ]

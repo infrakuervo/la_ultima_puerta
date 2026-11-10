@@ -355,7 +355,8 @@ func _on_event(ev: Dictionary) -> void:
 		var extra: String = ""
 		if ld.has("unlock"):
 			sim.unlocked = logros.unlocked_boons()
-			extra = "Nuevo don en el draft: %s" % String(sim.draft_def(String(ld["unlock"])).get("title", ""))
+			var ud: Dictionary = sim.draft_def(String(ld["unlock"]))
+			extra = "Nuevo don en el draft: %s" % String(ud.get("title", "")) if not ud.is_empty() else "Nuevo augurio: %s" % String(sim.augur_def(String(ld["unlock"])).get("name", ""))
 		toasts.append({"title": String(ld["name"]), "desc": String(ld["desc"]), "extra": extra, "t": 0.0})
 		_play("level")
 		_save_meta()
