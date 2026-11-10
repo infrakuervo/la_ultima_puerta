@@ -253,19 +253,19 @@ func draw(m) -> void:
 			var l: Dictionary = L.list[i]
 			var col_i: int = i % 2
 			var row: int = i / 2
-			var p0: Vector2 = Vector2(90 + 560 * col_i, 172 + 64 * row)
+			var p0: Vector2 = Vector2(90 + 560 * col_i, 170 + 57 * row)
 			var have: bool = L.got.has(String(l["id"]))
-			m.draw_rect(Rect2(p0, Vector2(540, 56)), Color(0.22, 0.12, 0.05, 0.85) if have else Color(0.08, 0.05, 0.05, 0.7))
-			m.draw_rect(Rect2(p0, Vector2(540, 56)), Color(1.0, 0.8, 0.35) if have else Color(0.4, 0.3, 0.25), false, 2.0)
-			m.draw_circle(p0 + Vector2(28, 28), 14.0, Color(1.0, 0.75, 0.3) if have else Color(0.25, 0.2, 0.18))
+			m.draw_rect(Rect2(p0, Vector2(540, 51)), Color(0.22, 0.12, 0.05, 0.85) if have else Color(0.08, 0.05, 0.05, 0.7))
+			m.draw_rect(Rect2(p0, Vector2(540, 51)), Color(1.0, 0.8, 0.35) if have else Color(0.4, 0.3, 0.25), false, 2.0)
+			m.draw_circle(p0 + Vector2(28, 25), 13.0, Color(1.0, 0.75, 0.3) if have else Color(0.25, 0.2, 0.18))
 			if have:
-				m.draw_polyline(PackedVector2Array([p0 + Vector2(20, 28), p0 + Vector2(26, 35), p0 + Vector2(37, 21)]), Color(0.2, 0.1, 0.05), 3.0)
-			m._txt(String(l["name"]), p0 + Vector2(54, 24), 18, Color(1.0, 0.9, 0.7) if have else Color(0.65, 0.58, 0.55))
+				m.draw_polyline(PackedVector2Array([p0 + Vector2(20, 25), p0 + Vector2(26, 32), p0 + Vector2(37, 18)]), Color(0.2, 0.1, 0.05), 3.0)
+			m._txt(String(l["name"]), p0 + Vector2(54, 22), 17, Color(1.0, 0.9, 0.7) if have else Color(0.65, 0.58, 0.55))
 			var d: String = String(l["desc"])
 			if l.has("unlock"):
 				var ud: Dictionary = m.sim.draft_def(String(l["unlock"]))
 				d += "  Abre: %s." % (String(ud.get("title", "")) if not ud.is_empty() else "augurio " + String(m.sim.augur_def(String(l["unlock"])).get("name", "")))
-			m._txt(d, p0 + Vector2(54, 45), 14, Color(0.85, 0.8, 0.75) if have else Color(0.55, 0.5, 0.48), HORIZONTAL_ALIGNMENT_LEFT, 480.0)
+			m._txt(d, p0 + Vector2(54, 42), 13, Color(0.85, 0.8, 0.75) if have else Color(0.55, 0.5, 0.48), HORIZONTAL_ALIGNMENT_LEFT, 480.0)
 	elif panel == "historial":
 		m._txt("Últimas partidas", Vector2(0, 110), 40, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		if m.history.is_empty():
