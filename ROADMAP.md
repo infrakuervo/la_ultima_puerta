@@ -14,8 +14,22 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 5. [x] Animación por código — `scripts/poses.gd`: respiración en reposo, trote al moverse, embestida al atacar (bestias por evento; enemigos cuando su enfriamiento salta) y retroceso con el destello de golpe; preparación (Presa, apuntar) agacha un poco. La sombra se dibuja aparte, plana, y el cuerpo gira/escala desde los pies con `draw_set_transform(arena_offset + ...)`. Arreglado el reinicio a cero de la transformación en los charcos de brea. Capturas: `tools/shots.tscn` → `animacion`.
 6. [x] Intro en vídeo — `VideoStreamPlayer` en un `CanvasLayer` al abrir el juego, antes del menú; clic o tecla la salta (fundido al menú); tope de 12 s por si no avisa al terminar. Opción «Vídeo de inicio» (`intro` en `user://opciones.json`). No sale en las pruebas ni sin pantalla. Captura: `tools/shots.tscn` → `intro`.
 7. [x] Peso y web — antes `index.pck` 5,5 MB; con los fotogramas en PNG sin pérdida 39 MB (+34). Con WebP con pérdida (calidad 0,8, `tools/anim_lossy.sh`, llamado desde `tools/publish_web.sh`) queda en 14 MB (+8,5, de ellos 3 del vídeo) sin diferencia visible; no hizo falta bajar fps ni hacer hojas. `index.wasm` 39 MB (10 MB con gzip), igual que antes. Republicada y probada en Chromium sin cabeza: intro, se salta con Esc, menú con el demonio animado, combate con el clip de la Brasa.
-8. [ ] Rejugabilidad (ampliación del encargo: ver sección «Rejugabilidad»), incluye curva del árbol, música procedural con volúmenes aparte y logros/estadísticas.
-9. [ ] Cierre: PR #1, resumen y lista de animaciones que faltan para Flow. La tarea programada solo se desactiva si ya no queda margen.
+8. [x] Rejugabilidad — ver la sección «Rejugabilidad» (curva del árbol, música procedural con volúmenes aparte, logros y estadísticas, y mucho más).
+9. [x] Cierre — PR #1 actualizado; resumen abajo; lista de animaciones que faltan para Flow. La tarea programada sigue activa mientras quede trabajo en «Siguientes pasos»: cada activación hace el primero pendiente y, cuando no quede ninguno, se desactiva.
+
+### Resumen de la noche 2
+- Animación: sistema genérico por fotogramas (`anim.gd` + `data/anim.json`) con el demonio (6 clips, hechizos desde la mano), Tizón/Sabuesos y Horno; poses por código para todo lo demás; intro en vídeo; web de 14 MB.
+- Rejugabilidad: oleadas remezcladas, augurios, encargos, terreno, draft con rareza, dones y resonancias, La Grieta sin fin, reto semanal, logros que abren contenido, historial, estadísticas, guardado entre oleadas, música procedural, x3, inflación del árbol, consejos de una vez.
+- Equilibrio medido con el bot torpe: primera partida 49% (objetivo 40-60%); subiendo Ira, 50-88% durante 11 partidas (antes 100% desde la segunda).
+- Pruebas: 315 comprobaciones, 0 fallos. Web republicada y probada en Chromium sin cabeza.
+- Decisiones propias: la variedad se activa por banderas en `Sim` (las pruebas siguen deterministas); la Ira propuesta por defecto es la más alta abierta; sin encargo en la primera partida con tutorial; WebP con pérdida solo al exportar a web (los PNG originales no se tocan).
+
+### Siguientes pasos (para las próximas activaciones o para mañana)
+1. [ ] Jugar a mano y ajustar: volumen de la música frente a los efectos, tiempos de los clips (rayo 24 fps, brasa 22 fps), que el rayo espere 0,08 s al fotograma de impacto.
+2. [ ] Integrar los clips nuevos de Flow en cuanto lleguen (ver «Animaciones que faltan»): solo hay que crear la carpeta y añadir la entrada en `data/anim.json`; los efectos sobre negro necesitan un modo aditivo en `Art.draw_sprite` (pendiente).
+3. [ ] Tercer asedio con mecánica de mapa nueva (por ejemplo, la Inquisición, con carriles que se cierran).
+4. [ ] Más dones y augurios (cada uno es una entrada en `balance.json`), y un sprite para las bestias del pack 2.
+5. [ ] Proponer el setup script del entorno (Godot 4.7.2, xvfb y plantillas web) para no rehacerlo en cada sesión.
 
 ## Animaciones que faltan (para pedir a Google Flow)
 Mismo método que hoy: fondo verde liso (o negro para efectos), cámara fija, personaje de perfil mirando a la derecha y sin desplazarse, 4-8 s. Se recortan a PNG en `art/anim/<pj>/<clip>/` y se añaden a `data/anim.json`.
