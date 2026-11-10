@@ -31,6 +31,10 @@ El cuadro es ancho porque el rayo y la bola de fuego salen hacia la derecha; en 
 - Velocidades: rayo a 24 fps desde el fotograma 5 (el destello llega a los 0,08 s), brasa a 22 fps desde el 8, golpe a 16, mordisco de Tizón a 22 desde el 3, Horno 12-18.
 - Para añadir un clip: carpeta con `01.png`, `02.png`… (mismo encuadre que los otros del personaje) y su entrada en el JSON. Si el encuadre cambia, medir alto y pies frente al sprite fijo (capturas con `tools/shots.tscn` → `demonio` / `animacion`).
 
+## Efectos sobre fondo negro (preparado, sin fotogramas aún)
+- Carpeta `art/anim/efectos/<clip>/01.png…` y entrada en `data/anim.json` → `efectos` (ya están `brasa` y `rayo`). Se dibujan con mezcla aditiva (`scripts/fx_layer.gd`): el negro no suma nada, así que no hace falta recortar. `anchor [-1, -1]` = centrado en el punto del impacto; `height` = alto en pantalla (la Brasa escala con su radio).
+- La Brasa lo lanza al caer (`brasa_land`) y el Rayo en el blanco (`rayo`). Si falta la carpeta no pasa nada: siguen los efectos por código.
+
 ## Pendiente
 - Peso: 41 MB en PNG, pero la versión web los importa como WebP con pérdida (`tools/anim_lossy.sh`) y el `.pck` queda en ~14 MB. No hace falta bajar fps.
 - Embestida del Horno: repetir con fondo verde (el clip magenta no se puede recortar).

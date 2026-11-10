@@ -26,7 +26,7 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 
 ### Siguientes pasos (para las próximas activaciones o para mañana)
 1. [ ] Jugar a mano y ajustar: volumen de la música frente a los efectos, tiempos de los clips (rayo 24 fps, brasa 22 fps), que el rayo espere 0,08 s al fotograma de impacto.
-2. [ ] Integrar los clips nuevos de Flow en cuanto lleguen (ver «Animaciones que faltan»): solo hay que crear la carpeta y añadir la entrada en `data/anim.json`; los efectos sobre negro necesitan un modo aditivo en `Art.draw_sprite` (pendiente).
+2. [ ] Integrar los clips nuevos de Flow en cuanto lleguen (ver «Animaciones que faltan»): solo hay que crear la carpeta y añadir la entrada en `data/anim.json`. Los efectos sobre negro ya tienen su capa aditiva (`scripts/fx_layer.gd`, personaje `efectos`, clips `brasa` y `rayo` esperando fotogramas).
 3. [ ] Tercer asedio con mecánica de mapa nueva (por ejemplo, la Inquisición, con carriles que se cierran).
 4. [ ] Más dones y augurios (cada uno es una entrada en `balance.json`), y un sprite para las bestias del pack 2.
 5. [ ] Proponer el setup script del entorno (Godot 4.7.2, xvfb y plantillas web) para no rehacerlo en cada sesión.
