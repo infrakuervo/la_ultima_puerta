@@ -160,6 +160,11 @@ func prep(s) -> void:
 	for c in s.creatures:
 		if not c["named"] and rng.randf() < 0.25 and s.can_level(int(c["id"])):
 			s.level_up(int(c["id"]))
+	# augurio: lo coge al azar un 60% de las veces (BAL_AUGUR=0 nunca, =1 siempre)
+	if not s.augur_offer.is_empty():
+		var rate: float = float(OS.get_environment("BAL_AUGUR")) if OS.has_environment("BAL_AUGUR") else 0.6
+		if rng.randf() < rate:
+			s.choose_augur(String(s.augur_offer[rng.randi() % s.augur_offer.size()]))
 
 
 const META_PRIORITY: Array = [

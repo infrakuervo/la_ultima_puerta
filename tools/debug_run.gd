@@ -10,6 +10,8 @@ func _ready() -> void:
 	var s = Sim.new(sd)
 	s.meta_mode = true
 	s.draft_enabled = true
+	s.remix_enabled = true
+	s.augurs_enabled = true
 	s.reset()
 	var bot = Bot.new(sd, 0.0)
 	var last: float = -10.0

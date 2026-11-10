@@ -36,6 +36,7 @@ func run() -> void:
 	test_clumsy_bot()
 	test_anim()
 	test_inflation()
+	test_procedural()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1298,6 +1299,58 @@ func test_inflation() -> void:
 	check(s.skill_cost("brasa_radio") > c0, "cada rango comprado encarece los demás (%d -> %d)" % [c0, s.skill_cost("brasa_radio")])
 	s.meta_mode = false
 	check(s.skill_cost("brasa_radio") == c0, "sin modo permanente no hay inflación")
+
+
+func test_procedural() -> void:
+	print("Variedad por partida: remezcla y augurios")
+	var a = new_sim(11)
+	a.remix_enabled = true
+	a.reset()
+	var b = new_sim(12)
+	b.remix_enabled = true
+	b.reset()
+	check(str(a.WAVES[0]) == str(a.SIEGES[0]["waves"][0]), "la primera oleada no se remezcla (tutorial)")
+	var differ: bool = false
+	for i in range(1, a.WAVES.size()):
+		if str(a.WAVES[i]) != str(b.WAVES[i]):
+			differ = true
+	check(differ, "dos semillas dan oleadas distintas")
+	check(str(a.SIEGES[0]["waves"][3]) != str(a.WAVES[3]) or str(b.SIEGES[0]["waves"][3]) != str(b.WAVES[3]), "la remezcla no toca los datos originales")
+	var c = new_sim(11)
+	c.remix_enabled = true
+	c.reset()
+	check(str(c.WAVES) == str(a.WAVES), "la misma semilla da la misma remezcla")
+	var heroes: int = 0
+	for g in a.WAVES[4]["spawns"]:
+		if String(g["kind"]) == "@hero":
+			heroes += 1
+	check(heroes == 1, "el héroe sigue en su oleada")
+	# augurios
+	var s = new_sim(5)
+	s.augurs_enabled = true
+	s.reset()
+	check(s.augur_offer.is_empty(), "no hay augurio antes de la primera oleada")
+	to_combat(s)
+	s.enemies.clear()
+	s.spawn_queue.clear()
+	run_ticks(s, 3)
+	check(s.phase == "prep" and s.augur_offer.size() == 2, "tras la oleada 1 se ofrecen dos augurios")
+	check(not s.choose_augur("no_existe"), "no se puede elegir un augurio no ofrecido")
+	var n0: int = s._build_spawns(s.WAVES[s.wave_index]).size()
+	s.augur = "marea"
+	var n1: int = s._build_spawns(s.WAVES[s.wave_index]).size()
+	check(n1 > n0, "Marea añade enemigos (%d -> %d)" % [n0, n1])
+	s.augur = "niebla"
+	s._front_lane = 2
+	var lanes: Dictionary = {}
+	for q in s._build_spawns(s.WAVES[s.wave_index]):
+		lanes[int(q["lane"])] = true
+	check(lanes.size() == 1 and lanes.has(2), "Niebla mete a todos por un frente")
+	s.augur = "luna"
+	s._spawn_enemy("campesino", 0)
+	check(float(s.enemies[-1]["max_hp"]) > float(s.B["enemies"]["campesino"]["hp"]), "Luna de sangre da más vida")
+	s.augur = ""
+	check(s.augur_fx("enemy_hp") == 0.0, "Calma no cambia nada")
 
 
 func test_anim() -> void:

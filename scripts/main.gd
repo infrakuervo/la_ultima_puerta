@@ -78,6 +78,8 @@ func _ready() -> void:
 	if not Engine.has_meta("sin_persistencia"):
 		sim.meta_mode = true
 		sim.draft_enabled = true
+		sim.remix_enabled = true
+		sim.augurs_enabled = true
 		_load_meta()
 		sim.reset()
 	sound = SoundBank.new()
@@ -513,6 +515,8 @@ func _on_event(ev: Dictionary) -> void:
 			_add_fx({"type": "disc", "p": Vector2((150.0 + float(ev["x"])) * 0.5, jy2), "r": 60.0, "col": Color(1.0, 0.95, 0.7, 0.0), "ttl": 0.1})
 			_add_fx({"type": "line", "a": Vector2(150, jy2 - 10), "b": Vector2(ev["x"], jy2 - 10), "col": Color(1.0, 0.97, 0.75), "w": 40.0, "ttl": 0.35})
 			flash_white = 0.35
+		"augur_done":
+			_float(Vector2(640, 240), "Augurio cumplido: %s" % String(sim.augur_def(String(ev["id"])).get("name", "")), Color(0.85, 0.65, 1.0), 1.8)
 		"draft_pick":
 			_play("level")
 			_save_meta()
@@ -862,6 +866,12 @@ func _on_press(p: Vector2) -> void:
 		return
 	if sim.phase != "prep":
 		return
+	for ar in _augur_rects():
+		if ar["rect"].has_point(p):
+			var pick: String = String(ar["id"])
+			sim.choose_augur("" if pick == sim.augur else pick)
+			_play("click")
+			return
 	var cid: int = _creature_at(p)
 	if cid >= 0:
 		selected_id = cid
@@ -1409,6 +1419,8 @@ func _draw_hud() -> void:
 	elif sim.phase == "combat":
 		var left: int = sim.spawn_queue.size() + sim.enemies.size()
 		_txt("Quedan %d enemigos." % left, Vector2(340, 646), 17, Color(0.95, 0.85, 0.7))
+		if sim.augur != "":
+			_txt("Augurio: %s" % String(sim.augur_def(sim.augur).get("name", "")), Vector2(560, 646), 15, Color(0.85, 0.65, 1.0))
 		_txt("Clic: lanza (mantén para repetir). Clic dcho. o rueda: cambia.", Vector2(340, 672), 14, Color(0.8, 0.7, 0.65), HORIZONTAL_ALIGNMENT_LEFT, 470.0)
 
 
@@ -1447,6 +1459,39 @@ func _draw_lane_preview() -> void:
 		y += 20.0
 	if not pv[3].is_empty():
 		_txt("sin orden y por cualquier frente", Vector2(box.position.x + 10, box.end.y + 18), 14, Color(0.8, 0.7, 0.6))
+	_draw_augurs()
+
+
+## Tarjetas de augurio (riesgo/recompensa opcional) bajo la previsión de la oleada.
+func _augur_rects() -> Array:
+	var out: Array = []
+	if sim.phase != "prep" or show_tree or _draft_active() or sim.augur_offer.is_empty():
+		return out
+	var rows: int = sim.preview_totals(sim.wave_index).size()
+	var y: float = 98.0 + 44.0 + 20.0 * float(rows) + 52.0
+	for id in sim.augur_offer:
+		out.append({"id": String(id), "rect": Rect2(1040, y, 232, 66)})
+		y += 72.0
+	return out
+
+
+func _draw_augurs() -> void:
+	var rects: Array = _augur_rects()
+	if rects.is_empty():
+		return
+	var top: Vector2 = rects[0]["rect"].position
+	_txt("AUGURIO (opcional)", top + Vector2(10, -8), 15, Color(0.85, 0.6, 1.0))
+	for ar in rects:
+		var r: Rect2 = ar["rect"]
+		var a: Dictionary = sim.augur_def(String(ar["id"]))
+		var on: bool = sim.augur == String(ar["id"])
+		var hov: bool = r.has_point(mouse_pos)
+		draw_rect(r, Color(0.22, 0.08, 0.28, 0.9) if on else Color(0.06, 0.02, 0.08, 0.82 if hov else 0.7))
+		draw_rect(r, Color(1.0, 0.8, 0.4) if on else Color(0.55, 0.3, 0.65), false, 3.0 if on else 2.0)
+		_txt(String(a.get("name", "")), r.position + Vector2(10, 20), 16, Color(1.0, 0.85, 0.5) if on else Color(0.92, 0.8, 1.0))
+		draw_multiline_string(font, r.position + Vector2(10, 38), String(a.get("desc", "")), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 16, 13, 2, Color(0.85, 0.8, 0.85))
+	var last: Rect2 = rects[-1]["rect"]
+	_txt("Elegido: %s" % String(sim.augur_def(sim.augur).get("name", "")) if sim.augur != "" else "Sin elegir: Calma", Vector2(last.position.x + 10, last.end.y + 16), 13, Color(0.75, 0.65, 0.8))
 
 
 # --- Árbol de habilidades -------------------------------------------------------

@@ -185,6 +185,17 @@ func run() -> void:
 			main.demon_anim.t = A.impact_delay("demonio", c) if c in ["rayo", "brasa"] else 0.6
 			await shot("demonio_" + c)
 		main.demon_anim = A.new("demonio")
+	if want("augurio"):
+		s().remix_enabled = true
+		s().augurs_enabled = true
+		s().reset()
+		s().wave_index = 5
+		s()._prepare_next()
+		s().choose_augur(String(s().augur_offer[0]))
+		await shot("augurio")
+		s().remix_enabled = false
+		s().augurs_enabled = false
+		s().reset()
 	if want("animacion"):
 		# bestias animadas en combate: Tizón y Sabuesos (carrera/mordisco), Horno, y el resto por código
 		s().reset()

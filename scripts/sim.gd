@@ -47,6 +47,11 @@ var _stat_cache: Dictionary = {}
 var kills: int = 0
 var seen_forms: Array = []       # formas vistas (bestiario); la vista lo persiste
 var message: String = ""
+var remix_enabled: bool = false  # oleadas remezcladas por partida (la vista y el bot lo activan)
+var augurs_enabled: bool = false # augurios a elegir antes de cada oleada
+var augur: String = ""           # augurio elegido para la oleada actual o siguiente ("" = Calma)
+var augur_offer: Array = []      # ids ofrecidos en esta preparación
+var _front_lane: int = -1
 
 
 func _init(seed_value: int = 1) -> void:
@@ -123,6 +128,11 @@ func reset() -> void:
 	draft.clear()
 	kills = 0
 	wave_time = 0.0
+	augur = ""
+	augur_offer.clear()
+	WAVES = SIEGES[siege_index]["waves"]
+	if remix_enabled:
+		WAVES = _remix_waves(SIEGES[siege_index])
 	var tizon: Dictionary = _new_creature("sabueso", {"x": 520.0, "lane": 1})
 	tizon["name"] = "Tizón"
 	tizon["named"] = true
@@ -430,6 +440,7 @@ func give_relic() -> bool:
 func start_wave() -> bool:
 	if phase != "prep" or not draft.is_empty():
 		return false
+	_front_lane = rng.randi_range(0, 2) if augur_fx("one_front") > 0.0 else -1
 	spawn_queue = _build_spawns(WAVES[wave_index])
 	enemies.clear()
 	zones.clear()
@@ -467,10 +478,19 @@ func _build_spawns(w: Dictionary) -> Array:
 		if kind == "@hero":
 			kind = String(ROUTES[route]["hero"]) if route != "" else "verdugo"
 		var n: int = int(g["count"])
+		var est: Dictionary = B["enemies"].get(kind, {})
+		if not (est.get("elite", false) or est.get("hero", false) or est.get("boss", false)):
+			n = int(round(float(n) * (1.0 + augur_fx("count"))))
 		var gap: float = float(g.get("gap", 1.0))
 		var d: float = float(g.get("delay", 0.0))
+		var lane: int = int(g["lane"]) if _front_lane < 0 else _front_lane
 		for i in n:
-			q.append({"t": d + gap * i, "lane": int(g["lane"]), "kind": kind})
+			q.append({"t": d + gap * i, "lane": lane, "kind": kind})
+	var extra: int = int(augur_fx("extra_elite"))
+	var pool: Array = SIEGES[siege_index].get("remix", {}).get("elites", [])
+	for j in extra:
+		if not pool.is_empty():
+			q.append({"t": 6.0 + 4.0 * j, "lane": _front_lane, "kind": String(pool[rng.randi() % pool.size()])})
 	q.sort_custom(func(a, b): return a["t"] < b["t"])
 	return q
 
@@ -487,6 +507,101 @@ func _prepare_next() -> void:
 			_note_seen("ojo")
 			events.append({"t": "loan_ojo", "id": o["id"]})
 	message = "Oleada %d: %s" % [wave_index + 1, w["title"]]
+	_offer_augurs()
+
+
+# ----------------------------------------------------------------------------
+# Variedad por partida: oleadas remezcladas y augurios
+# ----------------------------------------------------------------------------
+
+## Copia las oleadas del asedio cambiando la composición con el mismo presupuesto (recompensa):
+## el grupo principal de cada oleada conserva su tipo (es el tema y la nota de la oleada); los
+## demás comunes pueden cambiar por otro común y las élites por otra élite. Cantidades ±jitter.
+func _remix_waves(sg: Dictionary) -> Array:
+	var rx: Dictionary = sg.get("remix", {})
+	var out: Array = []
+	var src: Array = sg["waves"]
+	for wi in src.size():
+		var w: Dictionary = src[wi].duplicate(true)
+		out.append(w)
+		if rx.is_empty() or (wi == 0 and bool(rx.get("keep_first", true))):
+			continue
+		var main_i: int = -1
+		var best: float = -1.0
+		for gi in w["spawns"].size():
+			var g: Dictionary = w["spawns"][gi]
+			var est: Dictionary = B["enemies"].get(String(g["kind"]), {})
+			var budget: float = float(est.get("reward", 0)) * float(g["count"])
+			if budget > best and not est.get("elite", false):
+				best = budget
+				main_i = gi
+		for gi in w["spawns"].size():
+			var g2: Dictionary = w["spawns"][gi]
+			var kind: String = String(g2["kind"])
+			if kind.begins_with("@"):
+				continue
+			var st: Dictionary = B["enemies"].get(kind, {})
+			if st.get("hero", false) or st.get("boss", false):
+				continue
+			var commons: Array = rx.get("commons", [])
+			var elites: Array = rx.get("elites", [])
+			if st.get("elite", false):
+				if kind in elites and rng.randf() < float(rx.get("elite_swap", 0.0)):
+					g2["kind"] = String(elites[rng.randi() % elites.size()])
+				continue
+			var n: float = float(g2["count"])
+			if gi != main_i and kind in commons and rng.randf() < float(rx.get("swap", 0.0)):
+				var nk: String = String(commons[rng.randi() % commons.size()])
+				n = n * float(st["reward"]) / float(B["enemies"][nk]["reward"])
+				g2["kind"] = nk
+			var jit: float = float(rx.get("jitter", 0.0))
+			g2["count"] = maxi(1, int(round(n * rng.randf_range(1.0 - jit, 1.0 + jit))))
+	return out
+
+
+func augur_def(id: String) -> Dictionary:
+	for a in B.get("augurs", {}).get("list", []):
+		if String(a["id"]) == id:
+			return a
+	return {}
+
+
+func augur_fx(k: String) -> float:
+	if augur == "":
+		return 0.0
+	return float(augur_def(augur).get("fx", {}).get(k, 0.0))
+
+
+func _offer_augurs() -> void:
+	augur = ""
+	augur_offer.clear()
+	if not augurs_enabled or wave_index < 1:
+		return
+	var pool: Array = []
+	for a in B.get("augurs", {}).get("list", []):
+		if wave_index + 1 >= int(a.get("min_wave", 2)):
+			pool.append(a)
+	var n: int = int(B["augurs"].get("offer", 2))
+	while augur_offer.size() < n and not pool.is_empty():
+		var tot: float = 0.0
+		for a2 in pool:
+			tot += float(a2.get("weight", 1))
+		var r: float = rng.randf() * tot
+		for a3 in pool:
+			r -= float(a3.get("weight", 1))
+			if r <= 0.0:
+				augur_offer.append(String(a3["id"]))
+				pool.erase(a3)
+				break
+
+
+## Elige un augurio de los ofrecidos (o "" para Calma). Solo en preparación.
+func choose_augur(id: String) -> bool:
+	if phase != "prep" or (id != "" and not (id in augur_offer)):
+		return false
+	augur = id
+	events.append({"t": "augur", "id": id})
+	return true
 
 
 func _new_creature(kind: String, spot: Dictionary) -> Dictionary:
@@ -535,7 +650,7 @@ func _spawn_enemy(kind: String, lane: int) -> void:
 	var st: Dictionary = B["enemies"][kind]
 	var e: Dictionary = {
 		"id": next_id, "kind": kind, "lane": lane, "x": float(B["arena"]["spawn_x"]),
-		"hp": float(st["hp"]) * wrath_hp(), "max_hp": float(st["hp"]) * wrath_hp(),
+		"hp": float(st["hp"]) * wrath_hp() * (1.0 + augur_fx("enemy_hp")), "max_hp": float(st["hp"]) * wrath_hp() * (1.0 + augur_fx("enemy_hp")),
 		"cd": rng.randf() * 0.6, "held": 0.0, "stun": 0.0, "shield": 0.0, "summons": 0,
 		"judge_t": float(st.get("judge_cd", 0.0)) * 0.6, "judge_wind": 0.0, "judge_lane": -1,
 		"shield_t": float(st.get("shield_cd", 0.0)) * 0.5,
@@ -574,7 +689,7 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 	_check_summon(e, st)
 	if e["hp"] <= 0.0:
 		e["dead"] = true
-		var reward: int = int(round(float(st["reward"]) * (1.0 + fmul("eco.reward"))))
+		var reward: int = int(round(float(st["reward"]) * (1.0 + fmul("eco.reward")) * (1.0 + augur_fx("reward"))))
 		souls += reward
 		kills += 1
 		var c: Dictionary = creature_by_id(src)
@@ -670,7 +785,7 @@ func cast_brasa(p: Vector2) -> bool:
 	if phase != "combat" or brasa_cd > 0.0:
 		return false
 	var c: Dictionary = _stats("brasa")
-	brasa_cd = float(c["cd"])
+	brasa_cd = float(c["cd"]) * (1.0 + augur_fx("spell_cd"))
 	var r: float = brasa_radius()
 	pending_brasas.append({"t": float(c["delay"]), "d": float(c["delay"]), "p": p, "r": r, "k": 1.0})
 	events.append({"t": "brasa_cast", "p": p, "r": r, "delay": float(c["delay"])})
@@ -715,7 +830,7 @@ func cast_rayo(p: Vector2) -> bool:
 	if tgt.is_empty():
 		return false
 	var c: Dictionary = _stats("rayo")
-	rayo_cd = float(c["cd"])
+	rayo_cd = float(c["cd"]) * (1.0 + augur_fx("spell_cd"))
 	var tp: Vector2 = epos(tgt)
 	_rayo_hit(tgt, float(c["dmg"]), c)
 	events.append({"t": "rayo", "from": demon_pos(), "to": tp, "target": tgt["id"]})
@@ -1308,7 +1423,7 @@ func _blocked_by_ally(e: Dictionary, gap: float) -> bool:
 
 
 func _hit_door(amount: float, e: Dictionary) -> void:
-	amount *= wrath_dmg()
+	amount *= wrath_dmg() * (1.0 + augur_fx("door_dmg"))
 	door_hp -= amount
 	events.append({"t": "door_hit", "lane": e["lane"], "x": e["x"], "amount": amount})
 
@@ -1468,7 +1583,7 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 				return
 	elif not st.get("ignore_block", false) and _blocked_by_ally(e, 20.0):
 		return
-	e["x"] -= float(st["speed"]) * dt * _haste_mult(e)
+	e["x"] -= float(st["speed"]) * dt * _haste_mult(e) * (1.0 + augur_fx("enemy_speed"))
 
 
 # Virote de torno: atraviesa a todas las criaturas de la fila (hasta 3) con daño decreciente.
@@ -1683,12 +1798,16 @@ func _check_end() -> void:
 func _wave_cleared() -> void:
 	var cleared: int = wave_index + 1
 	var w: Dictionary = WAVES[wave_index]
-	souls += int(B["economy"]["wave_bonus"]) + int(fadd("eco.wave_bonus"))
+	souls += int(B["economy"]["wave_bonus"]) + int(fadd("eco.wave_bonus")) + int(augur_fx("souls"))
 	souls += mini(25, int(float(souls) * fadd("special.interest")))
 	door_hp = minf(door_max, door_hp + door_max * fadd("door.regen"))
 	events.append({"t": "wave_clear", "wave": cleared})
 	if meta_mode:
-		_gain_essence(int(B["meta"]["wave_base"]) + int(B["meta"]["wave_step"]) * cleared)
+		_gain_essence(int(round(float(int(B["meta"]["wave_base"]) + int(B["meta"]["wave_step"]) * cleared) * (1.0 + augur_fx("essence")))))
+	if augur != "":
+		events.append({"t": "augur_done", "id": augur})
+	augur = ""
+	augur_offer.clear()
 	for c in creatures:
 		if c["fallen"]:
 			c["fallen"] = false

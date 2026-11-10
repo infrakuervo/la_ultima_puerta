@@ -30,6 +30,9 @@ Plan: tras los puntos 1-7, jugar partidas de verdad (bot torpe, capturas, `tools
 
 ### Hecho
 - [x] **Curva del árbol** — inflación (`balance.json` → `meta.inflation` = 0,02): cada rango comprado encarece un 2% los demás. Carrera subiendo Ira (`BAL_CLIMB=1`, 8×14 partidas): asedio 1 con 62-100% de victorias en cada Ira (antes 88-100%), Ira 3 del asedio 2 queda como techo para el bot torpe. A Ira 0 sigue siendo fácil tras la primera victoria (es el «modo tranquilo»).
+- [x] **Oleadas remezcladas** (`waves.json` → `remix` por asedio, `Sim.remix_enabled`): cada partida copia las oleadas y cambia la composición con el mismo presupuesto (recompensa). El grupo principal de cada oleada conserva su tipo (es el tema y la nota); los demás comunes cambian con prob. 0,45 y las élites por otra élite con 0,6; cantidades ±20%. La oleada 1 no cambia (tutorial). Con semilla fija sale igual (para retos).
+- [x] **Augurios** (`balance.json` → `augurs`, `Sim.augurs_enabled`): antes de cada oleada desde la 2 se ofrecen dos riesgo/recompensa (Luna de sangre, Marea, Fervor, Campeón, Niebla, Diezmo, Lluvia de ceniza); se elige uno o ninguno (Calma) con tarjetas bajo la previsión. El bot coge uno al azar el 60% de las veces.
+  Medida (bot torpe, 80 primeras partidas): 58% sin variedad → 49% con remezcla y augurios al azar. Dentro del objetivo; un jugador que elige con cabeza lo tendrá algo mejor.
 
 
 ## Entorno (paso 0)

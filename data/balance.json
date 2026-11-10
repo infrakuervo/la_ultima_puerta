@@ -590,5 +590,82 @@
   "hp": 0.3,
   "dmg": 0.15,
   "essence": 0.3
+ },
+ "augurs": {
+  "_doc": "Augurios: antes de cada oleada (desde la 2) se ofrecen dos; el jugador puede elegir uno o ninguno (Calma). fx: enemy_hp, enemy_speed, count (comunes), extra_elite, one_front, door_dmg, spell_cd, reward (almas por baja), souls (almas al acabar), essence (esencia de la oleada).",
+  "offer": 2,
+  "list": [
+   {
+    "id": "luna",
+    "name": "Luna de sangre",
+    "desc": "Enemigos +25% de vida. Almas por baja +60%.",
+    "weight": 3,
+    "fx": {
+     "enemy_hp": 0.25,
+     "reward": 0.6
+    }
+   },
+   {
+    "id": "marea",
+    "name": "Marea",
+    "desc": "+35% de enemigos comunes. +50% de esencia en esta oleada.",
+    "weight": 3,
+    "fx": {
+     "count": 0.35,
+     "essence": 0.5
+    }
+   },
+   {
+    "id": "fervor",
+    "name": "Fervor",
+    "desc": "Enemigos un 20% más rápidos. Brasa y Rayo se recargan un 30% antes.",
+    "weight": 2,
+    "fx": {
+     "enemy_speed": 0.2,
+     "spell_cd": -0.3
+    }
+   },
+   {
+    "id": "campeon",
+    "name": "Campeón",
+    "desc": "Llega una élite más. +30 almas al acabar.",
+    "weight": 2,
+    "fx": {
+     "extra_elite": 1,
+     "souls": 30
+    },
+    "min_wave": 2
+   },
+   {
+    "id": "niebla",
+    "name": "Niebla",
+    "desc": "Todos entran por el mismo frente. +20 almas al acabar.",
+    "weight": 2,
+    "fx": {
+     "one_front": 1,
+     "souls": 20
+    }
+   },
+   {
+    "id": "diezmo",
+    "name": "Diezmo",
+    "desc": "La Puerta recibe +60% de daño. Almas por baja x2.",
+    "weight": 2,
+    "fx": {
+     "door_dmg": 0.6,
+     "reward": 1.0
+    }
+   },
+   {
+    "id": "ceniza",
+    "name": "Lluvia de ceniza",
+    "desc": "Brasa y Rayo se recargan un 25% más lento. +60% de esencia en esta oleada.",
+    "weight": 2,
+    "fx": {
+     "spell_cd": 0.25,
+     "essence": 0.6
+    }
+   }
+  ]
  }
 }
