@@ -1018,6 +1018,24 @@
         "share": 0.12
        }
       ]
+     },
+     {
+      "title": "Flagelantes",
+      "main": "flagelante",
+      "main_share": 0.45,
+      "note": "Rápidos y muchos: Brasa por delante de ellos."
+     },
+     {
+      "title": "Hogueras",
+      "main": "escudero",
+      "main_share": 0.35,
+      "extra": [
+       {
+        "kind": "purificador",
+        "share": 0.2
+       }
+      ],
+      "note": "Purificadores tras los escudos: no arden, búscalos con el Rayo."
      }
     ],
     "budget_max": 560,
@@ -1033,7 +1051,9 @@
      "escudero",
      "ballestero",
      "clerigo",
-     "zapador"
+     "zapador",
+     "flagelante",
+     "purificador"
     ],
     "elites": [
      "capataz",
