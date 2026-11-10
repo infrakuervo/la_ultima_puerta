@@ -392,6 +392,8 @@ func tut_update(delta: float) -> void:
 
 
 func tut_draw(m) -> void:
+	if m.show_tree or m.show_bestiary:
+		return   # el cartel del tutorial no tapa el árbol ni el bestiario
 	if tut_step < 0 or open:
 		return
 	var text: String = ""
