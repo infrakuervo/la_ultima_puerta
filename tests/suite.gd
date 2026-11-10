@@ -4,6 +4,7 @@ extends Node
 
 const Sim = preload("res://scripts/sim.gd")
 const Bot = preload("res://tests/bot.gd")
+const Anim = preload("res://scripts/anim.gd")
 
 var failures: int = 0
 var checks: int = 0
@@ -33,6 +34,7 @@ func run() -> void:
 	test_skills()
 	test_full_runs()
 	test_clumsy_bot()
+	test_anim()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1262,3 +1264,40 @@ func test_draft() -> void:
 		if s2.phase != "combat":
 			break
 	check(s2.draft.is_empty(), "sin el modo, no hay elección")
+
+
+func test_anim() -> void:
+	print("Animación por fotogramas (solo vista)")
+	check(not Anim.data().is_empty(), "data/anim.json se lee")
+	check(Anim.frame_count("demonio", "reposo") == 52, "el reposo del demonio tiene 52 fotogramas")
+	check(Anim.frame("demonio", "reposo", 0) != null, "el primer fotograma carga")
+	check(not Anim.has_clip("demonio", "baile"), "un clip que no está en los datos no existe")
+	check(not Anim.has_clip("nadie", "reposo"), "un personaje sin datos no tiene clips")
+	var a = Anim.new("demonio")
+	check(a.clip == "reposo", "el demonio empieza en reposo")
+	a.update(10.0)
+	check(a.clip == "reposo" and a.index() >= 0 and a.index() < 52, "el reposo es un bucle")
+	check(a.play("rayo"), "play(rayo) arranca el clip")
+	check(a.index() == 4, "el rayo empieza en su fotograma start (5)")
+	check(absf(Anim.impact_delay("demonio", "rayo") - 2.0 / 24.0) < 0.001, "el impacto del rayo llega 2 fotogramas después")
+	a.set_base("")
+	check(a.clip == "rayo", "set_base no corta un lanzamiento")
+	a.update(5.0)
+	check(a.clip == "reposo", "al acabar un clip de una vez vuelve al reposo")
+	a.play("derrota")
+	a.update(50.0)
+	check(a.clip == "derrota" and a.done and a.index() == 40, "la derrota se queda en el último fotograma")
+	var h: Vector2 = Anim.hand_at("demonio", "rayo", Vector2(100, 400))
+	check(h.x > 100.0 and h.y < 400.0, "la mano del rayo queda delante y arriba de los pies")
+	var tz = Anim.new("sabueso")
+	check(tz.clip == "" and tz.texture() == null, "Tizón sin reposo usa el sprite fijo")
+	tz.set_base("carrera")
+	check(tz.texture() != null, "Tizón corre con fotogramas")
+	tz.play("mordisco")
+	tz.update(5.0)
+	check(tz.clip == "" and tz.texture() == null, "tras el mordisco vuelve al sprite fijo")
+	Anim.enabled = false
+	var off = Anim.new("demonio")
+	check(off.texture() == null and off.draw_opts().is_empty(), "sin animaciones (o sin carpeta) no hay fotograma")
+	Anim.enabled = true
+	Anim.clear_cache()

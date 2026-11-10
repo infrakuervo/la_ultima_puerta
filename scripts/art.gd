@@ -69,11 +69,15 @@ static func background() -> Texture2D:
 	return _bg_tex
 
 
-## Dibuja un sprite con los pies en `pos`. opts: scale, alpha, flash, squash, bob, glow
+## Dibuja un sprite con los pies en `pos`. opts: scale, alpha, flash, squash, bob, glow,
+## frame ({tex, height, anchor} de Anim.draw_opts(): fotograma animado en lugar del sprite fijo).
 static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opts: Dictionary) -> bool:
 	var tx: Texture2D = tex(key)
-	if tx == null:
+	var fr: Dictionary = opts.get("frame", {})
+	if tx == null and fr.is_empty():
 		return false
+	if tx == null:
+		tx = fr["tex"]
 	var sc: float = float(opts.get("scale", 1.0))
 	var base: String = key.get_slice("_", 0)
 	var h: float = float(SPRITE_H[base]) * sc
@@ -97,6 +101,14 @@ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opt
 		ci.draw_circle(pos + Vector2(0, -h * 0.5 - lift), (h * 0.55 + 30.0 * glow), Color(1.0, 0.55, 0.2, 0.25 * glow))
 	var hh: float = h * squash * (1.0 - 0.08 * flash)
 	var rect: Rect2 = Rect2(pos.x - w * 0.5, pos.y - hh - lift + bob, w, hh)
+	if not fr.is_empty():
+		# fotograma animado: el ancla (pies) del cuadro cae en `pos`; el aplastamiento sale de los pies
+		var ftx: Texture2D = fr["tex"]
+		var fs: float = float(fr["height"]) * sc / float(ftx.get_height())
+		var anc: Vector2 = fr["anchor"]
+		var fsy: float = fs * squash * (1.0 - 0.08 * flash)
+		rect = Rect2(pos.x - anc.x * fs, pos.y - anc.y * fsy - lift + bob, ftx.get_width() * fs, ftx.get_height() * fsy)
+		tx = ftx
 	var col: Color = Color(1, 1, 1, alpha)
 	if opts.has("tint"):
 		var tn: Color = opts["tint"]
@@ -119,6 +131,9 @@ static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float, 
 	if SPRITE_H.has(kind):
 		var so: Dictionary = {"scale": s, "alpha": 0.35 if fallen else 1.0, "flash": flash, "glow": glow, "scars": scars,
 			"squash": 0.86 if bool(opts.get("crouch", false)) else 1.0, "bob": sin(t * 5.0) * 1.5}
+		if opts.has("frame") and not opts["frame"].is_empty():
+			so["frame"] = opts["frame"]
+			so["bob"] = 0.0
 		if draw_sprite(ci, kind, pos, t, so):
 			if int(opts.get("hambre", 0)) > 0:
 				for i in int(opts.get("hambre", 0)):

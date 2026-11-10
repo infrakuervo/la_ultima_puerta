@@ -3,6 +3,24 @@
 Memoria entre turnos. Al empezar cada turno: leer esto y seguir por el primer punto pendiente.
 Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, cada hora, minuto 16) creada.
 
+## Noche 2 (animaciones de Flow)
+Tarea programada «La Última Puerta: seguir 2» (trig_01RebsH5yBQGN7zjmY9vLLuV, cada hora, minuto 59) creada.
+Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
+
+1. [x] Sistema de animación por fotogramas — `scripts/anim.gd` + `data/anim.json` (personaje → clip: fps, bucle/hold, start, impacto, mano, alto y pies). Carga perezosa con caché; sin carpeta o sin fotograma → sprite fijo. Pruebas en `test_anim`.
+2. [ ] Demonio: reposo, rayo, brasa, golpe, victoria, derrota; bola y rayo desde la mano.
+3. [ ] Tizón / Sabuesos: carrera y mordisco (sin reposo: sprite fijo con respiración).
+4. [ ] Horno: reposo, carrera y mordisco (encuadre más abierto).
+5. [ ] Animación por código para el resto (respiración, trote, embestida, retroceso, sombra fija) + componer `juice.offset()` en `draw_set_transform` (charcos de brea).
+6. [ ] Intro en vídeo (`art/video/intro_demonio.ogv`), saltable y desactivable en Opciones.
+7. [ ] Peso y web: medir, reducir si pasa de ~40 MB, republicar y comprobar en Chromium.
+8. [ ] Rejugabilidad (ampliación del encargo: ver sección «Rejugabilidad»), incluye curva del árbol, música procedural con volúmenes aparte y logros/estadísticas.
+9. [ ] Cierre: PR #1, resumen y lista de animaciones que faltan para Flow. La tarea programada solo se desactiva si ya no queda margen.
+
+## Rejugabilidad (ampliación de la noche 2)
+El usuario quiere «un procedural divertido que dé horas de juego sin cansar aunque sea repetitivo».
+Plan: tras los puntos 1-7, jugar partidas de verdad (bot torpe, capturas, `tools/debug_run.tscn`), apuntar aquí qué se repite y qué aburre, y luego valorar: oleadas generadas con presupuesto, modificadores por oleada, sinergias y builds, draft con rareza, retos semanales con semilla, desbloqueos meta de contenido, ritmo (x3, menos tiempos muertos). Medir con el bot antes y después.
+
 ## Entorno (paso 0)
 - [x] Godot 4.7.2 estándar en `/opt/godot/godot` (enlace `/usr/local/bin/godot`), desde
   `https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip`.
