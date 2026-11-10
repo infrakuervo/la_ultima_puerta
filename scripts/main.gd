@@ -10,6 +10,7 @@ const Menu = preload("res://scripts/menu.gd")
 const Anim = preload("res://scripts/anim.gd")
 const Poses = preload("res://scripts/poses.gd")
 const Logros = preload("res://scripts/logros.gd")
+const Music = preload("res://scripts/music.gd")
 
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
@@ -70,6 +71,7 @@ var siege_wins: Dictionary = {}   # id de asedio -> mayor nivel de Ira ganado
 var records: Dictionary = {}      # "grieta" -> oleadas superadas (récord); "reto:<semana>" -> récord del reto
 var new_record: bool = false
 var logros = Logros.new()
+var music = Music.new()
 var toasts: Array = []            # avisos de logro: {title, desc, t}
 var challenge: Dictionary = {}    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
 var unlock_note: String = ""
@@ -89,8 +91,10 @@ func _ready() -> void:
 		_load_meta()
 		sim.reset()
 	sound = SoundBank.new()
+	_ensure_buses()
 	for i in 10:
 		var p: AudioStreamPlayer = AudioStreamPlayer.new()
+		p.bus = "Efectos"
 		add_child(p)
 		players.append(p)
 	_load_bestiary()
@@ -101,8 +105,20 @@ func _ready() -> void:
 	menu.load_options()
 	menu.apply(self)
 	speed = int(menu.opts["velocidad"])
+	if DisplayServer.get_name() != "headless" and not Engine.has_meta("sin_persistencia"):
+		music.setup(self, "Musica")
 	if not Engine.has_meta("sin_persistencia") and bool(menu.opts.get("intro", true)) and DisplayServer.get_name() != "headless":
 		_start_intro()
+
+
+## Buses de audio separados para música y efectos (los volúmenes van en Opciones).
+func _ensure_buses() -> void:
+	for nm in ["Efectos", "Musica"]:
+		if AudioServer.get_bus_index(nm) < 0:
+			AudioServer.add_bus()
+			var bi: int = AudioServer.bus_count - 1
+			AudioServer.set_bus_name(bi, nm)
+			AudioServer.set_bus_send(bi, "Master")
 
 
 # ----------------------------------------------------------------------------
@@ -138,6 +154,26 @@ func _start_intro() -> void:
 	vp.play()
 
 
+## Intensidad de la música según lo que pasa: calma en menús y preparación, combate según
+## cuántos enemigos quedan, al máximo con héroes y jefes.
+func _music_target() -> float:
+	if intro_layer != null or menu.open:
+		return 0.05
+	match sim.phase:
+		"combat":
+			var k: float = 0.55 + 0.4 * clampf(float(sim.enemies.size()) / 22.0, 0.0, 1.0)
+			for e in sim.enemies:
+				var st: Dictionary = sim.B["enemies"][e["kind"]]
+				if st.get("hero", false) or st.get("boss", false):
+					k = 1.0
+			return k
+		"victory":
+			return 0.2
+		"defeat":
+			return 0.0
+	return 0.15
+
+
 func _end_intro() -> void:
 	if intro_layer == null:
 		return
@@ -152,6 +188,8 @@ func _end_intro() -> void:
 
 func _process(delta: float) -> void:
 	delta = minf(delta, 0.1)
+	music.target = _music_target()
+	music.update(delta)
 	if intro_layer != null:
 		intro_t += delta
 		if intro_t > INTRO_MAX:

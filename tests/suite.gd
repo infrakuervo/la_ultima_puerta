@@ -40,6 +40,7 @@ func run() -> void:
 	test_boons()
 	test_endless()
 	test_logros()
+	test_music()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1450,6 +1451,29 @@ func test_logros() -> void:
 	var L2 = load("res://scripts/logros.gd").new()
 	L2.from_save(L.to_save())
 	check(L2.got.size() == L.got.size() and int(L2.stats["victorias"]) == 1, "logros y estadísticas se guardan y se cargan")
+
+
+func test_music() -> void:
+	print("Música procedural")
+	var M = load("res://scripts/music.gd").new()
+	M.target = 0.0
+	var calm: PackedVector2Array = M.render(22050)
+	M.intensity = 1.0
+	var loud: PackedVector2Array = M.render(22050 * 2)
+	var peak: float = 0.0
+	var energy_c: float = 0.0
+	var energy_l: float = 0.0
+	var ok: bool = true
+	for v in calm:
+		energy_c += absf(v.x)
+		ok = ok and is_finite(v.x) and absf(v.x) <= 1.2
+	for v2 in loud:
+		energy_l += absf(v2.x)
+		peak = maxf(peak, absf(v2.x))
+		ok = ok and is_finite(v2.x)
+	check(ok and peak <= 1.2, "la síntesis no se sale ni da NaN (pico %.2f)" % peak)
+	check(energy_c > 50.0, "en calma suena algo (drone y campanas)")
+	check(energy_l / 2.0 > energy_c, "en combate hay más energía (bajo y tambores)")
 
 
 func test_anim() -> void:

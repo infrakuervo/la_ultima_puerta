@@ -8,7 +8,7 @@ const W: float = 1280.0
 
 var open: bool = true            # se empieza en el menú
 var panel: String = "main"       # main | options | help
-var opts: Dictionary = {"volumen": 0.8, "velocidad": 1, "temblor": true, "tutorial_hecho": false, "intro": true}
+var opts: Dictionary = {"volumen": 0.8, "velocidad": 1, "temblor": true, "tutorial_hecho": false, "intro": true, "musica": 0.6}
 var persist: bool = true
 var started: bool = false        # ya hay una partida empezada (Continuar)
 var sel_siege: int = 0
@@ -40,9 +40,13 @@ func save_options() -> void:
 
 
 func apply(m) -> void:
-	var v: float = clampf(float(opts["volumen"]), 0.0, 1.0)
-	AudioServer.set_bus_volume_db(0, linear_to_db(maxf(v, 0.0001)))
-	AudioServer.set_bus_mute(0, v <= 0.001)
+	for pair in [["Efectos", "volumen"], ["Musica", "musica"]]:
+		var bi: int = AudioServer.get_bus_index(String(pair[0]))
+		if bi < 0:
+			continue
+		var v: float = clampf(float(opts[pair[1]]), 0.0, 1.0)
+		AudioServer.set_bus_volume_db(bi, linear_to_db(maxf(v, 0.0001)))
+		AudioServer.set_bus_mute(bi, v <= 0.001)
 	m.juice.shake_scale = 1.0 if bool(opts["temblor"]) else 0.0
 
 
@@ -67,16 +71,19 @@ func buttons(m) -> Array:
 			y += 70.0
 			out.append({"id": "logros", "rect": Rect2(x, y, 320, 58), "text": "Logros"})
 		"options":
-			var y2: float = 236.0
+			var y2: float = 226.0
 			out.append({"id": "vol-", "rect": Rect2(x + 150, y2, 50, 50), "text": "−"})
 			out.append({"id": "vol+", "rect": Rect2(x + 290, y2, 50, 50), "text": "+"})
-			y2 += 68.0
+			y2 += 58.0
+			out.append({"id": "mus-", "rect": Rect2(x + 150, y2, 50, 50), "text": "−"})
+			out.append({"id": "mus+", "rect": Rect2(x + 290, y2, 50, 50), "text": "+"})
+			y2 += 58.0
 			out.append({"id": "spd", "rect": Rect2(x + 150, y2, 190, 50), "text": "x%d" % int(opts["velocidad"])})
-			y2 += 68.0
+			y2 += 58.0
 			out.append({"id": "shake", "rect": Rect2(x + 150, y2, 190, 50), "text": "Sí" if bool(opts["temblor"]) else "No"})
-			y2 += 68.0
+			y2 += 58.0
 			out.append({"id": "tut", "rect": Rect2(x + 150, y2, 190, 50), "text": "Repetir" if bool(opts["tutorial_hecho"]) else "Activado"})
-			y2 += 68.0
+			y2 += 58.0
 			out.append({"id": "intro", "rect": Rect2(x + 150, y2, 190, 50), "text": "Sí" if bool(opts["intro"]) else "No"})
 			out.append({"id": "back", "rect": Rect2(x, 590, 320, 58), "text": "Volver"})
 		"help", "logros":
@@ -159,6 +166,12 @@ func _do(m, id: String) -> void:
 		"vol+":
 			opts["volumen"] = minf(1.0, snappedf(float(opts["volumen"]) + 0.1, 0.1))
 			apply(m)
+		"mus-":
+			opts["musica"] = maxf(0.0, snappedf(float(opts["musica"]) - 0.1, 0.1))
+			apply(m)
+		"mus+":
+			opts["musica"] = minf(1.0, snappedf(float(opts["musica"]) + 0.1, 0.1))
+			apply(m)
 		"spd":
 			opts["velocidad"] = int(opts["velocidad"]) % 3 + 1
 			m.speed = int(opts["velocidad"])
@@ -203,9 +216,9 @@ func draw(m) -> void:
 	elif panel == "options":
 		m._txt("Opciones", Vector2(0, 190), 48, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		var x: float = W * 0.5 - 160.0
-		var rows: Array = [["Volumen", "%d%%" % int(round(float(opts["volumen"]) * 100.0))], ["Velocidad inicial", ""], ["Temblor de pantalla", ""], ["Tutorial", ""], ["Vídeo de inicio", ""]]
+		var rows: Array = [["Efectos", "%d%%" % int(round(float(opts["volumen"]) * 100.0))], ["Música", "%d%%" % int(round(float(opts["musica"]) * 100.0))], ["Velocidad inicial", ""], ["Temblor de pantalla", ""], ["Tutorial", ""], ["Vídeo de inicio", ""]]
 		for i in rows.size():
-			var yy: float = 269.0 + 68.0 * i
+			var yy: float = 259.0 + 58.0 * i
 			m._txt(rows[i][0], Vector2(x - 160, yy), 22, Color(0.95, 0.88, 0.8), HORIZONTAL_ALIGNMENT_RIGHT, 290.0)
 			if rows[i][1] != "":
 				m._txt(rows[i][1], Vector2(x + 200, yy), 22, Color(1.0, 0.9, 0.6), HORIZONTAL_ALIGNMENT_CENTER, 90.0)

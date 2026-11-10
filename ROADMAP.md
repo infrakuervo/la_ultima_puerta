@@ -38,6 +38,7 @@ Plan: tras los puntos 1-7, jugar partidas de verdad (bot torpe, capturas, `tools
 - [x] **Reto semanal** — botón en la selección de asedio: semilla fija durante la semana (`unix/604800`), asedio (alterna primero/segundo si está abierto), Ira 1 y un augurio que dura toda la partida (`Sim.week_augur`). Reiniciar repite las mismas oleadas. Récord propio (`records["reto:<semana>"]`, oleadas superadas).
 - [x] **Ritmo** — velocidad x1 → x2 → x3 (botón, F y opción).
 - [x] **Logros y estadísticas** — `data/logros.json` (14) + `scripts/logros.gd` (condiciones por evento). Aviso arriba al conseguir uno, lista en el menú (Logros) con estadísticas (partidas, victorias, oleadas, bajas, mejor Brasa, récord de la Grieta) y los conseguidos en la partida en la pantalla final. **Progresión que abre contenido:** 5 logros abren dones del draft (`unlock` en el pool): Rayo de gracia, Furia del Abismo, Eco de la Fosa, Sangre de la Fosa y Presagio (nuevos Furia y Presagio). Se guarda en `user://meta.json` → `logros_data`.
+- [x] **Música procedural** — `scripts/music.gd`: síntesis en tiempo real en un `AudioStreamGenerator` (drone frigio con progresión de 4 compases, campanas que improvisan, y en combate bajo, bombo y caja con tempo que sube). La intensidad sigue a la partida (menú/preparación en calma; combate según enemigos; héroes y jefes al máximo). Buses `Musica` y `Efectos` con volumen aparte en Opciones. ~20 ms de CPU por segundo de audio. No suena en las pruebas ni sin pantalla (hay prueba de la síntesis con `render()`).
 
 
 ## Entorno (paso 0)
