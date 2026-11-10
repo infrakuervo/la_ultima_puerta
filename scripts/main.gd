@@ -1843,6 +1843,9 @@ func _draw_tree() -> void:
 	draw_rect(Rect2(0, 606, SCREEN_W, 30), Color(0.05, 0.02, 0.03))
 	_txt("ÁRBOL DE HABILIDADES", Vector2(24, 666), 24, Color(1.0, 0.85, 0.55))
 	_txt("%d esencia" % sim.essence, Vector2(1000, 666), 26, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_RIGHT, 256.0)
+	if sim.meta_mode:
+		var infl: float = float(sim.B["meta"].get("inflation", 0.0)) * float(sim.skill_points_spent())
+		_txt("%d rangos · cada rango encarece los demás un %d%% (ahora +%d%%)" % [sim.skill_points_spent(), int(round(float(sim.B["meta"].get("inflation", 0.0)) * 100.0)), int(round(infl * 100.0))], Vector2(24, 694), 13, Color(0.7, 0.65, 0.75))
 	for ci in sim.BRANCHES.size():
 		var br: Dictionary = sim.BRANCHES[ci]
 		var bc: Color = _branch_color(String(br["id"]))

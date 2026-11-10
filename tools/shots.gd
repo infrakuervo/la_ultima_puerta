@@ -217,8 +217,10 @@ func run() -> void:
 		main.show_bestiary = false
 	if want("arbol"):
 		s().reset()
+		s().meta_mode = true
 		main.show_tree = true
 		await shot("arbol")
+		s().meta_mode = false
 		main.show_tree = false
 	if want("ruta"):
 		s().reset()
