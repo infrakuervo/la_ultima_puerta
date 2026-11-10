@@ -338,7 +338,7 @@ func hp_mult(c: Dictionary) -> float:
 
 
 func dmg_mult(c: Dictionary) -> float:
-	var m: float = stat_mult(c) * (1.0 + fmul("beast.dmg"))
+	var m: float = stat_mult(c) * (1.0 + fmul("beast.dmg") + augur_fx("beast_dmg"))
 	m *= 1.0 + fadd("special.scar_dmg") * float(c["scars"])
 	var others: int = 0
 	for o in creatures:

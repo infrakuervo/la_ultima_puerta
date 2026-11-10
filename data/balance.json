@@ -790,6 +790,83 @@
       "add": 25
      }
     ]
+   },
+   {
+    "id": "brasero",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "fuego",
+    "weight": 1,
+    "title": "Brasero vivo",
+    "desc": "Esta partida: la Brasa se recarga un 20% antes y cae un 15% antes.",
+    "fx": [
+     {
+      "k": "brasa.cd",
+      "mul": -0.2
+     },
+     {
+      "k": "brasa.delay",
+      "mul": -0.15
+     }
+    ]
+   },
+   {
+    "id": "chispa",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "rayo",
+    "weight": 1,
+    "title": "Chispa negra",
+    "desc": "Esta partida: Rayo +30% de daño y +20% de alcance para elegir blanco.",
+    "fx": [
+     {
+      "k": "rayo.dmg",
+      "mul": 0.3
+     },
+     {
+      "k": "rayo.pick_radius",
+      "mul": 0.2
+     }
+    ]
+   },
+   {
+    "id": "garras",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 1,
+    "title": "Garras de obsidiana",
+    "desc": "Esta partida: bestias +15% de daño y la Presa se recarga un 25% antes.",
+    "fx": [
+     {
+      "k": "beast.dmg",
+      "mul": 0.15
+     },
+     {
+      "k": "sabueso.presa_cd",
+      "mul": -0.25
+     }
+    ]
+   },
+   {
+    "id": "diezmo_eterno",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "alma",
+    "weight": 0.5,
+    "min_wave": 2,
+    "title": "Diezmo eterno",
+    "desc": "Esta partida: +25 almas por oleada y subir de nivel cuesta un 25% menos.",
+    "fx": [
+     {
+      "k": "eco.wave_bonus",
+      "add": 25
+     },
+     {
+      "k": "eco.level_cost",
+      "mul": -0.25
+     }
+    ]
    }
   ],
   "_doc": "rarity: comun | rara | epica (marco y peso). type boon: efecto para el resto de la partida, con fx como los del árbol (se suman a _fx_totals). min_wave: oleada mínima (1 = tras la primera). unlock: true = solo sale si el jugador consiguió el logro que lo abre (data/logros.json).",
@@ -926,7 +1003,7 @@
   "essence": 0.3
  },
  "augurs": {
-  "_doc": "Augurios: antes de cada oleada (desde la 2) se ofrecen dos; el jugador puede elegir uno o ninguno (Calma). fx: enemy_hp, enemy_speed, count (comunes), extra_elite, one_front, door_dmg, spell_cd, reward (almas por baja), souls (almas al acabar), essence (esencia de la oleada). unlock: true = solo sale si un logro lo abrió (Sim.unlocked).",
+  "_doc": "Augurios: antes de cada oleada (desde la 2) se ofrecen dos; el jugador puede elegir uno o ninguno (Calma). fx: enemy_hp, enemy_speed, count (comunes), extra_elite, one_front, door_dmg, spell_cd, reward (almas por baja), souls (almas al acabar), essence (esencia de la oleada), beast_dmg (daño de las bestias). unlock: true = solo sale si un logro lo abrió (Sim.unlocked).",
   "offer": 2,
   "list": [
    {
@@ -1022,6 +1099,16 @@
      "door_dmg": 1.0,
      "reward": 1.5,
      "souls": 40
+    }
+   },
+   {
+    "id": "frenesi",
+    "name": "Frenesí",
+    "desc": "Tus bestias hacen un 25% más de daño, pero los humanos golpean la Puerta un 25% más fuerte.",
+    "weight": 2,
+    "fx": {
+     "beast_dmg": 0.25,
+     "door_dmg": 0.25
     }
    }
   ]
