@@ -65,6 +65,40 @@ func add_beast(kind: String) -> void:
 
 
 func run() -> void:
+	if want("partida"):
+		# partida completa del bot torpe a través de la vista: una captura a mitad de cada oleada
+		var Bot = load("res://tests/bot.gd")
+		var bot = Bot.new(int(OS.get_environment("SHOT_SEED")) if OS.has_environment("SHOT_SEED") else 21, 0.6)
+		s().remix_enabled = true
+		s().augurs_enabled = true
+		s().draft_enabled = true
+		s().reset()
+		var guard: int = 0
+		var shot_wave: int = -1
+		while s().phase != "victory" and s().phase != "defeat" and guard < 40000:
+			guard += 1
+			match s().phase:
+				"prep":
+					if not s().draft.is_empty():
+						await shot("partida_%d_draft" % (s().wave_index + 1))
+					bot.prep(s())
+					s().draft.clear()
+					await shot("partida_%d_prep" % (s().wave_index + 1))
+					s().start_wave()
+				"route":
+					await shot("partida_ruta")
+					s().choose_route("verdugo")
+				"forge":
+					s().give_relic()
+				"combat":
+					bot.combat_tick(s(), 1.0 / 30.0)
+					main._process(1.0 / 30.0)
+					if s().wave_time > 14.0 and shot_wave != s().wave_index:
+						shot_wave = s().wave_index
+						await shot("partida_%d_combate" % (s().wave_index + 1))
+		main._process(0.5)
+		await shot("partida_final")
+		return
 	if want("intro"):
 		main._start_intro()
 		await get_tree().create_timer(3.0).timeout
@@ -231,11 +265,13 @@ func run() -> void:
 		s().reset()
 		main.demon_anim.play("victoria")
 		main.demon_anim.t = 3.5
+		main.logros.fresh = ["primera_sangre", "puerta_resiste", "brasa_perfecta", "intocable", "manada"]
 		s().kills = 87
 		main.unlock_note = "Se abre: Segundo asedio: la Orden del Alba. Se abre Ira 1 en este asedio."
 		s().meta_mode = true
 		s().phase = "victory"
 		await shot("victoria")
+		main.logros.fresh = []
 	if want("derrota"):
 		s().reset()
 		s().defeat_wave = 3

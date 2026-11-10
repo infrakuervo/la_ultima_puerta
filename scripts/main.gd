@@ -1272,8 +1272,8 @@ func _draw_creature(c: Dictionary) -> void:
 
 
 func _draw_toasts() -> void:
-	if toasts.is_empty():
-		return
+	if toasts.is_empty() or sim.phase == "victory" or sim.phase == "defeat":
+		return   # en la pantalla final los logros ya salen en su línea
 	var ts: Dictionary = toasts[0]
 	var t: float = float(ts["t"])
 	var a: float = clampf(minf(t / 0.3, (3.8 - t) / 0.5), 0.0, 1.0)
@@ -1467,7 +1467,10 @@ func _draw_fx_and_warns() -> void:
 				var fc: Color = f["col"]
 				fc.a = 1.0 - fk * fk
 				var fp: Vector2 = f["p"]
-				_txt(String(f["text"]), fp + Vector2(-80, -fk * 34.0), 20, fc, HORIZONTAL_ALIGNMENT_CENTER, 160.0)
+				# ancho según el texto (antes se cortaban los largos) y sin salirse de la pantalla
+				var fw: float = font.get_string_size(String(f["text"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 20).x + 8.0
+				var fx0: float = clampf(fp.x - fw * 0.5, 4.0, SCREEN_W - fw - 4.0)
+				_txt(String(f["text"]), Vector2(fx0, fp.y - fk * 34.0), 20, fc, HORIZONTAL_ALIGNMENT_CENTER, fw)
 
 
 func _draw_hud() -> void:
@@ -1904,7 +1907,7 @@ func _draw_overlays() -> void:
 		draw_demon_at(Vector2(250, 590), 1.25)
 		var t: Dictionary = sim.named_creature()
 		if not t.is_empty():
-			Art.draw_creature(self, String(t["kind"]), Vector2(640, 452), clock, {"scars": int(t["scars"])})
+			Art.draw_creature(self, String(t["kind"]), Vector2(640, 468), clock, {"scars": int(t["scars"]), "scale": 0.85})
 
 
 func _overlay_open() -> bool:
