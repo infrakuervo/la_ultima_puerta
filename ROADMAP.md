@@ -20,8 +20,10 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 ### Resumen de la noche 2
 - Animación: sistema genérico por fotogramas (`anim.gd` + `data/anim.json`) con el demonio (6 clips, hechizos desde la mano), Tizón/Sabuesos y Horno; poses por código para todo lo demás; intro en vídeo; web de 14 MB.
 - Rejugabilidad: oleadas remezcladas, augurios, encargos, terreno, draft con rareza, dones y resonancias, La Grieta sin fin, reto semanal, logros que abren contenido, historial, estadísticas, guardado entre oleadas, música procedural, x3, inflación del árbol, consejos de una vez.
-- Equilibrio medido con el bot torpe: primera partida 49% (objetivo 40-60%); subiendo Ira, 50-88% durante 11 partidas (antes 100% desde la segunda).
-- Pruebas: 315 comprobaciones, 0 fallos. Web republicada y probada en Chromium sin cabeza.
+- Contenido: tercer asedio «la Inquisición» con santuarios, tres enemigos nuevos por datos y su jefe; 17 dones y 10 augurios.
+- Equilibrio medido con el bot torpe: primera partida 50% (objetivo 40-60%); carrera de 20 partidas por los tres asedios subiendo Ira con ~58% de media y sin muro (antes: 100% desde la segunda partida).
+- Pruebas: 327 comprobaciones, 0 fallos. Web republicada y probada en Chromium sin cabeza. PR #1 actualizado.
+- Tarea programada «La Última Puerta: seguir 2» desactivada a las 05:00 UTC: lo que queda en «Siguientes pasos» necesita al usuario (jugar a mano, clips nuevos de Flow, arte del pack 2, aprobar el entorno).
 - Decisiones propias: la variedad se activa por banderas en `Sim` (las pruebas siguen deterministas); la Ira propuesta por defecto es la más alta abierta; sin encargo en la primera partida con tutorial; WebP con pérdida solo al exportar a web (los PNG originales no se tocan).
 
 ### Siguientes pasos (para las próximas activaciones o para mañana)
@@ -31,7 +33,7 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 4. [~] Más dones y augurios — hecho: augurio Frenesí y dones Brasero vivo, Chispa negra, Garras de obsidiana y Diezmo eterno (17 dones, 10 augurios). Con tantos dones, las bestias salían menos en el draft y la primera partida bajó al 40%: pesos de los dones a 0,7 (raros) y 0,35 (épicos) → 50% en 100 partidas. Falta: un sprite para las bestias del pack 2.
 6. [x] La Grieta con temas de la Inquisición (Flagelantes, Hogueras) y sus enemigos en la remezcla.
 7. [x] Tercer asedio en la carrera del bot (`BAL_CLIMB=1`: primero → Alba → Inquisición, pasando al siguiente tras ganar Ira 3). 8 carreras × 20 partidas: victorias por partida 12 (muestra pequeña; la primera partida da ~50% en 100), 88, 75, 62, 75, 100, 50, 88, 50, 38, 38, 62, 50, 25, 25, 38, 88, 75, 75, 50%. Media ~58%, sin muro: el Alba con Ira 2-3 baja al 25-38% unas partidas y la Inquisición llega hacia la partida 12-18. Veinte partidas de progresión con reto.
-5. [ ] Proponer el setup script del entorno (Godot 4.7.2, xvfb y plantillas web) para no rehacerlo en cada sesión.
+5. [ ] Setup script del entorno (necesita aprobación del usuario; no se propuso de noche para no dejar la sesión esperando). El entorno actual es el Default, compartido por todos los repositorios, así que debería ir en un entorno propio de este repo. Pasos que funcionan: descargar `Godot_v4.7.2-stable_linux.x86_64.zip` de GitHub a `/opt/godot` y enlazarlo en `/usr/local/bin/godot`; `apt-get install -y xvfb`; sacar `web_nothreads_release.zip` y `web_nothreads_debug.zip` del `.tpz` con peticiones por rangos (script en la nota de entorno) a `~/.local/share/godot/export_templates/4.7.2.stable/`.
 
 ## Animaciones que faltan (para pedir a Google Flow)
 Mismo método que hoy: fondo verde liso (o negro para efectos), cámara fija, personaje de perfil mirando a la derecha y sin desplazarse, 4-8 s. Se recortan a PNG en `art/anim/<pj>/<clip>/` y se añaden a `data/anim.json`.
