@@ -348,6 +348,25 @@ func run() -> void:
 			main._process(1.0 / 30.0)
 		await shot("efecto")
 		s().reset()
+	if want("efectos"):
+		# todos los efectos de Flow a la vez: bola de la Brasa en vuelo, llamas, explosión, rayo y Juicio
+		s().reset()
+		s().start_wave()
+		s().spawn_queue = [{"t": 99999.0, "lane": 0, "kind": "campesino"}]
+		s()._spawn_enemy("escudero", 2)
+		s().enemies[-1]["x"] = 900.0
+		s().cast_brasa(Vector2(820, s().lane_y(0)))
+		s().zones.append({"lane": 2, "x0": 520.0, "x1": 700.0, "t": 3.0})
+		for i in 14:
+			main._process(1.0 / 30.0)
+		main.fx_layer.spawn("brasa", Vector2(1000, s().lane_y(2) - 10), 1.0)
+		main.fx_layer.spawn("rayo", Vector2(1150, s().lane_y(1) - 30))
+		main.fx_layer.spawn_rect("juicio", Rect2(130, s().lane_y(1) - 75, 700, 130))
+		for i in 5:
+			main._process(1.0 / 30.0)
+		main.banner_t = 0.0
+		await shot("efectos")
+		s().reset()
 	if want("encargo"):
 		s().contracts_enabled = true
 		s().meta_mode = true

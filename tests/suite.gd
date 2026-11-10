@@ -1742,10 +1742,25 @@ func test_anim() -> void:
 	check(off.texture() == null and off.draw_opts().is_empty(), "sin animaciones (o sin carpeta) no hay fotograma")
 	Anim.enabled = true
 	Anim.clear_cache()
-	check(Anim.character("efectos").has("clips") and not Anim.has_clip("efectos", "brasa"), "los efectos están en los datos y, sin fotogramas, no hay clip")
+	for fxc in ["brasa", "rayo", "juicio", "bola", "llamas", "santuario"]:
+		check(Anim.has_clip("efectos", fxc), "el efecto de Flow «%s» tiene fotogramas" % fxc)
+	var ArtS = load("res://scripts/art.gd")
+	for spk in ["zapador", "garfio", "gargola", "gran_inquisidor"]:
+		check(ArtS.tex(spk) != null and ArtS.SPRITE_H.has(spk), "el sprite nuevo «%s» carga y tiene tamaño" % spk)
+	check(ArtS.size_key("gran_inquisidor") == "gran_inquisidor" and ArtS.size_key("campesino_v02") == "campesino", "la clave de tamaño respeta los nombres con «_»")
+	var sa = new_sim(1)
+	check(String(sa.SIEGES[sa._siege_by_id("alba")].get("background", "")) == "fondo-alba.jpg" and ArtS.background("fondo-alba.jpg") != null, "el Alba tiene su propio fondo")
+	check(ArtS.background("no_existe.jpg") == ArtS.background(), "un fondo que falta cae al de la Fosa")
+	check(String(sa.B["enemies"]["zapador"]["sprite"]) == "zapador" and not sa.B["enemies"]["zapador"].has("tint"), "el Zapador usa su sprite, sin tinte prestado")
 	var FL = load("res://scripts/fx_layer.gd")
 	var fl = FL.new()
-	check(not fl.spawn("brasa", Vector2(500, 300)) and fl.items.is_empty(), "sin fotogramas la capa de efectos no lanza nada")
+	check(fl.spawn("brasa", Vector2(500, 300)) and fl.items.size() == 1, "la capa de efectos lanza la explosión de la Brasa")
+	check(not fl.spawn("no_existe", Vector2(500, 300)) and fl.items.size() == 1, "un efecto sin fotogramas no lanza nada")
+	fl.add_loop("bola", Vector2(400, 300))
+	fl.add_loop("no_existe", Vector2(400, 300))
+	check(fl.loops.size() == 1, "solo se ponen en bucle los efectos que tienen fotogramas")
+	fl._process(5.0)
+	check(fl.items.is_empty(), "un efecto de una vez se quita al acabar")
 	fl.free()
 	# poses por código y reproductores de bestias
 	var P = load("res://scripts/poses.gd")

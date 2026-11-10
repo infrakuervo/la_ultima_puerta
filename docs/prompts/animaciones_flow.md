@@ -55,6 +55,8 @@ Nota para el código: hoy solo las bestias y el demonio reproducen fotogramas. L
 
 ## Prioridad 1: efectos (fondo negro)
 
+Hechos e integrados: explosión de la Brasa, impacto del Rayo, llamas, bola de fuego (se usa como proyectil de la Brasa), santuario y Juicio.
+
 Ya tienen su sitio en el juego y son lo que más se nota.
 
 ### Explosión de la Brasa

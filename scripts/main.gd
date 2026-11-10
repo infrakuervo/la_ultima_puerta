@@ -254,6 +254,7 @@ func _process(delta: float) -> void:
 	_handle_events()
 	_update_tips(delta)
 	_update_fx(delta)
+	_update_fx_loops()
 	queue_redraw()
 
 
@@ -611,7 +612,9 @@ func _on_event(ev: Dictionary) -> void:
 			juice.stop(0.07)
 			var jy2: float = _lane_y(int(ev["lane"]))
 			_add_fx({"type": "disc", "p": Vector2((150.0 + float(ev["x"])) * 0.5, jy2), "r": 60.0, "col": Color(1.0, 0.95, 0.7, 0.0), "ttl": 0.1})
-			_add_fx({"type": "line", "a": Vector2(150, jy2 - 10), "b": Vector2(ev["x"], jy2 - 10), "col": Color(1.0, 0.97, 0.75), "w": 40.0, "ttl": 0.35})
+			# con el clip de Flow, el rayo de luz lo pone la capa de efectos; si no, la franja por código
+			if not fx_layer.spawn_rect("juicio", Rect2(130, jy2 - 75, float(ev["x"]) - 100.0, 130)):
+				_add_fx({"type": "line", "a": Vector2(150, jy2 - 10), "b": Vector2(ev["x"], jy2 - 10), "col": Color(1.0, 0.97, 0.75), "w": 40.0, "ttl": 0.35})
 			flash_white = 0.35
 		"set":
 			var sd: Dictionary = sim.B["draft"]["sets"][String(ev["family"])]
@@ -1102,7 +1105,7 @@ func _draw() -> void:
 
 
 func _draw_arena() -> void:
-	var bgt: Texture2D = Art.background()
+	var bgt: Texture2D = Art.background(String(sim.SIEGES[sim.siege_index].get("background", "fondo-fosa.jpg")))
 	if bgt != null:
 		draw_texture_rect(bgt, Rect2(0, 0, SCREEN_W, SCREEN_H), false)
 		_draw_arena_rest(true)
@@ -1145,8 +1148,12 @@ func _draw_arena_rest(painted: bool) -> void:
 			continue   # la fisura se dibuja aparte (_draw_terrain)
 		var zy: float = _lane_y(int(z["lane"]))
 		var za: float = clampf(float(z["t"]) / 1.0, 0.0, 1.0)
-		draw_rect(Rect2(float(z["x0"]), zy - 20, float(z["x1"]) - float(z["x0"]), 40), Color(1.0, 0.4, 0.1, 0.25 * za))
+		draw_rect(Rect2(float(z["x0"]), zy - 20, float(z["x1"]) - float(z["x0"]), 40), Color(1.0, 0.4, 0.1, (0.08 if FxLayer.has("llamas") else 0.25) * za))
 		var n: int = int((float(z["x1"]) - float(z["x0"])) / 26.0)
+		if FxLayer.has("llamas"):
+			n = 0   # llamas de Flow: _draw_ground_fx
+			var zw0: float = float(z["x1"]) - float(z["x0"])
+			_draw_ground_fx("llamas", Rect2(float(z["x0"]) - 8.0, zy - 44.0, zw0 + 16.0, 64.0), za, float(z["x0"]) * 0.01)
 		for k in n:
 			var fx0: float = float(z["x0"]) + k * 26.0 + 10.0
 			var h: float = 12.0 + 8.0 * sin(clock * 9.0 + k)
@@ -1235,6 +1242,18 @@ func _draw_profane() -> void:
 		_txt("HOGUERA PROFANA", p + Vector2(-80, -r * 0.5 - 10), 15, Color(0.6, 1.0, 0.65), HORIZONTAL_ALIGNMENT_CENTER, 160.0)
 
 
+## Efecto de Flow pegado al suelo (llamas, santuario): fotograma en bucle dentro de `rect`,
+## con mezcla normal para que las unidades queden por delante.
+func _draw_ground_fx(clip: String, rect: Rect2, alpha: float, phase: float) -> void:
+	var ci: Dictionary = Anim.clip_info("efectos", clip)
+	if ci.is_empty():
+		return
+	var i: int = int((clock + phase) * float(ci["fps"])) % int(ci["frames"])
+	var tx: Texture2D = Anim.frame("efectos", clip, i)
+	if tx != null:
+		draw_texture_rect(tx, rect, false, Color(1, 1, 1, alpha))
+
+
 ## Santuario del tercer asedio: círculo dorado en el suelo con runas que giran.
 func _draw_sanctuary() -> void:
 	if sim.sanctuary.is_empty():
@@ -1244,6 +1263,18 @@ func _draw_sanctuary() -> void:
 	var pulse: float = 0.5 + 0.5 * sin(clock * 2.2)
 	draw_set_transform(arena_offset + p, 0.0, Vector2(1.0, 0.5))
 	draw_circle(Vector2.ZERO, r, Color(1.0, 0.9, 0.5, 0.10 + 0.05 * pulse))
+	if FxLayer.has("santuario"):
+		# sigilo de Flow en el suelo (debajo de las unidades) y el borde exacto del área
+		draw_arc(Vector2.ZERO, r, 0.0, TAU, 48, Color(1.0, 0.88, 0.45, 0.45), 2.0)
+		draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+		var sci: Dictionary = Anim.clip_info("efectos", "santuario")
+		var ssz: Vector2 = Anim.frame("efectos", "santuario", 0).get_size()
+		var sst: float = float(sci["height"]) * r / 110.0 / ssz.y
+		var sanc: Vector2 = sci["anchor"]
+		_draw_ground_fx("santuario", Rect2(p - sanc * sst, ssz * sst), 0.95, 0.0)
+		if sim.phase == "prep":
+			_txt("SANTUARIO", p + Vector2(-60, -r * 0.5 - 10), 15, Color(1.0, 0.9, 0.55), HORIZONTAL_ALIGNMENT_CENTER, 120.0)
+		return
 	draw_arc(Vector2.ZERO, r, 0.0, TAU, 48, Color(1.0, 0.88, 0.45, 0.75), 3.0)
 	draw_arc(Vector2.ZERO, r * 0.82, 0.0, TAU, 48, Color(1.0, 0.88, 0.45, 0.35), 2.0)
 	for i in 12:
@@ -1408,27 +1439,53 @@ func _draw_demon() -> void:
 	draw_circle(hand, 5.0 + 3.0 * pulse, Color(1.0, 0.55, 0.2, 0.6 + 0.4 * pulse))
 
 
-func _draw_brasas() -> void:
+## Posición de la bola de una Brasa en vuelo (Vector2.INF si aún no ha salido de la mano).
+## La bola sale de la mano en el fotograma de impacto del clip y vuela el resto del retraso.
+func _brasa_ball_pos(b: Dictionary) -> Vector2:
 	var origin: Vector2 = Anim.hand_at("demonio", "brasa", demon_feet())
 	var imp: float = Anim.impact_delay("demonio", "brasa")
 	if origin == Vector2.INF:
 		origin = sim.demon_pos() + Vector2(56, -34)
 		imp = 0.0
+	var delay: float = maxf(0.01, float(b["d"]))
+	var k: float = clampf(1.0 - float(b["t"]) / delay, 0.0, 1.0)
+	var since: float = delay - float(b["t"])
+	if imp > 0.0 and delay > imp * 1.5:
+		if since < imp:
+			return Vector2.INF
+		k = clampf((since - imp) / (delay - imp), 0.0, 1.0)
+	return origin.lerp(b["p"], k) + Vector2(0, -sin(k * PI) * 170.0)
+
+
+func _draw_brasas() -> void:
+	var anim_ball: bool = FxLayer.has("bola")
 	for b in sim.pending_brasas:
 		var delay: float = maxf(0.01, float(b["d"]))
 		var k: float = clampf(1.0 - float(b["t"]) / delay, 0.0, 1.0)
 		var target: Vector2 = b["p"]
 		draw_arc(target, float(b["r"]), 0.0, TAU, 36, Color(1.0, 0.45, 0.1, 0.9), 3.0)
 		draw_arc(target, float(b["r"]) * (1.0 - k), 0.0, TAU, 36, Color(1.0, 0.8, 0.3, 0.7), 2.0)
-		# la bola sale de la mano en el fotograma de impacto del clip y vuela el resto del retraso
-		var since: float = delay - float(b["t"])
-		if imp > 0.0 and delay > imp * 1.5:
-			if since < imp:
-				continue
-			k = clampf((since - imp) / (delay - imp), 0.0, 1.0)
-		var pp: Vector2 = origin.lerp(target, k) + Vector2(0, -sin(k * PI) * 170.0)
+		var pp: Vector2 = _brasa_ball_pos(b)
+		if pp == Vector2.INF or anim_ball:
+			continue   # con el clip «bola», la dibuja la capa de efectos (_update_fx_loops)
 		draw_circle(pp, 11.0, Color(1.0, 0.55, 0.15))
 		draw_circle(pp, 6.0, Color(1.0, 0.9, 0.5))
+
+
+## Bucles de efectos de Flow (mezcla aditiva) para este fotograma: bola de la Brasa, llamas del
+## suelo y santuario. Sin fotogramas no se añade nada y queda el dibujo por código.
+func _update_fx_loops() -> void:
+	if fx_layer == null:
+		return
+	fx_layer.visible = not (menu.open or show_tree or show_bestiary or _overlay_open() or intro_layer != null)
+	fx_layer.clear_loops()
+	if sim.phase == "combat":
+		for b in sim.pending_brasas:
+			var pp: Vector2 = _brasa_ball_pos(b)
+			if pp != Vector2.INF:
+				fx_layer.add_loop("bola", pp, float(b.get("k", 1.0)))
+	# las llamas y el santuario van en el suelo, debajo de las unidades: los dibuja la arena
+	# (_draw_ground_fx), con fotogramas que llevan transparencia en lugar de mezcla aditiva
 
 
 func _draw_aim() -> void:

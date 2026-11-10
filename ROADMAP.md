@@ -117,6 +117,13 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 7. [x] Tercer asedio en la carrera del bot (`BAL_CLIMB=1`: primero → Alba → Inquisición, pasando al siguiente tras ganar Ira 3). 8 carreras × 20 partidas: victorias por partida 12 (muestra pequeña; la primera partida da ~50% en 100), 88, 75, 62, 75, 100, 50, 88, 50, 38, 38, 62, 50, 25, 25, 38, 88, 75, 75, 50%. Media ~58%, sin muro: el Alba con Ira 2-3 baja al 25-38% unas partidas y la Inquisición llega hacia la partida 12-18. Veinte partidas de progresión con reto.
 5. [ ] Setup script del entorno (necesita aprobación del usuario; no se propuso de noche para no dejar la sesión esperando). El entorno actual es el Default, compartido por todos los repositorios, así que debería ir en un entorno propio de este repo. Pasos que funcionan: descargar `Godot_v4.7.2-stable_linux.x86_64.zip` de GitHub a `/opt/godot` y enlazarlo en `/usr/local/bin/godot`; `apt-get install -y xvfb`; sacar `web_nothreads_release.zip` y `web_nothreads_debug.zip` del `.tpz` con peticiones por rangos (script en la nota de entorno) a `~/.local/share/godot/export_templates/4.7.2.stable/`.
 
+## Arte de Flow integrado (tanda del 10-11)
+- [x] Efectos: explosión de la Brasa, impacto del Rayo, Juicio, bola de la Brasa en vuelo, llamas del suelo y sigilo del santuario (ver `art/anim/LEEME.md`). Recorte por energía y corte de niveles; llamas y santuario con transparencia y en el suelo, debajo de las unidades.
+- [x] Sprites: Zapador, Ánima del Garfio, Gárgola de Ceniza y Gran Inquisidor. Sin tinte prestado en Zapador y Gran Inquisidor.
+- [x] Fondo del segundo asedio: `fondo-alba.jpg` (la Fosa con estandartes y luz de amanecer).
+- [ ] Llegaron solo para ver, no como archivo (hay que volver a enviarlos como adjunto): Ariete, Sacerdotisa (fondo blanco), Paladín, Purificador, Gran Maestre y Flagelante.
+- [ ] La «embestida del Horno» salió con otra criatura: repetir.
+
 ## Animaciones que faltan (para pedir a Google Flow)
 Mismo método que hoy: fondo verde liso (o negro para efectos), cámara fija, personaje de perfil mirando a la derecha y sin desplazarse, 4-8 s. Se recortan a PNG en `art/anim/<pj>/<clip>/` y se añaden a `data/anim.json`.
 1. **Efectos sobre fondo negro** (se suman con mezcla aditiva, sin recorte): explosión de la Brasa al caer (vista un poco desde arriba, 1-1,5 s); impacto del Rayo (destello y chispas azules, 0,5 s); llamas de suelo en bucle (para los charcos de fuego del Horno y la Brasa); chispazo en la mano del demonio (bucle corto).

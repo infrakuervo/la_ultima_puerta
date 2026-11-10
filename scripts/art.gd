@@ -26,7 +26,14 @@ const SPRITE_H: Dictionary = {
 	"campesino": 90.0, "escudero": 96.0, "ballestero": 90.0, "clerigo": 108.0,
 	"verdugo": 140.0, "inquisidor": 150.0,
 	"alacran": 86.0, "sapo": 76.0, "manta": 62.0,
+	"gargola": 100.0, "garfio": 112.0, "zapador": 88.0, "gran_inquisidor": 225.0,
 }
+
+
+## Clave de tamaño de un sprite: la clave entera si está en SPRITE_H (gran_inquisidor), si no
+## lo que va antes del primer «_» (variantes como campesino_v02 o escudero_elite).
+static func size_key(key: String) -> String:
+	return key if SPRITE_H.has(key) else key.get_slice("_", 0)
 const SPRITE_LIFT: Dictionary = {"ojo": 44.0, "manta": 26.0}
 static var _tex_cache: Dictionary = {}
 
@@ -49,24 +56,28 @@ static func tex(key: String) -> Texture2D:
 	return t
 
 
-static var _bg_tex: Texture2D = null
-static var _bg_tried: bool = false
+static var _bg_cache: Dictionary = {}
 
 
-static func background() -> Texture2D:
-	if _bg_tried:
-		return _bg_tex
-	_bg_tried = true
-	var path: String = "res://art/fondo-fosa.jpg"
+## Fondo de la arena. `file` es un archivo de art/ (cada asedio puede tener el suyo, campo
+## "background" en waves.json); si falta, se usa el de la Fosa.
+static func background(file: String = "fondo-fosa.jpg") -> Texture2D:
+	if _bg_cache.has(file):
+		return _bg_cache[file]
+	var path: String = "res://art/" + file
+	var t: Texture2D = null
 	if ResourceLoader.exists(path):
-		_bg_tex = load(path)
+		t = load(path)
 	else:
 		var gp: String = ProjectSettings.globalize_path(path)
 		if FileAccess.file_exists(gp):
 			var img: Image = Image.load_from_file(gp)
 			if img != null:
-				_bg_tex = ImageTexture.create_from_image(img)
-	return _bg_tex
+				t = ImageTexture.create_from_image(img)
+	if t == null and file != "fondo-fosa.jpg":
+		t = background()
+	_bg_cache[file] = t
+	return t
 
 
 ## Dibuja un sprite con los pies en `pos`. opts: scale, alpha, flash, squash, bob, glow,
@@ -79,7 +90,7 @@ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opt
 	if tx == null:
 		tx = fr["tex"]
 	var sc: float = float(opts.get("scale", 1.0))
-	var base: String = key.get_slice("_", 0)
+	var base: String = size_key(key)
 	var h: float = float(SPRITE_H[base]) * sc
 	var w: float = h * float(tx.get_width()) / float(tx.get_height())
 	var squash: float = float(opts.get("squash", 1.0))
@@ -135,7 +146,7 @@ const SIL_SHADOW: Dictionary = {"campesino": 16.0, "escudero": 20.0, "ballestero
 static func shadow_w(kind: String, sc: float = 1.0, sprite_key: String = "") -> float:
 	var key: String = sprite_key if sprite_key != "" else kind
 	var tx: Texture2D = tex(key)
-	var base: String = key.get_slice("_", 0)
+	var base: String = size_key(key)
 	if tx != null and SPRITE_H.has(base):
 		var w: float = float(SPRITE_H[base]) * sc * float(tx.get_width()) / float(tx.get_height())
 		return maxf(w * 0.34, 26.0)
@@ -154,6 +165,9 @@ static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float, 
 		var so: Dictionary = {"scale": s, "alpha": 0.35 if fallen else 1.0, "flash": flash, "glow": glow, "scars": scars,
 			"squash": 0.86 if bool(opts.get("crouch", false)) else 1.0, "bob": 0.0 if posed else sin(t * 5.0) * 1.5,
 			"no_shadow": no_shadow}
+		if bool(opts.get("stone", false)):
+			so["tint"] = Color(0.72, 0.72, 0.76)   # Gárgola hecha piedra
+			so["bob"] = 0.0
 		if opts.has("frame") and not opts["frame"].is_empty():
 			so["frame"] = opts["frame"]
 			so["bob"] = 0.0

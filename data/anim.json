@@ -6,7 +6,10 @@
 		"anchor": [161, 236],
 		"idle": "reposo",
 		"clips": {
-			"reposo": {"fps": 12, "loop": true},
+			"reposo": {
+				"fps": 12,
+				"loop": true
+			},
 			"rayo": {
 				"fps": 24,
 				"start": 5,
@@ -19,9 +22,17 @@
 				"impact": 13,
 				"hand": [240, 66]
 			},
-			"golpe": {"fps": 16},
-			"victoria": {"fps": 12, "hold": true},
-			"derrota": {"fps": 12, "hold": true}
+			"golpe": {
+				"fps": 16
+			},
+			"victoria": {
+				"fps": 12,
+				"hold": true
+			},
+			"derrota": {
+				"fps": 12,
+				"hold": true
+			}
 		}
 	},
 	"sabueso": {
@@ -30,7 +41,10 @@
 		"anchor": [207, 219],
 		"idle": "",
 		"clips": {
-			"carrera": {"fps": 16, "loop": true},
+			"carrera": {
+				"fps": 16,
+				"loop": true
+			},
 			"mordisco": {
 				"fps": 22,
 				"start": 3,
@@ -44,8 +58,14 @@
 		"anchor": [194, 247],
 		"idle": "reposo",
 		"clips": {
-			"reposo": {"fps": 12, "loop": true},
-			"carrera": {"fps": 14, "loop": true},
+			"reposo": {
+				"fps": 12,
+				"loop": true
+			},
+			"carrera": {
+				"fps": 14,
+				"loop": true
+			},
 			"mordisco": {
 				"fps": 18,
 				"impact": 8,
@@ -55,16 +75,37 @@
 		}
 	},
 	"efectos": {
-		"_doc": "Efectos sobre fondo negro, con mezcla aditiva (scripts/fx_layer.gd). anchor [-1, -1] = centrados en el punto. Aún sin fotogramas: carpeta art/anim/efectos/<clip>/.",
+		"_doc": "Efectos de Flow sobre fondo negro, con mezcla aditiva (scripts/fx_layer.gd). anchor [-1, -1] = centrados en el punto; height = alto en pantalla. brasa y rayo: al caer y al impactar; juicio: estirado a lo largo del carril; bola (proyectil de la Brasa), llamas (suelo ardiendo) y santuario: bucles que la vista coloca cada fotograma.",
 		"dir": "efectos",
 		"height": 190.0,
 		"anchor": [-1, -1],
 		"idle": "",
 		"clips": {
-			"brasa": {"fps": 24},
+			"brasa": {
+				"fps": 24,
+				"height": 150.0
+			},
 			"rayo": {
-				"fps": 30,
-				"height": 110.0
+				"fps": 24,
+				"height": 130.0
+			},
+			"juicio": {
+				"fps": 20
+			},
+			"bola": {
+				"fps": 12,
+				"loop": true,
+				"height": 44.0
+			},
+			"llamas": {
+				"fps": 12,
+				"loop": true
+			},
+			"santuario": {
+				"fps": 12,
+				"loop": true,
+				"height": 227.0,
+				"anchor": [150, 181]
 			}
 		}
 	}

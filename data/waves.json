@@ -655,7 +655,8 @@
     "elite_swap": 0.6,
     "jitter": 0.2,
     "keep_first": true
-   }
+   },
+   "background": "fondo-alba.jpg"
   },
   {
    "id": "inquisicion",

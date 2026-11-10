@@ -31,12 +31,24 @@ El cuadro es ancho porque el rayo y la bola de fuego salen hacia la derecha; en 
 - Velocidades: rayo a 24 fps desde el fotograma 5 (el destello llega a los 0,08 s), brasa a 22 fps desde el 8, golpe a 16, mordisco de Tizón a 22 desde el 3, Horno 12-18.
 - Para añadir un clip: carpeta con `01.png`, `02.png`… (mismo encuadre que los otros del personaje) y su entrada en el JSON. Si el encuadre cambia, medir alto y pies frente al sprite fijo (capturas con `tools/shots.tscn` → `demonio` / `animacion`).
 
-## Efectos sobre fondo negro (preparado, sin fotogramas aún)
-- Carpeta `art/anim/efectos/<clip>/01.png…` y entrada en `data/anim.json` → `efectos` (ya están `brasa` y `rayo`). Se dibujan con mezcla aditiva (`scripts/fx_layer.gd`): el negro no suma nada, así que no hace falta recortar. `anchor [-1, -1]` = centrado en el punto del impacto; `height` = alto en pantalla (la Brasa escala con su radio).
-- La Brasa lo lanza al caer (`brasa_land`) y el Rayo en el blanco (`rayo`). Si falta la carpeta no pasa nada: siguen los efectos por código.
+## Efectos de Flow (`efectos/`)
+Recortados de vídeos sobre fondo negro con `ffmpeg`: tramo útil, fps, recorte por energía (la caja con el 96-97% del brillo) y un corte de niveles para dejar el fondo a cero (el negro de los vídeos no es puro y en mezcla aditiva se veía un recuadro). Datos en `data/anim.json` → `efectos`.
+| Clip | Origen | Uso en el juego |
+|---|---|---|
+| `brasa/` | explosión, 0-1,8 s, 37 fotogramas | al caer la Brasa (`brasa_land`), escala con el radio; mezcla aditiva (`scripts/fx_layer.gd`) |
+| `rayo/` | impacto, 0-1,3 s, 25 fotogramas | en el blanco del Rayo; aditiva |
+| `juicio/` | rayo de luz, 0,3-2,3 s, 31 fotogramas, solo la franja central | Juicio del Gran Maestre y del Gran Inquisidor, estirado a lo largo del carril; aditiva |
+| `bola/` | bola de fuego, bucle de 2 s | proyectil de la Brasa en vuelo; aditiva |
+| `llamas/` | llamas, bucle de 2 s | suelo ardiendo del Horno; **en el suelo**, debajo de las unidades |
+| `santuario/` | sigilo dorado, bucle de 3 s | santuario de la Inquisición; **en el suelo**, ancla en el centro del anillo (150, 181) |
+
+`llamas` y `santuario` se guardaron con transparencia (alfa = brillo) y se dibujan en la arena con mezcla normal (`main.gd` → `_draw_ground_fx`) para que las unidades queden por delante. Los demás van en la capa aditiva, por encima. Sin fotogramas, cada uno vuelve a su dibujo por código.
+
+## Sprites fijos nuevos (`art/sprites/`)
+Zapador, Ánima del Garfio, Gárgola de Ceniza y Gran Inquisidor, recortados de imágenes de Flow sobre verde (quitar verde, limpiar el borde verde, recortar y escalar a ~1,6 veces su alto en pantalla). Tamaños en `Art.SPRITE_H`. La Gárgola en piedra se dibuja con tinte gris. Fondo del Alba: `art/fondo-alba.jpg` (`waves.json` → `background` del asedio).
 
 ## Pendiente
 - Peso: 41 MB en PNG, pero la versión web los importa como WebP con pérdida (`tools/anim_lossy.sh`) y el `.pck` queda en ~14 MB. No hace falta bajar fps.
-- Embestida del Horno: repetir con fondo verde (el clip magenta no se puede recortar).
+- Embestida del Horno: repetir con fondo verde. El segundo intento («Furnace beast charging lunge») salió con otra criatura (un encapuchado con antorcha), no el Horno: no se usa.
 - Efectos sobre negro (explosión de Brasa, impacto de Rayo): aún no hechos.
 - Tizón: falta el reposo.
