@@ -6,6 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/build/web"
 PUB="${PUB_DIR:-$ROOT/build/gh-pages}"
 mkdir -p "$OUT"
+"$ROOT/tools/anim_lossy.sh"
 godot --headless --path "$ROOT" --export-release "Web" "$OUT/index.html"
 rm -rf "$PUB"
 git -C "$ROOT" fetch origin gh-pages 2>/dev/null || true
