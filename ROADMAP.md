@@ -17,6 +17,16 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 8. [ ] Rejugabilidad (ampliación del encargo: ver sección «Rejugabilidad»), incluye curva del árbol, música procedural con volúmenes aparte y logros/estadísticas.
 9. [ ] Cierre: PR #1, resumen y lista de animaciones que faltan para Flow. La tarea programada solo se desactiva si ya no queda margen.
 
+## Animaciones que faltan (para pedir a Google Flow)
+Mismo método que hoy: fondo verde liso (o negro para efectos), cámara fija, personaje de perfil mirando a la derecha y sin desplazarse, 4-8 s. Se recortan a PNG en `art/anim/<pj>/<clip>/` y se añaden a `data/anim.json`.
+1. **Efectos sobre fondo negro** (se suman con mezcla aditiva, sin recorte): explosión de la Brasa al caer (vista un poco desde arriba, 1-1,5 s); impacto del Rayo (destello y chispas azules, 0,5 s); llamas de suelo en bucle (para los charcos de fuego del Horno y la Brasa); chispazo en la mano del demonio (bucle corto).
+2. **Tizón en reposo** (bucle de respiración, mismo encuadre que `carrera`/`mordisco`): ahora usa el sprite fijo con respiración por código.
+3. **Embestida del Horno en verde** (el clip magenta no se pudo recortar); también **inhalar** (abre las fauces y aspira 1-1,5 s), que encaja con su aviso INHALA.
+4. **Otras bestias** (reposo y ataque de cada una): Trueno (agacharse y salto), Ojo de Latón (flotar y disparo), Alacrán (pinza), Sapo (escupitajo), Manta (planeo). Las del pack 2 (Gárgola, Enjambre, Garfio) aún son siluetas por código: primero un sprite fijo de cada una.
+5. **Enemigos**: caminar y atacar del campesino y del escudero (son los más numerosos); el héroe Verdugo (hachazo) y el Inquisidor (campana).
+6. **Jefe Gran Maestre**: caminar, Juicio (levanta el brazo y cae la luz sobre un carril) y derrota.
+7. Opcional: el demonio **recibiendo Juicio** o **animando a la Puerta** entre oleadas.
+
 ## Rejugabilidad (ampliación de la noche 2)
 El usuario quiere «un procedural divertido que dé horas de juego sin cansar aunque sea repetitivo».
 Plan: tras los puntos 1-7, jugar partidas de verdad (bot torpe, capturas, `tools/debug_run.tscn`), apuntar aquí qué se repite y qué aburre, y luego valorar: oleadas generadas con presupuesto, modificadores por oleada, sinergias y builds, draft con rareza, retos semanales con semilla, desbloqueos meta de contenido, ritmo (x3, menos tiempos muertos). Medir con el bot antes y después.
