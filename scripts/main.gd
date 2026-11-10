@@ -861,8 +861,8 @@ func _buttons() -> Array:
 		out.append({"id": "spell_brasa", "rect": Rect2(20, y, 150, 72), "text": "Brasa", "sub": "tecla 1", "on": true, "cd": bcd, "active": spell == "brasa"})
 		out.append({"id": "spell_rayo", "rect": Rect2(180, y, 150, 72), "text": "Rayo", "sub": "tecla 2", "on": true, "cd": rcd, "active": spell == "rayo"})
 	elif ph == "route":
-		out.append({"id": "route_verdugo", "rect": Rect2(150, 150, 480, 360), "text": "", "sub": "", "on": true})
-		out.append({"id": "route_inquisidor", "rect": Rect2(650, 150, 480, 360), "text": "", "sub": "", "on": true})
+		out.append({"id": "route_verdugo", "rect": Rect2(150, 150, 480, 400), "text": "", "sub": "", "on": true})
+		out.append({"id": "route_inquisidor", "rect": Rect2(650, 150, 480, 400), "text": "", "sub": "", "on": true})
 	elif ph == "forge":
 		out.append({"id": "forge", "rect": Rect2(490, 430, 300, 64), "text": "Entregar a Tizón", "sub": "", "on": true})
 	elif ph == "victory" or ph == "defeat":
@@ -1920,7 +1920,7 @@ func _draw_overlays() -> void:
 		_txt("¿A qué heraldo reciben tus bestias?", Vector2(0, 124), 32, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		for key in ["verdugo", "inquisidor"]:
 			var rt: Dictionary = sim.ROUTES[key]
-			var rect: Rect2 = Rect2(150, 150, 480, 360) if key == "verdugo" else Rect2(650, 150, 480, 360)
+			var rect: Rect2 = Rect2(150, 150, 480, 400) if key == "verdugo" else Rect2(650, 150, 480, 400)
 			var hov: bool = rect.has_point(mouse_pos)
 			draw_rect(rect, Color(0.25, 0.1, 0.08) if not hov else Color(0.38, 0.16, 0.1))
 			draw_rect(rect, Color(0.85, 0.5, 0.25), false, 3.0)
@@ -1930,7 +1930,7 @@ func _draw_overlays() -> void:
 			_txt(String(rt["form_name"]), Vector2(rect.position.x, rect.position.y + 166), 28, Color(1.0, 0.9, 0.7), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x)
 			draw_multiline_string(font, Vector2(rect.position.x + 30, rect.position.y + 214), String(rt["promise"]), HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 60, 20, -1, Color(0.9, 0.85, 0.8))
 			var sil: String = String(rt["form"])
-			Art.draw_creature(self, sil, rect.position + Vector2(rect.size.x * 0.5 - 20, 340), clock, {"scale": 1.1})
+			Art.draw_creature(self, sil, rect.position + Vector2(rect.size.x * 0.5 - 20, 385), clock, {"scale": 0.9})
 	elif ph == "forge":
 		draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0, 0, 0, 0.72))
 		var r: Dictionary = sim.ROUTES[sim.route]
