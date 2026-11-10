@@ -43,6 +43,7 @@ func run() -> void:
 	test_music()
 	test_contracts()
 	test_terrain()
+	test_save_run()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1560,6 +1561,30 @@ func test_terrain() -> void:
 	v.terrain = "viento"
 	v._invalidate()
 	check(float(v._stats("brasa")["delay"]) < d0, "con Viento del Abismo la Brasa cae antes")
+
+
+func test_save_run() -> void:
+	print("Guardar a mitad de partida")
+	var a = new_sim(77)
+	a.remix_enabled = true
+	a.augurs_enabled = true
+	a.reset()
+	a.souls = 123
+	a.buy("sabueso")
+	a.wave_index = 2
+	a.boons = ["pacto_fuego"]
+	a.terrain = "osario"
+	a._invalidate()
+	var txt: String = var_to_str(a.run_save())
+	var b = new_sim(1)
+	check(b.run_load(str_to_var(txt)), "la partida guardada se carga")
+	check(b.souls == a.souls and b.wave_index == 2 and b.creatures.size() == a.creatures.size(), "almas, oleada y bestias se recuperan")
+	check(b.WAVES == a.WAVES, "las oleadas remezcladas se recuperan")
+	check(b.terrain == "osario" and str(b.boons) == str(["pacto_fuego"]), "terreno y dones se recuperan")
+	check(typeof(b.creatures[0]["id"]) == TYPE_INT, "los tipos se conservan (var_to_str, no JSON)")
+	check(b.brasa_radius() == a.brasa_radius(), "los efectos de los dones vuelven a aplicarse")
+	to_combat(a)
+	check(a.run_save().is_empty(), "en combate no se guarda")
 
 
 func test_anim() -> void:

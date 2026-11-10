@@ -670,6 +670,48 @@ func _pick_terrain() -> void:
 	_invalidate()
 
 
+# ----------------------------------------------------------------------------
+# Guardar a mitad de partida (solo entre oleadas)
+# ----------------------------------------------------------------------------
+
+const SAVE_KEYS: Array = ["wave_index", "door_hp", "door_max", "souls", "creatures", "route", "relic", "next_id",
+	"draft", "kills", "WAVES", "siege_index", "wrath", "augur", "augur_offer", "contract", "contract_offer",
+	"run_track", "boons", "terrain", "terrain_lane", "week_augur", "remix_enabled", "augurs_enabled",
+	"contracts_enabled", "draft_enabled"]
+
+
+## Estado de la partida en preparación, para guardarlo con var_to_str. {} si no se puede.
+func run_save() -> Dictionary:
+	if phase != "prep":
+		return {}
+	var d: Dictionary = {"version": 1, "rng_state": rng.state, "rng_seed": rng.seed}
+	for k in SAVE_KEYS:
+		var v: Variant = get(k)
+		d[k] = v.duplicate(true) if (v is Dictionary or v is Array) else v
+	return d
+
+
+func run_load(d: Dictionary) -> bool:
+	if int(d.get("version", 0)) != 1:
+		return false
+	for k in SAVE_KEYS:
+		if d.has(k):
+			set(k, d[k])
+	rng.seed = int(d.get("rng_seed", rng.seed))
+	rng.state = int(d.get("rng_state", rng.state))
+	phase = "prep"
+	enemies.clear()
+	zones.clear()
+	spawn_queue.clear()
+	pending_brasas.clear()
+	tar_pools.clear()
+	events.clear()
+	_invalidate()
+	refresh_creatures()
+	message = "Partida recuperada: oleada %d." % (wave_index + 1)
+	return true
+
+
 func contract_def(id: String) -> Dictionary:
 	for c in B.get("contracts", {}).get("list", []):
 		if String(c["id"]) == id:

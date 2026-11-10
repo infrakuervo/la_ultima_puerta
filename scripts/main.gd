@@ -15,6 +15,7 @@ const Music = preload("res://scripts/music.gd")
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
 const BESTIARY_PATH: String = "user://bestiario.json"
+const RUN_PATH: String = "user://partida.txt"     # partida a medias (entre oleadas)
 const ARENA_TOP: float = 90.0
 const ARENA_BOTTOM: float = 598.0
 
@@ -107,6 +108,8 @@ func _ready() -> void:
 	menu.load_options()
 	menu.apply(self)
 	speed = int(menu.opts["velocidad"])
+	if load_run():
+		menu.started = true   # «Continuar» lleva a la partida guardada
 	if DisplayServer.get_name() != "headless" and not Engine.has_meta("sin_persistencia"):
 		music.setup(self, "Musica")
 	if not Engine.has_meta("sin_persistencia") and bool(menu.opts.get("intro", true)) and DisplayServer.get_name() != "headless":
@@ -209,6 +212,10 @@ func _process(delta: float) -> void:
 		if last_phase != "" and sim.phase != "combat":
 			fade = maxf(fade, 0.45)
 		last_phase = sim.phase
+		if sim.phase == "prep":
+			save_run()
+		elif sim.phase == "victory" or sim.phase == "defeat":
+			clear_run()
 	menu.tut_update(delta)
 	_sim_dt = 0.0
 	if sim.phase == "combat" and juice.hitstop <= 0.0:
@@ -332,6 +339,8 @@ func _on_event(ev: Dictionary) -> void:
 	var t: String = ev["t"]
 	menu.tut_event(self, ev)
 	poses.on_event(ev, sim)
+	if t in ["bought", "leveled", "placed", "draft_pick", "skill", "augur", "route_chosen"] and sim.phase == "prep":
+		save_run()
 	for lid in logros.on_event(sim, ev, not challenge.is_empty()):
 		var ld: Dictionary = logros.def(String(lid))
 		var extra: String = ""
@@ -814,6 +823,8 @@ func _restart() -> void:
 	demon_anim = Anim.new("demonio")
 	poses.reset()
 	contract_note = ""
+	clear_run()
+	save_run()
 	selected_id = -1
 	dragging = false
 	accum = 0.0
@@ -2163,6 +2174,41 @@ func _save_meta() -> void:
 	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins, "records": records, "logros_data": logros.to_save()}, "  "))
+
+
+## Guarda la partida a medias (solo en preparación). Se recupera con «Continuar» al volver.
+func save_run() -> void:
+	if Engine.has_meta("sin_persistencia") or not sim.meta_mode:
+		return
+	var d: Dictionary = sim.run_save()
+	if d.is_empty():
+		return
+	d["challenge"] = challenge
+	d["logros_run"] = logros.run
+	var f: FileAccess = FileAccess.open(RUN_PATH, FileAccess.WRITE)
+	if f != null:
+		f.store_string(var_to_str(d))
+
+
+func clear_run() -> void:
+	if FileAccess.file_exists(RUN_PATH):
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(RUN_PATH))
+
+
+## Recupera la partida guardada. true si había una válida.
+func load_run() -> bool:
+	if Engine.has_meta("sin_persistencia") or not FileAccess.file_exists(RUN_PATH):
+		return false
+	var f: FileAccess = FileAccess.open(RUN_PATH, FileAccess.READ)
+	if f == null:
+		return false
+	var d: Variant = str_to_var(f.get_as_text())
+	if not (d is Dictionary) or not sim.run_load(d):
+		return false
+	challenge = d.get("challenge", {})
+	logros.run = d.get("logros_run", logros.run)
+	last_phase = "prep"
+	return true
 
 
 ## Clave del récord de la partida actual ("" si no hay récord que guardar).
