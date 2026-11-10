@@ -153,6 +153,7 @@ func _do(m, id: String) -> void:
 			if not bool(opts["tutorial_hecho"]):
 				tut_step = 0
 				tut_t = 0.0
+				m.sim.contract_offer.clear()   # primera partida: sin encargo, para no saturar
 		"help":
 			panel = "help"
 		"logros":
