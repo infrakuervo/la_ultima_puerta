@@ -28,12 +28,15 @@ Trabajas solo en «La Última Puerta» (Godot 4.7.2, GDScript), en la rama `prot
 - Rareza (común, rara, épica) con probabilidades que suben en oleadas avanzadas y con la Ira, como ya hace el draft.
 - Las cartas de nivel dejan el nivel máximo como está y respetan `eco.max_level` del árbol.
 
-### Bestias que se desbloquean en el árbol
-- Al empezar solo están Tizón (Sabueso de Escoria) y, como mucho, otra bestia básica. **Las demás no salen en las cartas hasta que se desbloquean en el árbol de habilidades**: Ojo de Latón, Alacrán, Sapo, Manta, Gárgola, Enjambre, Garfio (y las que vengan).
-- Cada desbloqueo es un nodo del árbol (por ejemplo, un nodo «Pacto con el Alacrán» en la rama Bestias o Jauría), con coste de esencia y requisitos razonables, de modo que el jugador elija qué bestias quiere añadir a su repertorio. Las del pack 2 pueden seguir colgando de las ramas que ya se ganan con los asedios.
-- Las cartas de bestia solo ofrecen las desbloqueadas; las cartas de mejora, solo las de bestias que tienes. Muestra en el árbol qué bestia abre cada nodo (con su sprite) y en el bestiario cuáles faltan por abrir.
-- Cuida la primera partida: con pocas bestias el bot torpe debe seguir entre el 40 y el 60%. Si baja, compénsalo con cartas de hechizo y de Puerta, no regalando bestias.
-- Migra a quien ya tenga esencia gastada: las bestias que ya ha visto pueden quedar abiertas, o se le devuelve esencia; decide y explícalo.
+### Empezar solo con el demonio y abrir las bestias en el árbol
+- **La primera partida es solo del demonio:** Brasa, Rayo y cartas del demonio y de la Puerta, sin ninguna bestia, ni siquiera Tizón. Tiene que poder perderse y dejar esencia, pero no ser un muro; ajusta esa primera partida aparte para que el bot torpe aguante varias oleadas y gane esencia suficiente para el primer desbloqueo.
+- **Tizón (el Sabueso) es el primer desbloqueo:** con la esencia de una partida aprox. se compra en el árbol, y desde entonces aparece en cada partida con su nombre y su historia (cicatrices, mutación de ruta). Después se abren las demás bestias (Ojo de Latón, Alacrán, Sapo, Manta, Gárgola, Enjambre, Garfio y las que vengan), cada una con su nodo. Hasta abrirlas no salen en las cartas.
+- **El árbol pasa a ser una red al estilo Path of Exile:** un tablero grande de nodos conectados que parte del demonio en el centro, con caminos hacia regiones (fuego/Brasa, rayo, Puerta, cada bestia, dones y resonancias). Se compra un nodo solo si toca a uno ya comprado. Mezcla nodos pequeños (+%), nodos notables (más fuertes, en los cruces) y las piedras angulares que ya existen, y pon en la red los nodos de desbloqueo de bestias, de modo que abrir el Horno o el Alacrán implique ir hacia su región. Así dos jugadores hacen recorridos distintos.
+  - La vista necesita un tablero que se pueda arrastrar y acercar (rueda), con el camino resaltado, el detalle del nodo al pasar el ratón y lo comprado bien visible. Comprueba con capturas que no hay solapes ni texto cortado.
+  - Reaprovecha los nodos y efectos del Árbol 2 (piedras angulares, caminos excluyentes, nodos de dones, ramas que se ganan con los asedios, reasignar con coste) dentro de la red; migra los rangos guardados con `load_tree` como hasta ahora.
+- Las cartas de bestia solo ofrecen las desbloqueadas; las de mejora, solo las de bestias que tienes. En el bestiario, las que faltan por abrir.
+- Equilibrio por etapas, no solo la primera partida: mide la carrera completa (`BAL_CLIMB=1`) desde cero, con el bot comprando por la red. Que desbloquear bestias se note, pero que ninguna tramo sea un muro ni dé el 100% durante muchas partidas.
+- Migra a quien ya tenga esencia gastada: lo que ya tenía queda abierto en la red o se le devuelve la esencia; decide y explícalo.
 
 ## 3. Reliquias (100 o más)
 - Una reliquia es un objeto pasivo para toda la partida, con icono, nombre, rareza y texto corto. Datos en un archivo nuevo, `data/reliquias.json`, con efectos por datos (`fx` como el árbol) y, para las que cambian reglas, una clave `special.*` que `sim.gd` lea, como las piedras angulares.
@@ -71,7 +74,7 @@ Trabajas solo en «La Última Puerta» (Godot 4.7.2, GDScript), en la rama `prot
 - Al final: republica la web con `tools/publish_web.sh` y actualiza la descripción del PR #1.
 
 ## Cuándo está terminado
-- No se compra nada durante la partida; tras cada oleada se eligen cartas; las bestias nuevas se abren en el árbol y no están desde el principio; hay 100 reliquias o más funcionando y visibles; el árbol solo se toca al final.
+- No se compra nada durante la partida; tras cada oleada se eligen cartas; la primera partida es solo del demonio, Tizón y las demás bestias se abren en un árbol en red al estilo Path of Exile; hay 100 reliquias o más funcionando y visibles; el árbol solo se toca al final.
 - Los enemigos tardan más en llegar y todo se ve algo más pequeño, sin solapes.
 - El juego reproduce las pistas de Suno si están, y la música de ahora si no.
 - Medidas con el bot dentro de las cifras, suite en verde, documentación y web al día.
