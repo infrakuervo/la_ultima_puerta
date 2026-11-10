@@ -90,6 +90,7 @@ const TIPS: Dictionary = {
 	"grieta": "La Grieta no acaba: cada oleada es más dura. Aguanta todo lo que puedas para batir tu récord.",
 }    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
 var unlock_note: String = ""
+var branch_note: String = ""      # rama del árbol que se abre con esta victoria
 var tree_refund: int = 0          # esencia devuelta al cargar un árbol guardado con nodos que ya no existen
 var flash_red: float = 0.0
 var flash_white: float = 0.0
@@ -677,6 +678,7 @@ func _on_event(ev: Dictionary) -> void:
 			demon_anim.play("victoria")
 			var sid: String = sim.siege_id()
 			unlock_note = ""
+			branch_note = ""
 			var first: bool = not siege_wins.has(sid)
 			if first or int(siege_wins[sid]) < sim.wrath:
 				siege_wins[sid] = sim.wrath
@@ -689,7 +691,7 @@ func _on_event(ev: Dictionary) -> void:
 						unlock_note = "Se abre: %s. %s" % [String(sg["name"]), unlock_note]
 				for brn in sim.BRANCHES:
 					if String(brn.get("unlock", "")) == sid:
-						unlock_note = "Rama nueva en el árbol: %s. %s" % [String(brn["name"]), unlock_note]
+						branch_note = "Rama nueva en el árbol: %s" % String(brn["name"])
 			_save_bestiary()
 			_save_meta()
 		"defeat":
@@ -1164,14 +1166,17 @@ func _draw_arena_rest(painted: bool) -> void:
 		var fpp: Vector2 = fp["p"]
 		var fr: float = float(fp["r"])
 		draw_set_transform(arena_offset + fpp, 0.0, Vector2(1.0, 0.5))
-		draw_circle(Vector2.ZERO, fr, Color(1.0, 0.35, 0.08, 0.22 * fa))
-		draw_arc(Vector2.ZERO, fr, 0.0, TAU, 32, Color(1.0, 0.55, 0.15, 0.7 * fa), 2.0)
+		draw_circle(Vector2.ZERO, fr, Color(1.0, 0.3, 0.05, 0.34 * fa))
+		draw_circle(Vector2.ZERO, fr * 0.6, Color(1.0, 0.5, 0.1, 0.2 * fa))
+		draw_arc(Vector2.ZERO, fr, 0.0, TAU, 32, Color(1.0, 0.6, 0.15, 0.9 * fa), 3.0)
 		draw_set_transform(arena_offset, 0.0, Vector2.ONE)
-		for k in 9:
-			var ang: float = TAU * float(k) / 9.0 + float(k) * 1.7
-			var q: Vector2 = fpp + Vector2(cos(ang) * fr * 0.6, sin(ang) * fr * 0.3)
-			var fh: float = 12.0 + 8.0 * sin(clock * 9.0 + float(k) * 1.3)
-			draw_colored_polygon(PackedVector2Array([q + Vector2(-7, 4), q + Vector2(0, 4 - fh), q + Vector2(7, 4)]), Color(1.0, 0.5, 0.15, 0.7 * fa))
+		for k in 16:
+			var ang: float = float(k) * 2.39996   # ángulo áureo: repartidas por todo el círculo
+			var rad: float = sqrt((float(k) + 0.5) / 16.0) * 0.92
+			var q: Vector2 = fpp + Vector2(cos(ang) * fr * rad, sin(ang) * fr * rad * 0.5)
+			var fh: float = 20.0 + 10.0 * sin(clock * 9.0 + float(k) * 1.3)
+			draw_colored_polygon(PackedVector2Array([q + Vector2(-8, 4), q + Vector2(0, 4 - fh), q + Vector2(8, 4)]), Color(1.0, 0.55, 0.15, 0.85 * fa))
+			draw_colored_polygon(PackedVector2Array([q + Vector2(-4, 4), q + Vector2(0, 4 - fh * 0.55), q + Vector2(4, 4)]), Color(1.0, 0.9, 0.4, 0.8 * fa))
 	# hueco del Trueno
 	for c in sim.creatures:
 		if c["kind"] == "trueno" and not c["dead"] and c["state"] != "home":
@@ -2447,14 +2452,16 @@ func _draw_overlays() -> void:
 		if ep != "":
 			_txt(ep, Vector2(0, 296), 24, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		if ph == "victory" and unlock_note != "" and sim.meta_mode:
-			_txt(unlock_note, Vector2(0, 336), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+			_txt(unlock_note, Vector2(0, 332), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		if ph == "victory" and branch_note != "" and sim.meta_mode:
+			_txt(branch_note, Vector2(0, 358), 19, Color(1.0, 0.82, 0.35), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		if contract_note != "" and ph == "victory":
-			_txt(contract_note, Vector2(0, 404), 18, Color(1.0, 0.75, 0.4), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+			_txt(contract_note, Vector2(0, 410), 18, Color(1.0, 0.75, 0.4), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		if not logros.fresh.is_empty():
 			var names: Array = []
 			for lid in logros.fresh:
 				names.append(String(logros.def(String(lid)).get("name", "")))
-			_txt("Logros: " + ", ".join(names), Vector2(0, 372), 18, Color(1.0, 0.8, 0.4), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+			_txt("Logros: " + ", ".join(names), Vector2(0, 384), 18, Color(1.0, 0.8, 0.4), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		# el demonio a la izquierda: victoria con los brazos en llamas o derrota de rodillas
 		draw_circle(Vector2(250, 470), 120.0, Color(1.0, 0.45, 0.15, 0.14) if ph == "victory" else Color(0.6, 0.1, 0.1, 0.12))
 		draw_demon_at(Vector2(250, 590), 1.25)

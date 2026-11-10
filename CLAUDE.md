@@ -12,7 +12,7 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 - Arena abierta con zonas de retaguardia y vanguardia; oleadas desordenadas por frentes al azar; Brasa (área con retraso, apuntada con el ratón) y Rayo.
 
 ## Decisiones tomadas
-- El árbol (69 nodos) se paga con **Esencia permanente**, guardada en `user://meta.json` junto con los rangos. Se gana por oleada y por victoria (`balance.json` → `meta`). Las almas son solo de la partida (Sabuesos, Ojos, niveles).
+- El árbol (110 nodos, 10 ramas) se paga con **Esencia permanente**, guardada en `user://meta.json` junto con los rangos (`habilidades`) y lo pagado por nodo (`pagado`). Se gana por oleada y por victoria (`balance.json` → `meta`). Las almas son solo de la partida (Sabuesos, Ojos, niveles).
 - Tras cada oleada se elige 1 de 3 (`draft.pool`): bestias gratis o recompensas. Añadir un pack nuevo = entrada en `balance.json` (con `spot`) + `_ai_*` en `sim.gd` (y su caso en `_update_creature`) + sprite en `art/sprites/` **o** silueta por código en `Art.draw_creature` (pack 2: gárgola, enjambre, garfio) + línea en el pool + texto en `FORM_INFO` de `main.gd`. Mantener los pesos de bestias del pool bajos (1): cada bestia más en el pool sube mucho la tasa de victorias.
 - Asedios en `waves.json` → `sieges` (`unlock` = id del asedio que hay que ganar). `Sim.set_siege(i, ira)` antes de `reset()`. Ira multiplica vida/daño enemigos y esencia (`balance.json` → `wrath`). Lo ganado se guarda en `user://meta.json` → `asedios` (id → mayor Ira ganada).
 - Enemigos con banderas de datos: `ignore_block`, `explode`, `burn_immune`, `unstoppable`, `shield_cd`, `judge_cd`, `summon_at`/`summon`, `tint`/`sprite`/`scale` (reutilizan sprites con tinte; no hay arte nuevo con IA).
@@ -25,6 +25,14 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
   - Santuario (asedio con `sanctuary`, la Inquisición): `_place_sanctuary()` al preparar y `_update_sanctuary()` cada 0,5 s.
   - La Grieta: asedio con `endless`; `_gen_wave(i)` genera oleadas tras las del asedio base; no hay victoria, récord en `records.grieta`.
   - Árbol con inflación (`meta.inflation`): cada rango comprado encarece los demás.
+- Árbol 2 (`data/skills.json`; todo por datos salvo la regla de cada piedra angular):
+  - `keystone: true` = piedra angular (rango único; su regla se lee en `sim.gd` con `fadd("special.<clave>")` y su contrapartida suele ser un `fx` normal). Parámetros en `balance.json` → `meta` (`tizon_revive`, `burst_r`, `ground_burn`, `arc_max`, `profane`).
+  - `excl: <id>` = camino excluyente (los dos nodos se apuntan entre sí). `skill_state()` devuelve además `"excluded"` y `"sealed"`.
+  - `branches[].unlock` = asedio que hay que ganar (`Sim.won`, que la vista rellena con `siege_wins`). Solo sella en `meta_mode`.
+  - Dones: `set.need.<familia>` (suma al mínimo de 2), `set.power.<familia>`, `draft.family.<familia>`, `draft.kind.<bestia>`, `draft.rarity.<rareza>`. Las resonancias se suman al final de `_fx_totals()` para poder leer esas claves.
+  - `Sim.skill_paid` apunta lo pagado por nodo; `respec(rama)` devuelve `meta.respec_refund` de eso y solo vale entre partidas. `load_tree(guardado, pagado)` migra: lo que ya no existe (`legacy` en el JSON) se devuelve entero. No renombrar ids sin pasar por ahí.
+  - Vista (`main.gd`): `tree_tab` (pestaña), `_build_tree_pos()` coloca cada rama en dos columnas + una lateral (`side`), `_draw_tree_panel()` es el detalle fijo. Para un nodo nuevo basta el JSON; comprobar con `tools/shots.tscn -- <dir> arbol` y la prueba de solapes de `test_ui_smoke`.
+  - Bot: `tests/bot.gd` → `STYLES` (lista de deseos, ramas, piedras y caminos que acepta). `tools/balance.tscn` repite la carrera con cada estilo y compara árboles.
 - Logros (`data/logros.json` + `scripts/logros.gd`) y música procedural (`scripts/music.gd`, `AudioStreamGenerator` en modo stream, buses `Musica`/`Efectos`) son de la vista.
 
 ## Pruebas y herramientas
@@ -38,5 +46,5 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 - https://infrakuervo.github.io/la_ultima_puerta/ — republicar con `tools/publish_web.sh` tras cada cambio importante. `export_presets.cfg` sí se versiona.
 
 ## Pendiente
-- Ver ROADMAP.md (secciones «Noche 2» y «Rejugabilidad») para lo hecho y lo siguiente.
+- Ver ROADMAP.md (secciones «Árbol 2», «Noche 2» y «Rejugabilidad») para lo hecho y lo siguiente.
 - Más packs de bestias y asedios (el patrón está arriba).

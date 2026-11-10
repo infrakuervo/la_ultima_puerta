@@ -83,12 +83,77 @@ func report_first(n: int, level: float) -> void:
 
 ## Carrera. Con BAL_CLIMB=1 el bot sube la Ira tras cada victoria (como un jugador que busca reto)
 ## y pasa al asedio siguiente al ganar Ira 3 (primero → Alba → Inquisición).
+## Se repite con cada estilo de compra (BAL_STYLE=mixto,fuego,manada; por defecto los tres) y al final
+## se comparan los árboles: tasas parecidas con árboles distintos es el objetivo.
 func report_career(n_car: int, n_games: int) -> void:
+	var styles: Array = Array((OS.get_environment("BAL_STYLE") if OS.has_environment("BAL_STYLE") else "mixto,fuego,manada").split(","))
+	var trees: Dictionary = {}
+	var means: Dictionary = {}
+	for st in styles:
+		print("  -- estilo «%s» --" % st)
+		var res: Dictionary = _career(String(st), n_car, n_games)
+		trees[st] = res["trees"]
+		means[st] = res["mean"]
+	print("  == comparación de estilos ==")
+	for st in styles:
+		var t: Dictionary = trees[st][0]
+		var keys: Array = []
+		var paths: Array = []
+		var by_branch: Dictionary = {}
+		var probe = Sim.new(1)
+		for id in t:
+			if not probe.SK.has(id):
+				continue
+			var nd: Dictionary = probe.SK[id]
+			by_branch[nd["branch"]] = int(by_branch.get(nd["branch"], 0)) + int(t[id])
+			if bool(nd.get("keystone", false)):
+				keys.append(String(nd["name"]))
+			elif nd.has("excl"):
+				paths.append(String(nd["name"]))
+		print("  %s: media %.0f%%  rangos por rama %s" % [st, means[st], str(by_branch)])
+		print("     piedras: %s | caminos: %s" % [", ".join(keys), ", ".join(paths)])
+	for i in styles.size():
+		for j in range(i + 1, styles.size()):
+			var d: float = 0.0
+			var n: int = 0
+			for a in trees[styles[i]]:
+				for b in trees[styles[j]]:
+					d += tree_distance(a, b)
+					n += 1
+			print("  distancia de árbol %s / %s: %.2f  (0 = iguales, 1 = nada en común)" % [styles[i], styles[j], d / maxf(1.0, float(n))])
+	if styles.size() > 0:
+		var d0: float = 0.0
+		var n0: int = 0
+		var same: Array = trees[styles[0]]
+		for i in same.size():
+			for j in range(i + 1, same.size()):
+				d0 += tree_distance(same[i], same[j])
+				n0 += 1
+		print("  distancia entre carreras del mismo estilo (%s): %.2f" % [styles[0], d0 / maxf(1.0, float(n0))])
+
+
+## Diferencia entre dos árboles: rangos que no comparten sobre el total (1 − Jaccard ponderado).
+func tree_distance(a: Dictionary, b: Dictionary) -> float:
+	var inter: float = 0.0
+	var uni: float = 0.0
+	var ids: Dictionary = {}
+	for k in a:
+		ids[k] = true
+	for k in b:
+		ids[k] = true
+	for k in ids:
+		inter += float(mini(int(a.get(k, 0)), int(b.get(k, 0))))
+		uni += float(maxi(int(a.get(k, 0)), int(b.get(k, 0))))
+	return 1.0 - inter / maxf(1.0, uni)
+
+
+func _career(style: String, n_car: int, n_games: int) -> Dictionary:
 	var wins_at: Array = []
 	var ess_at: Array = []
 	var lvl_at: Array = []
 	var climb: bool = OS.has_environment("BAL_CLIMB")
 	var spent_total: Array = []
+	var trees: Array = []
 	spent_total.resize(n_car)
 	spent_total.fill(0)
 	for g in n_games:
@@ -98,22 +163,31 @@ func report_career(n_car: int, n_games: int) -> void:
 	for c in n_car:
 		var essence: int = 0
 		var skills: Dictionary = {}
+		var paid: Dictionary = {}
+		var won: Array = []
 		var sg: int = 0
 		var ira: int = 0
 		for g in n_games:
 			var s = new_game(5000 + c * 100 + g, essence, skills)
+			s.skill_paid = paid.duplicate()
+			s.won = won.duplicate()
 			if climb:
 				s.set_siege(sg, ira)
-				s.reset()
-				lvl_at[g].append("%d.%d" % [sg + 1, ira])
 			var bot = Bot.new(5000 + c * 100 + g, 0.0)
+			bot.style = style
 			var ess0: int = s.essence
 			bot.buy_meta(s)
+			# el árbol se compra antes de empezar: la partida arranca con él (Pacto del Abismo, Puerta…)
+			s.reset()
+			if climb:
+				lvl_at[g].append("%d.%d" % [sg + 1, ira])
 			spent_total[c] += ess0 - s.essence
 			ess_at[g] += spent_total[c]
 			var res: Dictionary = bot.play(s)
 			if res["phase"] == "victory":
 				wins_at[g] += 1
+				if not won.has(s.siege_id()):
+					won.append(s.siege_id())
 				if climb:
 					ira += 1
 					# primer asedio hasta Ira 3, luego el Alba hasta Ira 3, luego la Inquisición
@@ -123,8 +197,14 @@ func report_career(n_car: int, n_games: int) -> void:
 					ira = mini(ira, 5)
 			essence = s.essence
 			skills = s.skills.duplicate()
+			paid = s.skill_paid.duplicate()
+		trees.append(skills)
+	var tot: float = 0.0
 	for g in n_games:
+		tot += 100.0 * wins_at[g] / n_car
 		print("  partida %2d: victorias %d/%d (%.0f%%), esencia invertida media %d %s" % [g + 1, wins_at[g], n_car, 100.0 * wins_at[g] / n_car, ess_at[g] / n_car, " ".join(lvl_at[g]) if climb else ""])
+	print("  media de la carrera (%s): %.0f%%" % [style, tot / n_games])
+	return {"trees": trees, "mean": tot / n_games}
 
 
 ## Victorias del bot torpe con un árbol comprado con `ess` de esencia.

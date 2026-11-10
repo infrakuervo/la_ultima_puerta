@@ -121,6 +121,8 @@ func _rayo_pick(s) -> Dictionary:
 			sc += 1500.0
 		if st.get("hero", false) or st.get("boss", false):
 			sc += 600.0
+		if e["burn_t"] > 0.0 and s.fadd("special.rayo_arc") > 0.0:
+			sc += 500.0   # con Arco voltaico apunta a los que arden: desde ahí salta
 		if sc > best_sc:
 			best_sc = sc
 			best = {"p": ep}
@@ -175,34 +177,104 @@ const META_PRIORITY: Array = [
 	"brasa_radio", "brasa_cd", "rayo_cd", "brasa_dmg", "beast_hp", "beast_dmg", "brasa_delay", "rayo_dmg",
 ]
 
+## Estilos de compra en el árbol (para comparar builds con tools/balance.tscn):
+## - order: lista de deseos; un id repetido pide un rango más. Si lo siguiente es una piedra angular
+##   y no llega la esencia, ahorra en vez de gastar en otra cosa.
+## - branches: ramas donde gasta lo que sobra (lo más barato primero); luego, en cualquiera.
+## - keys / paths: piedras angulares y caminos excluyentes que acepta. El resto no lo compra nunca
+##   (una piedra angular tiene contrapartida: no se coge por ser barata).
+## - route: heraldo que prefiere (su rama de ruta), el 80% de las veces.
+const STYLES: Dictionary = {
+	"mixto": {
+		"order": META_PRIORITY,
+		"branches": [],
+		"keys": [],
+		"paths": ["brasa_ascuas", "rayo_chispa", "door_baluarte", "beast_horda", "sab_cepo", "horno_boca", "trueno_meteoro", "ojo_vigia", "abi_guardia", "inq_cadenas"],
+		"route": "",
+	},
+	"fuego": {
+		"order": ["brasa_radio", "rayo_cadena", "brasa_cd", "brasa_dmg", "rayo_dmg", "brasa_radio", "brasa_dmg", "brasa_cd", "beast_hp", "door_hp",
+			"brasa_dmg", "brasa_burn", "brasa_infierno", "brasa_tierra", "rayo_dmg", "rayo_dmg", "rayo_arco", "rayo_cd", "rayo_cd",
+			"brasa_delay", "brasa_stun", "brasa_burn", "brasa_echo", "brasa_cometa", "brasa_cometa",
+			"horno_hp", "horno_spit", "horno_spit", "horno_burn", "horno_burn", "horno_ceniza", "inq_trofeos", "inq_hereje", "inq_sellos", "inq_sordo", "inq_velo", "inq_notario", "inq_profeta", "inq_fuego"],
+		"branches": ["brasa", "rayo", "horno", "inquisicion"],
+		"keys": ["brasa_tierra", "rayo_arco", "horno_ceniza"],
+		"paths": ["brasa_cometa", "rayo_verdugo", "door_baluarte", "beast_alfa", "sab_cepo", "horno_fragua", "trueno_meteoro", "ojo_vigia", "abi_plaga", "inq_fuego"],
+		"route": "verdugo",
+	},
+	"manada": {
+		"order": ["beast_hp", "brasa_radio", "beast_dmg", "sab_hp", "rayo_cadena", "beast_hp", "door_hp", "beast_dmg", "sab_hp", "sab_camada",
+			"sab_presa_cd", "sab_dmg", "beast_hp", "beast_dmg", "beast_cd", "beast_cd", "beast_speed", "beast_leash", "beast_jauria",
+			"beast_pack", "beast_dmg", "beast_scar", "beast_horda", "beast_horda", "door_hp", "door_regen", "door_espinas",
+			"sab_presa_time", "sab_presa_time", "sab_dmg", "sab_desgarro", "sab_range", "sab_leash", "sab_carnicero",
+			"abi_llamada", "abi_gargola_hp", "abi_enjambre_burn", "abi_garfio_cd", "abi_garfio_stun", "abi_guardia"],
+		"branches": ["bestias", "jauria", "demonio", "trueno", "abismo"],
+		"keys": ["sab_camada", "door_espinas", "trueno_errante"],
+		"paths": ["brasa_ascuas", "rayo_chispa", "eco_mercader", "beast_horda", "sab_carnicero", "horno_boca", "trueno_relampago", "ojo_parpadeo", "abi_guardia", "inq_cadenas"],
+		"route": "inquisidor",
+	},
+}
 
-## Compra en el árbol permanente: primero una lista corta y luego lo más barato disponible.
+var style: String = "mixto"
+
+
+func _allowed(s, id: String, st: Dictionary) -> bool:
+	var nd: Dictionary = s.SK[id]
+	if bool(nd.get("keystone", false)):
+		return st["keys"].has(id)
+	if nd.has("excl"):
+		return st["paths"].has(id)
+	return true
+
+
+func _cheapest(s, st: Dictionary, branches: Array) -> String:
+	var best: String = ""
+	var cc: int = 1 << 30
+	for id in s.SK_ORDER:
+		if not branches.is_empty() and not branches.has(String(s.SK[id]["branch"])):
+			continue
+		if s.can_skill(id) and _allowed(s, id, st) and s.skill_cost(id) < cc:
+			cc = s.skill_cost(id)
+			best = id
+	return best
+
+
+## Compra en el árbol permanente según el estilo: lista de deseos, luego lo más barato de sus ramas
+## y por último lo más barato de cualquiera.
 func buy_meta(s) -> void:
+	var st: Dictionary = STYLES.get(style, STYLES["mixto"])
 	var guard: int = 0
-	while guard < 200:
+	while guard < 400:
 		guard += 1
-		var bought: bool = false
-		for id in META_PRIORITY:
-			if s.SK.has(id) and s.can_skill(id):
-				s.buy_skill(id)
-				bought = true
+		var pick: String = ""
+		var want: Dictionary = {}
+		for id in st["order"]:
+			if not s.SK.has(id):
+				continue
+			want[id] = int(want.get(id, 0)) + 1
+			if s.skill_rank(id) >= int(want[id]):
+				continue
+			if s.can_skill(id):
+				pick = id
 				break
-		if not bought:
-			var cheapest: String = ""
-			var cc: int = 1 << 30
-			for id2 in s.SK_ORDER:
-				if s.can_skill(id2) and s.skill_cost(id2) < cc:
-					cc = s.skill_cost(id2)
-					cheapest = id2
-			if cheapest == "":
-				return
-			s.buy_skill(cheapest)
+			if bool(s.SK[id].get("keystone", false)) and s.skill_state(id) == "poor":
+				return   # ahorra para la piedra angular
+		if pick == "" and not st["branches"].is_empty():
+			pick = _cheapest(s, st, st["branches"])
+		if pick == "":
+			pick = _cheapest(s, st, [])
+		if pick == "":
+			return
+		s.buy_skill(pick)
 
 
 ## Juega una partida entera con el árbol que ya tenga `s` (modo permanente y draft activos).
 func play(s, route: String = "") -> Dictionary:
 	if route == "":
 		route = "verdugo" if rng.randf() < 0.5 else "inquisidor"
+		var pref: String = String(STYLES.get(style, {}).get("route", ""))
+		if pref != "" and s.skill_points_spent() > 0 and rng.randf() < 0.8:
+			route = pref
 	var guard: int = 0
 	var ticks: int = 0
 	var alive: Array = []

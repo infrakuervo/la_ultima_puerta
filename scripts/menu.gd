@@ -242,10 +242,13 @@ func draw(m) -> void:
 			"Las almas son de la partida (reclutar y subir de nivel). La esencia es para siempre:",
 			"gástala en el Árbol (T) entre oleadas o al terminar. Tras la oleada 4 eliges heraldo",
 			"y Tizón muta. Ganar abre la Ira, el segundo asedio y La Grieta (sin fin).",
-			"Cada semana hay un reto con la misma semilla para todos. Los logros abren dones nuevos.",
+			"El Árbol tiene una pestaña por rama. La piedra angular (marco dorado) cambia una regla",
+			"y pide algo a cambio; al final de cada rama eliges un camino y el otro se cierra.",
+			"Reasignar devuelve el 75% de lo pagado, entre partidas. Ganar el segundo y el tercer",
+			"asedio abre dos ramas nuevas. Cada semana hay un reto; los logros abren dones.",
 		]
 		for i in lines.size():
-			m._txt(lines[i], Vector2(0, 210 + 36 * i), 19, Color(0.92, 0.86, 0.8), HORIZONTAL_ALIGNMENT_CENTER, W)
+			m._txt(lines[i], Vector2(0, 198 + 31 * i), 19, Color(0.92, 0.86, 0.8), HORIZONTAL_ALIGNMENT_CENTER, W)
 	elif panel == "logros":
 		m._txt("Logros", Vector2(0, 110), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		var L = m.logros

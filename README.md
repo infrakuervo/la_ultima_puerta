@@ -61,7 +61,7 @@ Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tsc
 
 ## Qué hay (orden de URI-111)
 
-00. Árbol de habilidades (`data/skills.json`, 69 nodos y 235 rangos en 8 ramas: Brasa, Rayo, Demonio, Bestias, Jauría, Horno y Trueno —estas dos se abren al elegir ruta—, Ojo). Cada rango se compra con almas entre oleadas; hay requisitos entre nodos, y las mejoras de bestias (vida, daño, velocidad, cicatrices, manada, regeneración) conviven con las de cada forma. Los efectos son datos (`fx`: `mul`/`add` sobre una clave como `brasa.cd` o `horno.inhale_max`), así que se amplía editando el JSON. La Brasa empieza lenta (cae a 1,5 s, enfriamiento 6,5 s, radio 75) para que el árbol la mejore.
+00. Árbol de habilidades (`data/skills.json`, 110 nodos en 10 ramas: Brasa, Rayo, Demonio, Bestias, Jauría, Horno y Trueno —las ramas de cada heraldo—, Ojo, y dos que se ganan: Abismo e Inquisición; ver «Árbol 2» más abajo). Cada rango se compra con almas entre oleadas; hay requisitos entre nodos, y las mejoras de bestias (vida, daño, velocidad, cicatrices, manada, regeneración) conviven con las de cada forma. Los efectos son datos (`fx`: `mul`/`add` sobre una clave como `brasa.cd` o `horno.inhale_max`), así que se amplía editando el JSON. La Brasa empieza lenta (cae a 1,5 s, enfriamiento 6,5 s, radio 75) para que el árbol la mejore.
 0. Dirección anterior (URI-117 + niveles): arena abierta sin casillas, con retaguardia y vanguardia; los enemigos llegan sin orden por frentes sorteados; el demonio ya no ataca solo: **Brasa** (círculo con retardo y llamas) y **Rayo** (inmediato, con cadena) se lanzan con el ratón; con almas se suben de nivel las bestias (+25% de vida y daño por nivel, máximo 3) y se mejoran los hechizos (radio de Brasa, cadena de Rayo).
 1. Partida base: Puerta, Tizón con Presa, campesinos, previsión de la oleada, colocación libre, x1/x2, reinicio.
 2. Seis oleadas, elección de ruta tras la 4, héroe y reliquia en la 5, pantallas de victoria y derrota.
@@ -115,7 +115,20 @@ Seis unidades con habilidad propia, en `data/balance.json` (campo `elite`) y `da
 
 ## Progreso permanente
 
-El árbol se paga con **Esencia**, que se conserva entre partidas (`user://meta.json`, junto con los rangos comprados). Se gana al superar cada oleada (10 + 5×n) y +60 por victoria (`data/balance.json` → `meta`). Se compra entre oleadas y en las pantallas de victoria o derrota. Las almas quedan solo para Sabuesos, Ojos y niveles de bestia. Árbol completo: 6635 de Esencia.
+El árbol se paga con **Esencia**, que se conserva entre partidas (`user://meta.json`, junto con los rangos comprados). Se gana al superar cada oleada (10 + 5×n) y +60 por victoria (`data/balance.json` → `meta`). Se compra entre oleadas y en las pantallas de victoria o derrota. Las almas quedan solo para Sabuesos, Ojos y niveles de bestia.
+
+## Árbol 2: builds y decisiones
+
+El árbol ya no es solo «+X%». Se abre con **T** y tiene una pestaña por rama, el árbol de esa rama en el centro y un panel de detalle a la derecha.
+
+- **Piedras angulares** (marco dorado, una por rama, rango único): cambian una regla y piden algo a cambio. Tierra quemada (la Brasa deja el suelo ardiendo, pero tarda el doble), Arco voltaico (el Rayo salta sin límite, pero solo a los que arden), Puerta de espinas, Tizón inmortal, Camada, Estallido de ceniza, Tormenta errante, Mirada fija, Pacto del Abismo y Hoguera profana.
+- **Caminos excluyentes**: al final de cada rama se elige uno de dos nodos y el otro se cierra (sale tachado, «camino cerrado»). Cometa o Lluvia de ascuas, Rayo verdugo o Chispa incesante, Baluarte o Mercader de almas, Horda o Alfa…
+- **Nodos que hablan con los dones** (rótulo morado): Corazón del Infierno y Pacto de Avaricia despiertan su resonancia con un solo don; Sangre de Jauría y Piedra del Bastión la hacen más fuerte; Heraldo de la Tempestad, Llamada del Abismo y Lengua de profeta cambian lo que sale en el draft.
+- **Reasignar**: en el panel del árbol, «Reasignar esta rama» o «Reasignar todo» (dos clics) devuelve el 75% de la esencia pagada de verdad (cada compra se apunta con su inflación en `meta.json` → `pagado`). Solo entre partidas: antes de la primera oleada o al acabar.
+- **Ramas que se ganan**: **Abismo** (Gárgola, Enjambre y Garfio) se abre al ganar el segundo asedio; **Inquisición** (santuarios, escudos, Juicio, encargos) al ganar el tercero. Antes se ven selladas con el requisito escrito.
+- **Partidas guardadas**: los ocho remates antiguos (Maestría del fuego, Tormenta, Cría barata, Furia de la jauría, Sabueso alfa, Infierno interior, Tormenta de cobre, Mirada del Abismo) ya no existen; al abrir el juego su esencia se devuelve entera y el menú lo avisa.
+
+Datos: `keystone`, `excl`, `side`, `boon` y `branches[].unlock` en `data/skills.json`; los parámetros de las piedras angulares en `data/balance.json` → `meta`. `tools/arbol2_datos.py` es el script que generó los nodos nuevos.
 
 ## Bestias nuevas y elección tras cada oleada
 
@@ -130,7 +143,7 @@ Arte: `art/LEEME_bestias.md` (diseños elegidos y alternativas en `art/alternati
 ## Equilibrio (bot torpe)
 
 `tests/bot.gd` juega como una persona en su primera partida: reacciona tarde (decide cada ~0,45 s y lanza 0,3 s después sobre la posición vieja), apunta con error (~38 px), se adelanta a medias, se distrae un 18% de las veces, tarda en cambiar de hechizo y elige en el draft con preferencias medianas.
-Informe: `godot --headless --path . res://tools/balance.tscn -- 120 10 8` (primera partida, bot hábil de referencia y carreras acumulando esencia; `BAL_ESS=0,80,150` mide con árboles fijos).
+Informe: `godot --headless --path . res://tools/balance.tscn -- 120 10 8` (primera partida, bot hábil de referencia y carreras acumulando esencia; `BAL_ESS=0,80,150` mide con árboles fijos). Las carreras se repiten con tres estilos de compra del bot (`mixto`, `fuego`, `manada`; `BAL_STYLE=fuego` para uno solo) y al final se compara lo distintos que quedan los árboles.
 
 | Medida | Antes | Después |
 | --- | --- | --- |

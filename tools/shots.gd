@@ -259,6 +259,26 @@ func run() -> void:
 		s().meta_mode = false
 		main.show_tree = false
 		main.tree_tab = "brasa"
+	if want("piedras"):
+		# piedras angulares en combate: suelo ardiendo (Tierra quemada) y Hoguera profana
+		s().reset()
+		s().skills = {"brasa_tierra": 1, "inq_hoguera": 1}
+		s()._tree_changed()
+		await shot("piedras_prep")
+		s().start_wave()
+		s().spawn_queue = [{"t": 99999.0, "lane": 0, "kind": "campesino"}]
+		for i in 9:
+			s()._spawn_enemy("campesino" if i % 2 == 0 else "escudero", i % 3)
+			s().enemies[-1]["x"] = 900.0 + 30.0 * float(i)
+		s().cast_brasa(Vector2(760, main._lane_y(1) - 30.0))
+		for j in 70:
+			main._process(1.0 / 30.0)
+		await shot("piedras")
+		s().skills.clear()
+		s()._tree_changed()
+		s().phase = "prep"
+		s().enemies.clear()
+		s().reset()
 	if want("ruta"):
 		s().reset()
 		s().phase = "route"
@@ -374,9 +394,13 @@ func run() -> void:
 		main.logros.fresh = ["primera_sangre", "puerta_resiste", "brasa_perfecta", "intocable", "manada"]
 		s().kills = 87
 		main.unlock_note = "Se abre: Segundo asedio: la Orden del Alba. Se abre Ira 1 en este asedio."
+		main.branch_note = "Rama nueva en el árbol: Abismo"
+		main.contract_note = "Encargo cumplido: Puerta intacta  (+80 esencia)"
 		s().meta_mode = true
 		s().phase = "victory"
 		await shot("victoria")
+		main.branch_note = ""
+		main.contract_note = ""
 		main.logros.fresh = []
 	if want("derrota"):
 		s().reset()
