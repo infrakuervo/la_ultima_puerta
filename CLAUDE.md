@@ -18,11 +18,18 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 - Enemigos con banderas de datos: `ignore_block`, `explode`, `burn_immune`, `unstoppable`, `shield_cd`, `judge_cd`, `summon_at`/`summon`, `tint`/`sprite`/`scale` (reutilizan sprites con tinte; no hay arte nuevo con IA).
 - Los modos permanente y elección están desactivados por defecto en `Sim` (`meta_mode`, `draft_enabled`) y los activa `main.gd`, salvo en las pruebas (`Engine` meta `sin_persistencia`).
 - Élites con habilidad propia y variantes de aspecto de los enemigos comunes; los diseños elegidos del arte están en `art/LEEME*.md`.
+- Rejugabilidad (todo con banderas en `Sim`, que la vista y el bot activan y las pruebas no, para que sigan siendo deterministas):
+  - `remix_enabled`: oleadas remezcladas por partida (`waves.json` → `remix` por asedio; el grupo principal conserva su tipo).
+  - `augurs_enabled`: dos augurios antes de cada oleada desde la 2 (`balance.json` → `augurs`, efectos con `augur_fx(k)`); `week_augur` para el reto semanal.
+  - Draft con `rarity` y dones (`type: boon`, `fx` como el árbol, se suman en `_fx_totals`); `unlock: true` = solo si `Sim.unlocked` lo tiene (logros).
+  - La Grieta: asedio con `endless`; `_gen_wave(i)` genera oleadas tras las del asedio base; no hay victoria, récord en `records.grieta`.
+  - Árbol con inflación (`meta.inflation`): cada rango comprado encarece los demás.
+- Logros (`data/logros.json` + `scripts/logros.gd`) y música procedural (`scripts/music.gd`, `AudioStreamGenerator` en modo stream, buses `Musica`/`Efectos`) son de la vista.
 
 ## Pruebas y herramientas
 - `godot --headless --editor --import --path .` (una vez) y `godot --headless --path . res://tests/run_scene.tscn` → `FIN_SUITE fallos=0`. (`--script res://tests/run_tests.gd` no funciona.)
-- `tests/bot.gd`: bot torpe (reacción lenta, puntería con error, draft mediano). Objetivo de equilibrio: ~40-60% en la primera partida; hoy 55%.
-- Capturas útiles: `tools/shots.tscn -- <dir> demonio|animacion|intro|victoria|derrota`.
+- `tests/bot.gd`: bot torpe (reacción lenta, puntería con error, draft mediano, augurio al azar el 60%). Objetivo de equilibrio: ~40-60% en la primera partida; hoy ~46% con variedad (58% sin ella, `BAL_PROC=0`). `BAL_CLIMB=1` simula una carrera subiendo Ira tras cada victoria; `BAL_SIEGE=2` mide La Grieta (oleadas superadas con `BAL_ESS`).
+- Capturas útiles: `tools/shots.tscn -- <dir> demonio|animacion|intro|augurio|draft|asedios|partida|victoria|derrota` (`partida` juega una partida entera con el bot a través de la vista).
 - `tools/balance.tscn` (informe de equilibrio), `tools/debug_run.tscn` (línea de tiempo de una partida), `tools/shots.tscn` (capturas con xvfb-run).
 - `*.uid` e `*.import` están en `.gitignore` para no chocar con la copia local del usuario.
 
@@ -30,5 +37,5 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 - https://infrakuervo.github.io/la_ultima_puerta/ — republicar con `tools/publish_web.sh` tras cada cambio importante. `export_presets.cfg` sí se versiona.
 
 ## Pendiente
-- Dificultad con tiradas reales; actualizar la descripción del PR #1.
+- Ver ROADMAP.md (secciones «Noche 2» y «Rejugabilidad») para lo hecho y lo siguiente.
 - Más packs de bestias y asedios (el patrón está arriba).

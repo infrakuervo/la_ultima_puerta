@@ -39,6 +39,15 @@ Debe terminar con `FIN_SUITE fallos=0`.
 
 Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tscn` desde el editor (la salida va al registro del juego). Comprueba: datos, combate de la oleada 1, Presa, Brasa, Rayo, niveles, vuelta de Tizón con cicatriz, flujo de ruta y reliquia (ambas rutas), Horno, Trueno y su hueco, Ojo (combo y marca), préstamo del Ojo, economía, partidas completas automáticas de las dos rutas (Puerta invulnerable) y un recorrido por la interfaz con el ratón. Al final imprime un informe de equilibrio (5 semillas por ruta).
 
+## Rejugabilidad
+
+- **Cada partida es distinta:** las oleadas se remezclan (mismo presupuesto, otra composición) y antes de cada oleada eliges un **augurio** de riesgo/recompensa o ninguno.
+- **Draft con rareza:** además de bestias y recompensas salen **dones** raros y épicos que duran toda la partida y empujan a una build (fuego, rayo, bestias, almas, Puerta). Algunos se abren con **logros**.
+- **La Grieta:** modo sin fin con oleadas generadas que no paran de crecer; guarda tu récord.
+- **Reto semanal:** misma semilla para todos durante la semana, con un augurio fijo y récord propio.
+- **Logros y estadísticas** en el menú; **música procedural** que sube con el combate (volumen aparte de los efectos); velocidad x1/x2/x3.
+- El árbol encarece cada rango comprado, así la Ira sigue siendo un reto durante muchas partidas.
+
 ## Estructura
 
 - `scripts/sim.gd`: toda la lógica, sin dibujo ni sonido (tick fijo de 1/30 s).
