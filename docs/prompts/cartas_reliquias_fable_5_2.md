@@ -4,7 +4,7 @@ Trabajas solo en «La Última Puerta» (Godot 4.7.2, GDScript), en la rama `prot
 
 ## Lo que ha dicho el usuario después de jugar
 - «Empieza a estar bien».
-- Los enemigos se le echan encima muy pronto, y todo se ve un poco grande.
+- Los enemigos se le echan encima muy pronto. Prefiere que vayan más lentos y con más vida; el tamaño está bien.
 - Quiere las opciones del árbol (ramas, nodos) **solo al final de la partida**, no entre oleadas.
 - Quiere **quitar las compras dentro de la partida**. En su lugar, elegir **cartas** tras cada oleada, al estilo Slay the Spire, con **reliquias**.
 - Quiere **al menos 100 reliquias**, para que cada partida sea distinta y apetezca volver.
@@ -13,9 +13,10 @@ Trabajas solo en «La Última Puerta» (Godot 4.7.2, GDScript), en la rama `prot
 ## Lee primero
 `CLAUDE.md`, `ROADMAP.md` (secciones «Árbol 2», «Rejugabilidad» y «Noche 2»), `data/balance.json` (`economy`, `draft`, `augurs`, `contracts`), `data/waves.json`, y en `scripts/sim.gd` la economía (`buy`, `can_buy`, `level_up`, `level_cost`, `souls`), el draft (`make_draft`, `_draft_ok`, `draft_pick`, `boons`, `_fx_totals`, `active_sets`), las reliquias de ruta (`give_relic`, `relic`) y el árbol (`can_skill`). En `scripts/main.gd`, los botones del panel inferior (`_buttons`, `_do_button`) y `_draw_draft`.
 
-## 1. Ritmo y tamaño (primero, es lo más rápido)
-- Más aire antes del choque: que los humanos tarden más en llegar a tus bestias. Valora mover `arena.spawn_x` (hoy 1240) o la zona de vanguardia (`zones`), retrasar el primer grupo de cada oleada (`delay`), separar más los grupos y bajar un poco la velocidad de los comunes. Mide el tiempo hasta el primer contacto antes y después con `tools/debug_run.tscn`: que haya unos segundos para mirar y lanzar la primera Brasa.
-- Todo un poco más pequeño en la arena: una escala global de unidades en la vista (por ejemplo 0,8; mejor una constante en `main.gd`/`art.gd` que tocar cada `SPRITE_H`), con sombras, barras de vida, etiquetas y efectos ajustados. Las colisiones y alcances de `sim.gd` no cambian. Comprueba con capturas que nada se corta, que las etiquetas no se pisan y que las unidades siguen legibles.
+## 1. Ritmo (primero, es lo más rápido)
+- El usuario quiere que los humanos **vayan más lentos y tengan más vida**, para que no se le echen encima tan pronto sin que la partida se vuelva fácil. **El tamaño de las unidades está bien: no lo cambies.**
+- Empieza por ahí (velocidad más baja y vida más alta en `balance.json` → `enemies`, sobre todo los comunes) y mide el tiempo hasta el primer contacto con `tools/debug_run.tscn`: que haya unos segundos para mirar y lanzar la primera Brasa.
+- El resto de estadísticas (daño, recompensas, élites, oleadas) revísalas tú con el bot y cambia lo que haga falta para que la curva cuadre con el sistema nuevo de cartas. Apunta en ROADMAP.md qué cambiaste y por qué.
 
 ## 2. Fuera la tienda: cartas tras cada oleada
 - Desaparecen de la partida las almas como moneda y los botones de comprar Sabueso/Ojo y Subir nivel. Las almas pueden quedar como puntuación o desaparecer; decide y explícalo.
@@ -37,6 +38,16 @@ Trabajas solo en «La Última Puerta» (Godot 4.7.2, GDScript), en la rama `prot
 - Las cartas de bestia solo ofrecen las desbloqueadas; las de mejora, solo las de bestias que tienes. En el bestiario, las que faltan por abrir.
 - Equilibrio por etapas, no solo la primera partida: mide la carrera completa (`BAL_CLIMB=1`) desde cero, con el bot comprando por la red. Que desbloquear bestias se note, pero que ninguna tramo sea un muro ni dé el 100% durante muchas partidas.
 - Migra a quien ya tenga esencia gastada: lo que ya tenía queda abierto en la red o se le devuelve la esencia; decide y explícalo.
+
+### Referencia: el sistema de cartas de Monster Train 2
+Al usuario le gusta cómo funcionan las cartas en Monster Train 2. Estúdialo (lo que sepas del juego y del primero) y adáptalo a un juego en tiempo real como este; no lo copies. Ideas que encajan:
+- **Un mazo que crece durante la partida.** Las cartas que eliges tras cada oleada entran en tu mazo, en vez de aplicarse al momento. En combate tienes una mano de cartas y una energía que se recarga con el tiempo (el equivalente al ascua). Juegas una carta para invocar una bestia en un punto, lanzar un hechizo o mejorar algo. La Brasa y el Rayo pueden quedarse como poderes fijos del demonio o pasar a ser cartas: decide qué se juega mejor.
+- **Mejorar cartas**, no solo conseguir nuevas: piedras o forjas entre oleadas que suben una carta (más daño, menos coste, un efecto extra).
+- **Dos clanes por partida**: al empezar eliges dos familias de cartas (por ejemplo Fuego y Manada), y el draft sale de ellas. Encaja con las familias de dones y las resonancias que ya existen.
+- **El demonio como campeón**, con mejoras propias que eliges a lo largo de la partida (equivalente a la mejora del campeón).
+- **Paradas entre oleadas** en las que eliges qué hacer: mercader de cartas, forja de mejoras, reliquia, curar la Puerta… Así una partida tiene decisiones de camino, no solo de cartas.
+- Las reliquias de la sección siguiente son el equivalente de sus artefactos.
+Si el mazo en combate en tiempo real no funciona bien con el bot o con el ritmo, quédate con la elección de cartas entre oleadas (el apartado 2), pero aprovecha las mejoras, los clanes y las paradas. Explica lo que elijas y por qué en ROADMAP.md.
 
 ## 3. Reliquias (100 o más)
 - Una reliquia es un objeto pasivo para toda la partida, con icono, nombre, rareza y texto corto. Datos en un archivo nuevo, `data/reliquias.json`, con efectos por datos (`fx` como el árbol) y, para las que cambian reglas, una clave `special.*` que `sim.gd` lea, como las piedras angulares.
@@ -75,6 +86,6 @@ Trabajas solo en «La Última Puerta» (Godot 4.7.2, GDScript), en la rama `prot
 
 ## Cuándo está terminado
 - No se compra nada durante la partida; tras cada oleada se eligen cartas; la primera partida es solo del demonio, Tizón y las demás bestias se abren en un árbol en red al estilo Path of Exile; hay 100 reliquias o más funcionando y visibles; el árbol solo se toca al final.
-- Los enemigos tardan más en llegar y todo se ve algo más pequeño, sin solapes.
+- Los enemigos van más lentos y con más vida, y tardan más en llegar; el tamaño sigue igual.
 - El juego reproduce las pistas de Suno si están, y la música de ahora si no.
 - Medidas con el bot dentro de las cifras, suite en verde, documentación y web al día.
