@@ -11,6 +11,7 @@ const Anim = preload("res://scripts/anim.gd")
 const Poses = preload("res://scripts/poses.gd")
 const Logros = preload("res://scripts/logros.gd")
 const Music = preload("res://scripts/music.gd")
+const FxLayer = preload("res://scripts/fx_layer.gd")
 
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
@@ -74,6 +75,7 @@ var new_record: bool = false
 var history: Array = []           # últimas partidas (resumen), se guarda en meta.json
 var logros = Logros.new()
 var music = Music.new()
+var fx_layer = null               # efectos animados aditivos (clips de Flow sobre negro)
 var toasts: Array = []            # avisos de logro: {title, desc, t}
 var challenge: Dictionary = {}
 var contract_note: String = ""
@@ -103,6 +105,9 @@ func _ready() -> void:
 		_load_meta()
 		sim.reset()
 	sound = SoundBank.new()
+	fx_layer = FxLayer.new()
+	fx_layer.main = self
+	add_child(fx_layer)
 	_ensure_buses()
 	for i in 10:
 		var p: AudioStreamPlayer = AudioStreamPlayer.new()
@@ -394,6 +399,7 @@ func _on_event(ev: Dictionary) -> void:
 		"brasa_land":
 			_play("horno_spit")
 			juice.burst(ev["p"], 26, Color(1.0, 0.5, 0.15), 260.0, 0.7, 3.0, 380.0, 120.0)
+			fx_layer.spawn("brasa", ev["p"], float(ev["r"]) / 75.0)
 			if int(ev["hits"]) >= 3:
 				juice.stop(0.06)
 			juice.add_trauma(0.21)
@@ -407,6 +413,7 @@ func _on_event(ev: Dictionary) -> void:
 			if rfrom == Vector2.INF:
 				rfrom = ev["from"]
 			juice.burst(ev["to"] + Vector2(0, -30), 8, Color(0.7, 0.9, 1.0), 240.0, 0.25, 2.0, 200.0)
+			fx_layer.spawn("rayo", ev["to"] + Vector2(0, -30))
 			_add_fx({"type": "bolt", "a": rfrom, "b": ev["to"], "col": Color(0.75, 0.9, 1.0), "ttl": 0.18, "t": -rdelay})
 			_add_fx({"type": "ring", "p": ev["to"], "r0": 4.0, "r1": 26.0, "col": Color(0.75, 0.9, 1.0, 0.9), "ttl": 0.2, "t": -rdelay})
 			if rdelay > 0.0:
@@ -832,6 +839,8 @@ func _restart() -> void:
 	fx.clear()
 	warns.clear()
 	mut_anim.clear()
+	if fx_layer != null:
+		fx_layer.items.clear()
 	demon_anim = Anim.new("demonio")
 	poses.reset()
 	contract_note = ""

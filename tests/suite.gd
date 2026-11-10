@@ -1640,6 +1640,11 @@ func test_anim() -> void:
 	check(off.texture() == null and off.draw_opts().is_empty(), "sin animaciones (o sin carpeta) no hay fotograma")
 	Anim.enabled = true
 	Anim.clear_cache()
+	check(Anim.character("efectos").has("clips") and not Anim.has_clip("efectos", "brasa"), "los efectos están en los datos y, sin fotogramas, no hay clip")
+	var FL = load("res://scripts/fx_layer.gd")
+	var fl = FL.new()
+	check(not fl.spawn("brasa", Vector2(500, 300)) and fl.items.is_empty(), "sin fotogramas la capa de efectos no lanza nada")
+	fl.free()
 	# poses por código y reproductores de bestias
 	var P = load("res://scripts/poses.gd")
 	var po = P.new()

@@ -3,36 +3,112 @@
 	"demonio": {
 		"dir": "demonio",
 		"height": 199.0,
-		"anchor": [161, 236],
+		"anchor": [
+			161,
+			236
+		],
 		"idle": "reposo",
 		"clips": {
-			"reposo": {"fps": 12, "loop": true},
-			"rayo": {"fps": 24, "start": 5, "impact": 7, "hand": [226, 80]},
-			"brasa": {"fps": 22, "start": 8, "impact": 13, "hand": [240, 66]},
-			"golpe": {"fps": 16},
-			"victoria": {"fps": 12, "hold": true},
-			"derrota": {"fps": 12, "hold": true}
+			"reposo": {
+				"fps": 12,
+				"loop": true
+			},
+			"rayo": {
+				"fps": 24,
+				"start": 5,
+				"impact": 7,
+				"hand": [
+					226,
+					80
+				]
+			},
+			"brasa": {
+				"fps": 22,
+				"start": 8,
+				"impact": 13,
+				"hand": [
+					240,
+					66
+				]
+			},
+			"golpe": {
+				"fps": 16
+			},
+			"victoria": {
+				"fps": 12,
+				"hold": true
+			},
+			"derrota": {
+				"fps": 12,
+				"hold": true
+			}
 		}
 	},
 	"sabueso": {
 		"dir": "tizon",
 		"height": 89.6,
-		"anchor": [207, 219],
+		"anchor": [
+			207,
+			219
+		],
 		"idle": "",
 		"clips": {
-			"carrera": {"fps": 16, "loop": true},
-			"mordisco": {"fps": 22, "start": 3, "impact": 8}
+			"carrera": {
+				"fps": 16,
+				"loop": true
+			},
+			"mordisco": {
+				"fps": 22,
+				"start": 3,
+				"impact": 8
+			}
 		}
 	},
 	"horno": {
 		"dir": "horno",
 		"height": 100.0,
-		"anchor": [194, 247],
+		"anchor": [
+			194,
+			247
+		],
 		"idle": "reposo",
 		"clips": {
-			"reposo": {"fps": 12, "loop": true},
-			"carrera": {"fps": 14, "loop": true},
-			"mordisco": {"fps": 18, "impact": 8, "height": 114.0, "anchor": [185, 239]}
+			"reposo": {
+				"fps": 12,
+				"loop": true
+			},
+			"carrera": {
+				"fps": 14,
+				"loop": true
+			},
+			"mordisco": {
+				"fps": 18,
+				"impact": 8,
+				"height": 114.0,
+				"anchor": [
+					185,
+					239
+				]
+			}
+		}
+	},
+	"efectos": {
+		"_doc": "Efectos sobre fondo negro, con mezcla aditiva (scripts/fx_layer.gd). anchor [-1, -1] = centrados en el punto. Aún sin fotogramas: carpeta art/anim/efectos/<clip>/.",
+		"dir": "efectos",
+		"height": 190.0,
+		"anchor": [
+			-1,
+			-1
+		],
+		"idle": "",
+		"clips": {
+			"brasa": {
+				"fps": 24
+			},
+			"rayo": {
+				"fps": 30,
+				"height": 110.0
+			}
 		}
 	}
 }
