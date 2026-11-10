@@ -1497,6 +1497,8 @@ func _draw_hud() -> void:
 		sg_txt += "  ·  Ira %d" % sim.wrath
 	if not challenge.is_empty():
 		sg_txt = "Reto semanal  ·  " + sg_txt
+	if sim.is_endless():
+		sg_txt += "  ·  récord %d" % int(records.get("grieta", 0))
 	_txt(sg_txt, Vector2(24, 68), 14, Color(0.85, 0.6, 0.5))
 	var shown_wave: int = mini(sim.wave_index + 1, sim.wave_count())
 	if sim.phase == "victory":

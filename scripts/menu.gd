@@ -229,13 +229,16 @@ func draw(m) -> void:
 			"Entre oleadas, arrastra tus bestias: la vanguardia frena, la retaguardia dispara.",
 			"En combate, clic lanza el hechizo: la Brasa cae al rato en un área; el Rayo es inmediato.",
 			"Clic derecho, rueda o teclas 1/2 cambian de hechizo. Mantén pulsado para repetir.",
-			"Tras cada oleada eliges una recompensa: bestias gratis, almas o esencia.",
+			"Tras cada oleada eliges una recompensa: bestias, almas, esencia o un don para toda la partida.",
+			"Dos dones de la misma familia despiertan una resonancia. Antes de cada oleada, un augurio",
+			"opcional: más riesgo, más premio. Al empezar, un encargo opcional da esencia si lo cumples.",
 			"Las almas son de la partida (reclutar y subir de nivel). La esencia es para siempre:",
-			"gástala en el Árbol (T) entre oleadas o al terminar. Tras la oleada 4 eliges heraldo,",
-			"y Tizón muta. Si gana el primer asedio, se abre el siguiente.",
+			"gástala en el Árbol (T) entre oleadas o al terminar. Tras la oleada 4 eliges heraldo",
+			"y Tizón muta. Ganar abre la Ira, el segundo asedio y La Grieta (sin fin).",
+			"Cada semana hay un reto con la misma semilla para todos. Los logros abren dones nuevos.",
 		]
 		for i in lines.size():
-			m._txt(lines[i], Vector2(0, 230 + 40 * i), 20, Color(0.92, 0.86, 0.8), HORIZONTAL_ALIGNMENT_CENTER, W)
+			m._txt(lines[i], Vector2(0, 210 + 36 * i), 19, Color(0.92, 0.86, 0.8), HORIZONTAL_ALIGNMENT_CENTER, W)
 	elif panel == "logros":
 		m._txt("Logros", Vector2(0, 110), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		var L = m.logros
