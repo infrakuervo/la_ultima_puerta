@@ -29,6 +29,7 @@ func _frames(n: int) -> void:
 
 
 func shot(name: String) -> void:
+	get_viewport().warp_mouse(Vector2(1275, 715))
 	await _frames(2)
 	await RenderingServer.frame_post_draw
 	var img: Image = get_viewport().get_texture().get_image()
@@ -178,6 +179,23 @@ func run() -> void:
 			main.demon_anim.t = A.impact_delay("demonio", c) if c in ["rayo", "brasa"] else 0.6
 			await shot("demonio_" + c)
 		main.demon_anim = A.new("demonio")
+	if want("animacion"):
+		# bestias animadas en combate: Tizón y Sabuesos (carrera/mordisco), Horno, y el resto por código
+		s().reset()
+		for k in ["horno", "sabueso", "alacran", "ojo", "sapo"]:
+			add_beast(k)
+		s().start_wave()
+		s().spawn_queue = [{"t": 99999.0, "lane": 0, "kind": "campesino"}]
+		var j: int = 0
+		for k in ["escudero", "campesino", "verdugo", "clerigo", "campesino", "escudero"]:
+			s()._spawn_enemy(k, j % 3)
+			s().enemies[-1]["x"] = 700.0 + 90.0 * float(j)
+			j += 1
+		for n in [25, 35, 30]:
+			for i in n:
+				main._process(1.0 / 30.0)
+			main.banner_t = 0.0
+			await shot("animacion_%d" % n)
 	if want("victoria"):
 		s().reset()
 		main.demon_anim.play("victoria")

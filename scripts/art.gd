@@ -89,13 +89,9 @@ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opt
 	var lift: float = float(SPRITE_LIFT.get(base, 0.0)) * sc
 	if base == "ojo":
 		bob += sin(t * 2.6) * 5.0
-	# sombra elíptica en el suelo
-	var sw: float = maxf(w * 0.34, 26.0)
-	var pts: PackedVector2Array = PackedVector2Array()
-	for i in 16:
-		var a: float = TAU * float(i) / 16.0
-		pts.append(pos + Vector2(cos(a) * sw, 4.0 + sin(a) * sw * 0.28))
-	ci.draw_colored_polygon(pts, Color(0, 0, 0, 0.38 * alpha))
+	# sombra elíptica en el suelo (la vista la dibuja aparte cuando gira o escala el cuerpo)
+	if not bool(opts.get("no_shadow", false)):
+		shadow(ci, pos, maxf(w * 0.34, 26.0), alpha)
 	var glow: float = float(opts.get("glow", 0.0))
 	if glow > 0.0:
 		ci.draw_circle(pos + Vector2(0, -h * 0.5 - lift), (h * 0.55 + 30.0 * glow), Color(1.0, 0.55, 0.2, 0.25 * glow))
@@ -122,15 +118,42 @@ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opt
 
 
 ## kind: sabueso | horno | trueno | ojo. opts: scale, hambre, scars, crouch, fallen, flash, glow
+## Sombra elíptica en el suelo con centro en los pies.
+static func shadow(ci: CanvasItem, pos: Vector2, sw: float, alpha: float = 1.0) -> void:
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i in 16:
+		var a: float = TAU * float(i) / 16.0
+		pts.append(pos + Vector2(cos(a) * sw, 4.0 + sin(a) * sw * 0.28))
+	ci.draw_colored_polygon(pts, Color(0, 0, 0, 0.38 * alpha))
+
+
+const SIL_SHADOW: Dictionary = {"campesino": 16.0, "escudero": 20.0, "ballestero": 16.0, "clerigo": 17.0,
+	"verdugo": 33.0, "inquisidor": 31.0, "ariete": 50.0}
+
+
+## Ancho de la sombra de una unidad (el mismo que usan draw_sprite y las siluetas).
+static func shadow_w(kind: String, sc: float = 1.0, sprite_key: String = "") -> float:
+	var key: String = sprite_key if sprite_key != "" else kind
+	var tx: Texture2D = tex(key)
+	var base: String = key.get_slice("_", 0)
+	if tx != null and SPRITE_H.has(base):
+		var w: float = float(SPRITE_H[base]) * sc * float(tx.get_width()) / float(tx.get_height())
+		return maxf(w * 0.34, 26.0)
+	return float(SIL_SHADOW.get(kind, 28.0)) * sc
+
+
 static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float, opts: Dictionary) -> void:
 	var s: float = float(opts.get("scale", 1.0))
 	var scars: int = int(opts.get("scars", 0))
 	var flash: float = float(opts.get("flash", 0.0))
 	var fallen: bool = bool(opts.get("fallen", false))
 	var glow: float = float(opts.get("glow", 0.0))
+	var posed: bool = bool(opts.get("posed", false))
+	var no_shadow: bool = bool(opts.get("no_shadow", false))
 	if SPRITE_H.has(kind):
 		var so: Dictionary = {"scale": s, "alpha": 0.35 if fallen else 1.0, "flash": flash, "glow": glow, "scars": scars,
-			"squash": 0.86 if bool(opts.get("crouch", false)) else 1.0, "bob": sin(t * 5.0) * 1.5}
+			"squash": 0.86 if bool(opts.get("crouch", false)) else 1.0, "bob": 0.0 if posed else sin(t * 5.0) * 1.5,
+			"no_shadow": no_shadow}
 		if opts.has("frame") and not opts["frame"].is_empty():
 			so["frame"] = opts["frame"]
 			so["bob"] = 0.0
@@ -139,11 +162,12 @@ static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float, 
 				for i in int(opts.get("hambre", 0)):
 					ci.draw_circle(pos + Vector2(-16 + i * 12, -34 * s), 4.0, Color(1.0, 0.6, 0.2))
 			return
-	var bob: float = sin(t * 5.0) * 1.5
+	var bob: float = 0.0 if posed else sin(t * 5.0) * 1.5
 	var p: Vector2 = pos + Vector2(0, bob)
 	var alpha: float = 0.35 if fallen else 1.0
 	# sombra
-	ci.draw_circle(pos + Vector2(0, 4), 26.0 * s, Color(0, 0, 0, 0.35 * alpha))
+	if not no_shadow:
+		ci.draw_circle(pos + Vector2(0, 4), 26.0 * s, Color(0, 0, 0, 0.35 * alpha))
 	if glow > 0.0:
 		ci.draw_circle(p + Vector2(0, -34 * s), (50.0 + 30.0 * glow) * s, Color(1.0, 0.55, 0.2, 0.25 * glow))
 	match kind:
@@ -249,9 +273,12 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 	var flash: float = float(opts.get("flash", 0.0))
 	var burning: bool = bool(opts.get("burning", false))
 	var bump: float = float(opts.get("bump", 0.0))
+	var posed: bool = bool(opts.get("posed", false))
+	var no_shadow: bool = bool(opts.get("no_shadow", false))
+	var ebob: float = 0.0 if posed else -absf(sin(t * 6.0 + bump * 6.0)) * 3.0
 	var esp: String = String(opts.get("sprite", ""))
 	if esp != "":
-		var eo2: Dictionary = {"flash": flash, "scale": float(opts.get("scale", 1.0)), "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
+		var eo2: Dictionary = {"flash": flash, "scale": float(opts.get("scale", 1.0)), "bob": ebob, "no_shadow": no_shadow}
 		if opts.has("tint"):
 			eo2["tint"] = opts["tint"]
 		if burning:
@@ -260,7 +287,7 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 			return
 		kind = esp.get_slice("_", 0)
 	if SPRITE_H.has(kind):
-		var eo: Dictionary = {"flash": flash, "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
+		var eo: Dictionary = {"flash": flash, "bob": ebob, "no_shadow": no_shadow}
 		if burning:
 			eo["flash"] = maxf(flash, 0.25 + 0.15 * sin(t * 14.0))
 		var vk: String = kind
@@ -270,45 +297,51 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 			vk = "%s_v%02d" % [kind, vi]
 		if draw_sprite(ci, vk, pos, t, eo):
 			return
-	var p: Vector2 = pos + Vector2(0, absf(sin(t * 6.0 + bump * 6.0)) * -2.0)
+	var p: Vector2 = pos + Vector2(0, ebob * (2.0 / 3.0))
 	var skin: Color = Color(0.85, 0.7, 0.55).lerp(Color(1, 1, 1), flash)
 	var cloth: Color = Color(0.4, 0.33, 0.22)
 	if burning:
 		cloth = cloth.lerp(Color(1.0, 0.4, 0.1), 0.5)
 	match kind:
 		"campesino":
-			ci.draw_circle(pos + Vector2(0, 3), 14.0, Color(0, 0, 0, 0.3))
+			if not no_shadow:
+				ci.draw_circle(pos + Vector2(0, 3), 14.0, Color(0, 0, 0, 0.3))
 			_poly(ci, [[-8, 0], [-10, -26], [0, -32], [10, -26], [8, 0]], p, 1.0, 1.0, cloth)
 			ci.draw_circle(p + Vector2(0, -38), 7.0, skin)
 			ci.draw_line(p + Vector2(-14, -4), p + Vector2(-16, -52), Color(0.5, 0.35, 0.2), 2.0)
 			ci.draw_line(p + Vector2(-20, -52), p + Vector2(-12, -52), Color(0.7, 0.7, 0.7), 2.0)
 		"escudero":
-			ci.draw_circle(pos + Vector2(0, 3), 18.0, Color(0, 0, 0, 0.3))
+			if not no_shadow:
+				ci.draw_circle(pos + Vector2(0, 3), 18.0, Color(0, 0, 0, 0.3))
 			_poly(ci, [[-10, 0], [-12, -30], [0, -38], [12, -30], [10, 0]], p, 1.0, 1.0, Color(0.45, 0.47, 0.5))
 			ci.draw_circle(p + Vector2(0, -44), 8.0, Color(0.6, 0.62, 0.66))
 			_poly(ci, [[-30, -48], [-14, -48], [-14, -6], [-22, 2], [-30, -6]], p, 1.0, 1.0, Color(0.55, 0.15, 0.15).lerp(Color(1, 1, 1), flash))
 		"ballestero":
-			ci.draw_circle(pos + Vector2(0, 3), 14.0, Color(0, 0, 0, 0.3))
+			if not no_shadow:
+				ci.draw_circle(pos + Vector2(0, 3), 14.0, Color(0, 0, 0, 0.3))
 			_poly(ci, [[-8, 0], [-10, -26], [0, -32], [10, -26], [8, 0]], p, 1.0, 1.0, Color(0.25, 0.4, 0.28))
 			ci.draw_circle(p + Vector2(0, -38), 7.0, skin)
 			ci.draw_line(p + Vector2(-26, -26), p + Vector2(6, -26), Color(0.4, 0.28, 0.15), 3.0)
 			ci.draw_line(p + Vector2(-26, -36), p + Vector2(-26, -16), Color(0.8, 0.8, 0.8), 2.0)
 		"clerigo":
-			ci.draw_circle(pos + Vector2(0, 3), 15.0, Color(0, 0, 0, 0.3))
+			if not no_shadow:
+				ci.draw_circle(pos + Vector2(0, 3), 15.0, Color(0, 0, 0, 0.3))
 			_poly(ci, [[-14, 0], [-8, -32], [0, -38], [8, -32], [14, 0]], p, 1.0, 1.0, Color(0.92, 0.9, 0.78).lerp(Color(1, 1, 1), flash))
 			ci.draw_circle(p + Vector2(0, -44), 7.0, skin)
 			ci.draw_arc(p + Vector2(0, -56), 8.0, 0.0, TAU, 16, Color(1.0, 0.9, 0.3), 2.0)
 			ci.draw_line(p + Vector2(-18, -30), p + Vector2(-18, -6), Color(0.9, 0.8, 0.3), 2.0)
 			ci.draw_line(p + Vector2(-24, -22), p + Vector2(-12, -22), Color(0.9, 0.8, 0.3), 2.0)
 		"verdugo":
-			ci.draw_circle(pos + Vector2(0, 4), 30.0, Color(0, 0, 0, 0.35))
+			if not no_shadow:
+				ci.draw_circle(pos + Vector2(0, 4), 30.0, Color(0, 0, 0, 0.35))
 			_poly(ci, [[-22, 0], [-26, -50], [-12, -76], [0, -84], [12, -76], [26, -50], [22, 0]], p, 1.0, 1.0, Color(0.18, 0.12, 0.12).lerp(Color(1, 1, 1), flash))
 			ci.draw_circle(p + Vector2(0, -88), 12.0, Color(0.1, 0.08, 0.08))
 			ci.draw_circle(p + Vector2(-4, -88), 2.5, Color(1.0, 0.2, 0.1))
 			ci.draw_line(p + Vector2(-30, -10), p + Vector2(-38, -100), Color(0.4, 0.3, 0.2), 4.0)
 			_poly(ci, [[-38, -100], [-62, -92], [-60, -66], [-38, -72]], p, 1.0, 1.0, Color(0.7, 0.7, 0.72))
 		"inquisidor":
-			ci.draw_circle(pos + Vector2(0, 4), 28.0, Color(0, 0, 0, 0.35))
+			if not no_shadow:
+				ci.draw_circle(pos + Vector2(0, 4), 28.0, Color(0, 0, 0, 0.35))
 			_poly(ci, [[-20, 0], [-18, -60], [-8, -80], [8, -80], [18, -60], [20, 0]], p, 1.0, 1.0, Color(0.85, 0.82, 0.7).lerp(Color(1, 1, 1), flash))
 			_poly(ci, [[-10, -80], [0, -112], [10, -80]], p, 1.0, 1.0, Color(0.8, 0.65, 0.15))
 			ci.draw_circle(p + Vector2(0, -74), 8.0, skin)
@@ -316,7 +349,8 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
 			ci.draw_circle(p + Vector2(-26, -74), 9.0, Color(0.9, 0.8, 0.3))
 		"ariete":
 			var rp: Vector2 = pos
-			ci.draw_circle(rp + Vector2(0, 6), 46.0, Color(0, 0, 0, 0.3))
+			if not no_shadow:
+				ci.draw_circle(rp + Vector2(0, 6), 46.0, Color(0, 0, 0, 0.3))
 			var wood: Color = Color(0.42, 0.28, 0.16).lerp(Color(1, 1, 1), flash)
 			_poly(ci, [[-60, -20], [-50, -70], [50, -70], [60, -20]], rp, 1.0, 1.0, Color(0.55, 0.5, 0.42).lerp(Color(1, 1, 1), flash))
 			_poly(ci, [[-90, -44], [70, -44], [70, -28], [-90, -28]], rp, 1.0, 1.0, wood)

@@ -9,9 +9,9 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 
 1. [x] Sistema de animación por fotogramas — `scripts/anim.gd` + `data/anim.json` (personaje → clip: fps, bucle/hold, start, impacto, mano, alto y pies). Carga perezosa con caché; sin carpeta o sin fotograma → sprite fijo. Pruebas en `test_anim`.
 2. [x] Demonio — reposo en bucle; `rayo` (24 fps desde el fotograma 5) y `brasa` (22 fps desde el 8) al lanzar; `golpe` si golpean la Puerta y no está lanzando; `victoria` y `derrota` (se queda en el último) en las pantallas finales, donde ahora sale el demonio grande a la izquierda. El rayo y la bola salen de la mano (`hand` en el JSON) en el fotograma de impacto: los efectos visuales del rayo esperan ~0,08 s; la bola vuela el resto del retraso de la Brasa. Escala y pies medidos con PIL frente al sprite fijo (`tools/shots.tscn` → `demonio`).
-3. [ ] Tizón / Sabuesos: carrera y mordisco (sin reposo: sprite fijo con respiración).
-4. [ ] Horno: reposo, carrera y mordisco (encuadre más abierto).
-5. [ ] Animación por código para el resto (respiración, trote, embestida, retroceso, sombra fija) + componer `juice.offset()` en `draw_set_transform` (charcos de brea).
+3. [x] Tizón / Sabuesos — `carrera` al moverse (velocidad suavizada leída de la simulación) y `mordisco` en `bite`/`presa`; sin reposo usa el sprite fijo con respiración por código. Al volver a casa se da la vuelta.
+4. [x] Horno — `reposo`, `carrera` y `mordisco` (en `bite` y `horno_spit`); el mordisco tiene su propio `height`/`anchor` en el JSON por el encuadre más abierto.
+5. [x] Animación por código — `scripts/poses.gd`: respiración en reposo, trote al moverse, embestida al atacar (bestias por evento; enemigos cuando su enfriamiento salta) y retroceso con el destello de golpe; preparación (Presa, apuntar) agacha un poco. La sombra se dibuja aparte, plana, y el cuerpo gira/escala desde los pies con `draw_set_transform(arena_offset + ...)`. Arreglado el reinicio a cero de la transformación en los charcos de brea. Capturas: `tools/shots.tscn` → `animacion`.
 6. [ ] Intro en vídeo (`art/video/intro_demonio.ogv`), saltable y desactivable en Opciones.
 7. [ ] Peso y web: medir, reducir si pasa de ~40 MB, republicar y comprobar en Chromium.
 8. [ ] Rejugabilidad (ampliación del encargo: ver sección «Rejugabilidad»), incluye curva del árbol, música procedural con volúmenes aparte y logros/estadísticas.

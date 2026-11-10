@@ -8,6 +8,7 @@ const SoundBank = preload("res://scripts/sound_bank.gd")
 const Juice = preload("res://scripts/juice.gd")
 const Menu = preload("res://scripts/menu.gd")
 const Anim = preload("res://scripts/anim.gd")
+const Poses = preload("res://scripts/poses.gd")
 
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
@@ -50,6 +51,9 @@ var fx: Array = []
 var warns: Array = []
 var mut_anim: Dictionary = {}
 var demon_anim = Anim.new("demonio")
+var poses = Poses.new()
+var arena_offset: Vector2 = Vector2.ZERO   # temblor de cámara aplicado a la arena en este fotograma
+var _sim_dt: float = 0.0
 var banner_text: String = ""
 var banner_t: float = 0.0
 var banner_dur: float = 1.0
@@ -105,6 +109,7 @@ func _process(delta: float) -> void:
 			fade = maxf(fade, 0.45)
 		last_phase = sim.phase
 	menu.tut_update(delta)
+	_sim_dt = 0.0
 	if sim.phase == "combat" and juice.hitstop <= 0.0:
 		accum += delta * float(speed)
 		var guard: int = 0
@@ -114,6 +119,7 @@ func _process(delta: float) -> void:
 			guard += 1
 			if sim.phase != "combat":
 				break
+		_sim_dt = float(guard) * Sim.TICK
 	else:
 		accum = 0.0
 	if sim.phase == "combat" and holding and not show_bestiary:
@@ -125,6 +131,10 @@ func _process(delta: float) -> void:
 
 func _update_fx(delta: float) -> void:
 	demon_anim.update(delta)
+	var rate: float = float(speed) if sim.phase == "combat" else 1.0
+	if juice.hitstop > 0.0:
+		rate = 0.0
+	poses.update(sim, _sim_dt, delta, rate)
 	var keep: Array = []
 	for f in fx:
 		f["t"] += delta
@@ -216,6 +226,7 @@ func _handle_events() -> void:
 func _on_event(ev: Dictionary) -> void:
 	var t: String = ev["t"]
 	menu.tut_event(self, ev)
+	poses.on_event(ev, sim)
 	match t:
 		"placed":
 			_play("click")
@@ -658,6 +669,7 @@ func _restart() -> void:
 	warns.clear()
 	mut_anim.clear()
 	demon_anim = Anim.new("demonio")
+	poses.reset()
 	selected_id = -1
 	dragging = false
 	accum = 0.0
@@ -837,8 +849,8 @@ func _txt(s: String, pos: Vector2, size: int, col: Color, align: int = HORIZONTA
 
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(0.08, 0.03, 0.04))
-	var sh: Vector2 = juice.offset()
-	draw_set_transform(sh, 0.0, Vector2.ONE)
+	arena_offset = juice.offset()
+	draw_set_transform(arena_offset, 0.0, Vector2.ONE)
 	_draw_arena()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_hud()
@@ -914,10 +926,11 @@ func _draw_arena_rest(painted: bool) -> void:
 		var ta: float = clampf(float(tp["t"]) / 1.0, 0.0, 1.0)
 		var pp: Vector2 = tp["p"]
 		var rr: float = float(tp["r"])
-		draw_set_transform(pp, 0.0, Vector2(1.0, 0.45))
+		# draw_set_transform sustituye la transformación: hay que volver a sumar el temblor
+		draw_set_transform(arena_offset + pp, 0.0, Vector2(1.0, 0.45))
 		draw_circle(Vector2.ZERO, rr, Color(0.12, 0.07, 0.04, 0.55 * ta))
 		draw_arc(Vector2.ZERO, rr, 0.0, TAU, 28, Color(0.5, 0.3, 0.12, 0.8 * ta), 2.0)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		draw_set_transform(arena_offset, 0.0, Vector2.ONE)
 	# hueco del Trueno
 	for c in sim.creatures:
 		if c["kind"] == "trueno" and not c["dead"] and c["state"] != "home":
@@ -1091,7 +1104,18 @@ func _draw_creature(c: Dictionary) -> void:
 	opts["flash"] = maxf(float(opts["flash"]), juice.flash_of(1000000 + int(c["id"])))
 	if selected_id == int(c["id"]):
 		draw_arc(pos + Vector2(0, -34), 52.0, 0.0, TAU, 28, Color(1.0, 0.9, 0.4, 0.8), 3.0)
-	Art.draw_creature(self, kind, pos, clock + float(c["id"]), opts)
+	var id: int = int(c["id"])
+	if m < 0.0 and not c["fallen"] and not c["air"] and c["state"] != "stone":
+		var fr: Dictionary = poses.frame_of(id)
+		var look: float = poses.facing(id)
+		var pz: Dictionary = poses.pose(id, clock, look, juice.flash_of(1000000 + id),
+			float(c["windup"]) > 0.0 or crouch, not fr.is_empty(), poses.clip_of(id) == "mordisco")
+		opts["frame"] = fr
+		opts["posed"] = true
+		opts["no_shadow"] = true
+		_draw_posed(pos, pz, look, Art.shadow_w(kind, scale_v), func(): Art.draw_creature(self, kind, Vector2.ZERO, clock + float(id), opts))
+	else:
+		Art.draw_creature(self, kind, pos, clock + float(id), opts)
 	if c["stun"] > 0.0:
 		_txt("aturdido", pos + Vector2(-30, -110), 15, Color(1.0, 0.9, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
 	for lv in int(c["level"]) - 1:
@@ -1105,6 +1129,17 @@ func _draw_creature(c: Dictionary) -> void:
 		_bar(pos + Vector2(-26, -100 if kind == "horno" or kind == "ojo" else -82), 52.0, float(c["hp"]) / float(c["max_hp"]), Color(0.4, 0.9, 0.4))
 	if c["loaned"]:
 		_txt("prestado", pos + Vector2(-34, 24), 14, Color(0.9, 0.85, 0.5), HORIZONTAL_ALIGNMENT_CENTER, 68.0)
+
+
+## Dibuja una unidad con su pose de código: sombra plana en el suelo y cuerpo girado/escalado desde
+## los pies. draw_set_transform sustituye la transformación, así que se compone con el temblor.
+## flip = -1 la dibuja mirando al otro lado (una bestia que vuelve a casa).
+func _draw_posed(pos: Vector2, pz: Dictionary, flip: float, shadow_w: float, body: Callable) -> void:
+	Art.shadow(self, pos, shadow_w * (1.0 + 0.5 * (pz["scale"].x - 1.0)))
+	var sc: Vector2 = pz["scale"]
+	draw_set_transform(arena_offset + pos + pz["shift"], pz["rot"], Vector2(sc.x * flip, sc.y))
+	body.call()
+	draw_set_transform(arena_offset, 0.0, Vector2.ONE)
 
 
 func _bar(p: Vector2, w: float, frac: float, col: Color) -> void:
@@ -1138,7 +1173,12 @@ func _draw_enemy(e: Dictionary) -> void:
 			draw_arc(ep0 + Vector2(0, 4), float(sim.B["enemies"][kind]["haste_radius"]), 0.0, TAU, 40, Color(1.0, 0.5, 0.2, 0.22), 2.0)
 		if sim.B["enemies"][kind].has("cover_range"):
 			draw_line(ep0 + Vector2(0, -6), ep0 + Vector2(float(sim.B["enemies"][kind]["cover_range"]), -6), Color(0.9, 0.85, 0.6, 0.4), 4.0)
-	Art.draw_enemy(self, kind, pos, clock, opts)
+	var eid: int = int(e["id"])
+	opts["posed"] = true
+	opts["no_shadow"] = true
+	var epz: Dictionary = poses.pose(eid, clock, -1.0, hfl, float(e.get("aim_t", 0.0)) > 0.0, false, false)
+	var esw: float = Art.shadow_w(kind, float(opts.get("scale", 1.0)), String(opts.get("sprite", "")))
+	_draw_posed(pos, epz, 1.0, esw, func(): Art.draw_enemy(self, kind, Vector2.ZERO, clock, opts))
 	var st: Dictionary = sim.B["enemies"][kind]
 	var top: float = -118.0 if (kind == "verdugo" or kind == "inquisidor" or kind == "tajo" or kind == "campana") else -62.0
 	if elite:

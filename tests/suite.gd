@@ -1306,3 +1306,31 @@ func test_anim() -> void:
 	check(off.texture() == null and off.draw_opts().is_empty(), "sin animaciones (o sin carpeta) no hay fotograma")
 	Anim.enabled = true
 	Anim.clear_cache()
+	# poses por código y reproductores de bestias
+	var P = load("res://scripts/poses.gd")
+	var po = P.new()
+	var sm = new_sim()
+	to_combat(sm)
+	var tz2: Dictionary = sm.named_creature()
+	po.update(sm, 0.0, 0.016)
+	check(po.clip_of(int(tz2["id"])) == "", "Tizón quieto: sprite fijo (respira por código)")
+	for i in 10:
+		tz2["x"] = float(tz2["x"]) + 6.0
+		po.update(sm, 1.0 / 30.0, 1.0 / 30.0)
+	check(po.moving(int(tz2["id"])) and po.clip_of(int(tz2["id"])) == "carrera", "Tizón en marcha usa la carrera")
+	po.on_event({"t": "bite", "id": tz2["id"]}, sm)
+	check(po.clip_of(int(tz2["id"])) == "mordisco", "el evento bite lanza el mordisco")
+	var pz: Dictionary = po.pose(int(tz2["id"]), 1.0, 1.0, 0.0, false, true, true)
+	check(pz["shift"].x == 0.0, "con el clip de mordisco no hay embestida por código encima")
+	var e0: Dictionary = add_enemy(sm, "escudero", 1, 600.0)
+	po.update(sm, 1.0 / 30.0, 1.0 / 30.0)
+	e0["cd"] = 2.0
+	po.update(sm, 1.0 / 30.0, 1.0 / 30.0)
+	po.update(sm, 1.0 / 30.0, 0.12)
+	var pe: Dictionary = po.pose(int(e0["id"]), 1.0, -1.0, 0.0, false, false, false)
+	check(pe["shift"].x < -5.0, "un enemigo que golpea embiste hacia la izquierda")
+	var ph: Dictionary = po.pose(int(e0["id"]), 1.0, -1.0, 1.0, false, false, false)
+	check(ph["shift"].x > pe["shift"].x, "al recibir un golpe retrocede")
+	sm.enemies.clear()
+	po.update(sm, 1.0 / 30.0, 1.0 / 30.0)
+	check(not po.units.has(int(e0["id"])), "las unidades que desaparecen se olvidan")
