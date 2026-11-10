@@ -663,11 +663,10 @@
    "desc": "Oleadas sin fin, cada vez más duras. ¿Hasta dónde aguanta la Puerta?",
    "unlock": "primer",
    "endless": {
-    "_doc": "Las primeras oleadas son las de base_siege (remezcladas). Después se generan: presupuesto en recompensa que crece por oleada, vida extra por oleada, élites cada vez más, héroe cada hero_every y jefe cada boss_every.",
+    "_doc": "Las primeras oleadas son las de base_siege (remezcladas). Después se generan: presupuesto en recompensa ×growth por oleada (tope budget_max, por rendimiento), vida ×hp_growth y daño ×dmg_growth compuestos por oleada, élites cada vez más, héroe cada hero_every y jefe cada boss_every.",
     "base_siege": "primer",
     "budget": 190,
-    "growth": 1.08,
-    "hp_step": 0.07,
+    "growth": 1.06,
     "elites_base": 1,
     "elites_every": 2,
     "elites_max": 6,
@@ -700,7 +699,10 @@
       "main": "clerigo",
       "note": "Clérigos que curan a todos: céntrate en ellos."
      }
-    ]
+    ],
+    "budget_max": 560,
+    "hp_growth": 1.075,
+    "dmg_growth": 1.04
    },
    "remix": {
     "commons": [

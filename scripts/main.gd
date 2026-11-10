@@ -1544,7 +1544,7 @@ func _phase_hint() -> String:
 func _draw_lane_preview() -> void:
 	if sim.phase != "prep" or show_tree:
 		return
-	var tot: Dictionary = sim.preview_totals(sim.wave_index)
+	var tot: Dictionary = _preview_tot()
 	var pv: Array = sim.preview(sim.wave_index)
 	var rows: int = tot.size()
 	var h: float = 44.0 + 20.0 * float(rows)
@@ -1557,11 +1557,30 @@ func _draw_lane_preview() -> void:
 		var kk: String = String(k)
 		var hero: bool = bool(sim.B["enemies"].get(kk, {}).get("hero", false)) or kk == "heroe"
 		var col: Color = Color(1.0, 0.35, 0.3) if hero else Color(0.9, 0.85, 0.8)
-		_txt("%d x %s" % [int(tot[k]), sim.label(kk)], Vector2(box.position.x + 10, y), 16, col)
+		var line: String = "%d x %s" % [int(tot[k]), sim.label(kk)]
+		var fs: int = 16 if font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x < box.size.x - 16 else 13
+		_txt(line, Vector2(box.position.x + 10, y), fs, col)
 		y += 20.0
-	if not pv[3].is_empty():
+	if sim.augur_fx("one_front") > 0.0:
+		_txt("todos por el mismo frente (Niebla)", Vector2(box.position.x + 10, box.end.y + 18), 14, Color(0.85, 0.65, 1.0))
+	elif not pv[3].is_empty():
 		_txt("sin orden y por cualquier frente", Vector2(box.position.x + 10, box.end.y + 18), 14, Color(0.8, 0.7, 0.6))
 	_draw_augurs()
+
+
+## Lo que llega en la próxima oleada, con el augurio elegido aplicado.
+func _preview_tot() -> Dictionary:
+	var tot: Dictionary = sim.preview_totals(sim.wave_index)
+	var cnt: float = sim.augur_fx("count")
+	if cnt > 0.0:
+		for k0 in tot.keys():
+			var est: Dictionary = sim.B["enemies"].get(String(k0), {})
+			if not (est.get("elite", false) or est.get("hero", false) or est.get("boss", false)):
+				tot[k0] = int(round(float(tot[k0]) * (1.0 + cnt)))
+	var extra_el: int = int(sim.augur_fx("extra_elite"))
+	if extra_el > 0:
+		tot["élite al azar"] = extra_el
+	return tot
 
 
 ## Tarjetas de augurio (riesgo/recompensa opcional) bajo la previsión de la oleada.
@@ -1569,11 +1588,11 @@ func _augur_rects() -> Array:
 	var out: Array = []
 	if sim.phase != "prep" or show_tree or _draft_active() or sim.augur_offer.is_empty():
 		return out
-	var rows: int = sim.preview_totals(sim.wave_index).size()
+	var rows: int = sim.preview_totals(sim.wave_index).size() + 1   # fila de reserva: Campeón añade una línea sin mover las tarjetas
 	var y: float = 98.0 + 44.0 + 20.0 * float(rows) + 52.0
 	for id in sim.augur_offer:
-		out.append({"id": String(id), "rect": Rect2(1040, y, 232, 66)})
-		y += 72.0
+		out.append({"id": String(id), "rect": Rect2(1040, y, 232, 78)})
+		y += 84.0
 	return out
 
 
@@ -1591,7 +1610,7 @@ func _draw_augurs() -> void:
 		draw_rect(r, Color(0.22, 0.08, 0.28, 0.9) if on else Color(0.06, 0.02, 0.08, 0.82 if hov else 0.7))
 		draw_rect(r, Color(1.0, 0.8, 0.4) if on else Color(0.55, 0.3, 0.65), false, 3.0 if on else 2.0)
 		_txt(String(a.get("name", "")), r.position + Vector2(10, 20), 16, Color(1.0, 0.85, 0.5) if on else Color(0.92, 0.8, 1.0))
-		draw_multiline_string(font, r.position + Vector2(10, 38), String(a.get("desc", "")), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 16, 13, 2, Color(0.85, 0.8, 0.85))
+		draw_multiline_string(font, r.position + Vector2(10, 38), String(a.get("desc", "")), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 16, 13, 3, Color(0.85, 0.8, 0.85))
 	var last: Rect2 = rects[-1]["rect"]
 	_txt("Elegido: %s" % String(sim.augur_def(sim.augur).get("name", "")) if sim.augur != "" else "Sin elegir: Calma", Vector2(last.position.x + 10, last.end.y + 16), 13, Color(0.75, 0.65, 0.8))
 

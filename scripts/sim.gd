@@ -103,7 +103,7 @@ func wrath_hp() -> float:
 
 
 func wrath_dmg() -> float:
-	return 1.0 + float(B["wrath"]["dmg"]) * float(wrath)
+	return (1.0 + float(B["wrath"]["dmg"]) * float(wrath)) * float(current_wave().get("dmg_mult", 1.0))
 
 
 func reset() -> void:
@@ -590,7 +590,7 @@ func _gen_wave(i: int) -> Dictionary:
 	var rx: Dictionary = SIEGES[siege_index].get("remix", {})
 	var base_n: int = SIEGES[_siege_by_id(String(en["base_siege"]))]["waves"].size()
 	var k: int = i - base_n + 1   # 1 = primera oleada generada
-	var budget: float = float(en["budget"]) * pow(float(en["growth"]), float(k))
+	var budget: float = minf(float(en["budget"]) * pow(float(en["growth"]), float(k)), float(en.get("budget_max", 1e9)))
 	var themes: Array = en["themes"]
 	var th: Dictionary = themes[rng.randi() % themes.size()]
 	var spawns: Array = []
@@ -623,7 +623,8 @@ func _gen_wave(i: int) -> Dictionary:
 		spawns.append({"kind": "@hero", "count": 1, "lane": -1, "delay": 6.0})
 		title = "El heraldo vuelve"
 		note = "Tu heraldo regresa, más duro."
-	return {"title": title, "note": note, "spawns": spawns, "hp_mult": 1.0 + float(en["hp_step"]) * float(k), "generated": true}
+	return {"title": title, "note": note, "spawns": spawns, "generated": true,
+		"hp_mult": pow(float(en["hp_growth"]), float(k)), "dmg_mult": pow(float(en["dmg_growth"]), float(k))}
 
 
 func augur_def(id: String) -> Dictionary:

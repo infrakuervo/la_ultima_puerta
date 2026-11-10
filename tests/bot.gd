@@ -221,6 +221,6 @@ func play(s, route: String = "") -> Dictionary:
 				s.step(Sim.TICK)
 				s.events.clear()
 				ticks += 1
-				if ticks > 30 * 60 * 30:
+				if ticks > 30 * 60 * (120 if s.is_endless() else 30):
 					break
 	return {"phase": s.phase, "wave": s.wave_index + (1 if s.phase != "victory" else 0), "door": int(s.door_hp), "route": route, "seconds": ticks / 30, "alive": alive}
