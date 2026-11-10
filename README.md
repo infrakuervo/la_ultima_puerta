@@ -47,6 +47,8 @@ Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tsc
 - **Reto semanal:** misma semilla para todos durante la semana, con un augurio fijo y récord propio.
 - **Logros y estadísticas** en el menú; **música procedural** que sube con el combate (volumen aparte de los efectos); velocidad x1/x2/x3.
 - El árbol encarece cada rango comprado, así la Ira sigue siendo un reto durante muchas partidas.
+- **Encargos** opcionales al empezar (Solo fuego, Tizón invicto, Austero…) que dan esencia si se cumplen, y **terreno** distinto en cada partida (fisura de lava, osario, viento del Abismo).
+- La partida se **guarda sola entre oleadas**: al volver, «Continuar» la recupera.
 
 ## Estructura
 
