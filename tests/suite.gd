@@ -42,6 +42,7 @@ func run() -> void:
 	test_logros()
 	test_music()
 	test_contracts()
+	test_terrain()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1524,6 +1525,41 @@ func test_contracts() -> void:
 	s3.reset()
 	s3.wave_index = 1
 	check(not s3.choose_contract(String(s3.contract_offer[0])), "el encargo solo se elige antes de la primera oleada")
+
+
+func test_terrain() -> void:
+	print("Terreno por partida")
+	var seen: Dictionary = {}
+	for i in 30:
+		var s = new_sim(200 + i)
+		s.remix_enabled = true
+		s.reset()
+		seen[s.terrain] = true
+	check(seen.size() >= 3, "con la remezcla salen terrenos distintos (%s)" % str(seen.keys()))
+	var f = new_sim(3)
+	f.terrain = "fisura"
+	f.terrain_lane = 2
+	f.start_wave()
+	var tz: bool = false
+	for z in f.zones:
+		tz = tz or (z.get("terrain", false) and int(z["lane"]) == 2)
+	check(tz, "la Fisura pone una franja ardiente fija en su carril")
+	var e: Dictionary = add_enemy(f, "campesino", 2, 770.0)
+	run_ticks(f, 3)
+	check(float(e["burn_t"]) > 0.0, "quien pisa la Fisura arde")
+	var o = new_sim(3)
+	o.terrain = "osario"
+	o.terrain_lane = 0
+	to_combat(o)
+	var a: Dictionary = add_enemy(o, "campesino", 0, 1000.0)
+	var b: Dictionary = add_enemy(o, "campesino", 1, 1000.0)
+	run_ticks(o, 30)
+	check(float(a["x"]) > float(b["x"]), "en el Osario los humanos van más lentos por su carril")
+	var v = new_sim(3)
+	var d0: float = float(v._stats("brasa")["delay"])
+	v.terrain = "viento"
+	v._invalidate()
+	check(float(v._stats("brasa")["delay"]) < d0, "con Viento del Abismo la Brasa cae antes")
 
 
 func test_anim() -> void:

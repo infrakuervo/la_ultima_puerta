@@ -1049,5 +1049,50 @@
     "reward": 60
    }
   ]
+ },
+ "terrains": {
+  "_doc": "Terreno por partida (con la remezcla activa). zone: franja ardiente fija en un carril al azar (quema a los humanos); slow: humanos más lentos en un carril al azar; fx: como el árbol, toda la partida.",
+  "list": [
+   {
+    "id": "llano",
+    "name": "Llanura de ceniza",
+    "desc": "Nada especial: el campo de siempre.",
+    "weight": 3
+   },
+   {
+    "id": "fisura",
+    "name": "Fisura de lava",
+    "desc": "Una grieta ardiente cruza un carril y quema a los humanos que la pisan.",
+    "weight": 2,
+    "zone": {
+     "x0": 720,
+     "x1": 820,
+     "dps": 6
+    }
+   },
+   {
+    "id": "osario",
+    "name": "Osario",
+    "desc": "Montones de huesos en un carril: los humanos van un 15% más lentos por él.",
+    "weight": 2,
+    "slow": 0.15
+   },
+   {
+    "id": "viento",
+    "name": "Viento del Abismo",
+    "desc": "La Brasa cae un 20% antes, pero el Rayo alcanza un 15% menos.",
+    "weight": 2,
+    "fx": [
+     {
+      "k": "brasa.delay",
+      "mul": -0.2
+     },
+     {
+      "k": "rayo.range",
+      "mul": -0.15
+     }
+    ]
+   }
+  ]
  }
 }

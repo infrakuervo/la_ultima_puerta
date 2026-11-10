@@ -1008,6 +1008,7 @@ func _draw() -> void:
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_hud()
 	_draw_boons()
+	_draw_terrain_label()
 	_draw_lane_preview()
 	_draw_tree()
 	_draw_draft()
@@ -1063,12 +1064,15 @@ func _draw_arena_rest(painted: bool) -> void:
 		var door_rect: Rect2 = Rect2(40, _lane_y(0) - 70, 90, _lane_y(2) - _lane_y(0) + 140)
 		Art.draw_door(draw_ctx(), door_rect, clampf(sim.door_hp / sim.door_max, 0.0, 1.0), 0.0)
 	juice.draw_back(self)
+	_draw_terrain()
 	_draw_demon()
 	# zonas de despliegue: solo se resaltan al colocar
 	if sim.phase == "prep":
 		_draw_zones()
 	# suelo en llamas
 	for z in sim.zones:
+		if z.get("terrain", false):
+			continue   # la fisura se dibuja aparte (_draw_terrain)
 		var zy: float = _lane_y(int(z["lane"]))
 		var za: float = clampf(float(z["t"]) / 1.0, 0.0, 1.0)
 		draw_rect(Rect2(float(z["x0"]), zy - 20, float(z["x1"]) - float(z["x0"]), 40), Color(1.0, 0.4, 0.1, 0.25 * za))
@@ -1114,6 +1118,91 @@ func _draw_arena_rest(painted: bool) -> void:
 	juice.draw_front(self, font)
 	if sim.phase == "combat":
 		_draw_aim()
+
+
+## Terreno de la partida: grieta de lava, huesos o viento, en su carril.
+func _draw_terrain() -> void:
+	var td: Dictionary = sim.terrain_def()
+	if td.is_empty() or sim.terrain == "llano":
+		return
+	var ly: float = _lane_y(sim.terrain_lane)
+	match sim.terrain:
+		"fisura":
+			var z: Dictionary = td["zone"]
+			var x0: float = float(z["x0"])
+			var x1: float = float(z["x1"])
+			var cx: float = (x0 + x1) * 0.5
+			var glow: float = 0.65 + 0.35 * sin(clock * 2.3)
+			# resplandor en el suelo
+			for k in 3:
+				var rr: float = (x1 - x0) * (0.55 + 0.25 * k)
+				draw_set_transform(arena_offset + Vector2(cx, ly), 0.0, Vector2(1.0, 0.42))
+				draw_circle(Vector2.ZERO, rr, Color(1.0, 0.35, 0.05, 0.07 * glow))
+			draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+			# grieta: polígono irregular oscuro con el núcleo de lava
+			var left: PackedVector2Array = PackedVector2Array()
+			var right: PackedVector2Array = PackedVector2Array()
+			for k2 in 9:
+				var t: float = float(k2) / 8.0
+				var yy: float = ly - 34.0 + 68.0 * t
+				var off: float = sin(t * 7.0 + 1.3) * 16.0 + sin(t * 17.0) * 5.0
+				var wd: float = 4.0 + 9.0 * sin(t * PI)
+				left.append(Vector2(cx + off - wd, yy))
+				right.append(Vector2(cx + off + wd, yy))
+			var crack: PackedVector2Array = left.duplicate()
+			right.reverse()
+			crack.append_array(right)
+			draw_colored_polygon(crack, Color(0.12, 0.03, 0.02))
+			var core: PackedVector2Array = PackedVector2Array()
+			for k3 in left.size():
+				core.append((left[k3] + crack[crack.size() - 1 - k3]) * 0.5)
+			draw_polyline(core, Color(1.0, 0.5, 0.1, 0.9 * glow), 5.0)
+			draw_polyline(core, Color(1.0, 0.92, 0.55, glow), 2.0)
+			# ascuas que suben
+			for k4 in 6:
+				var ph: float = fposmod(clock * 0.6 + float(k4) * 0.17, 1.0)
+				var ex: float = cx + sin(float(k4) * 2.1 + clock) * 14.0
+				draw_circle(Vector2(ex, ly + 20.0 - ph * 70.0), 2.0 * (1.0 - ph) + 0.5, Color(1.0, 0.6, 0.2, 0.8 * (1.0 - ph)))
+		"osario":
+			for k5 in 22:
+				var h1: float = fposmod(sin(float(k5) * 12.9898) * 43758.5453, 1.0)
+				var h2: float = fposmod(sin(float(k5) * 78.233) * 12543.531, 1.0)
+				var bx: float = 560.0 + h1 * 640.0
+				var by: float = ly - 26.0 + h2 * 52.0
+				var a: float = h1 * TAU
+				var bone: Color = Color(0.86, 0.82, 0.72, 0.7)
+				if k5 % 5 == 0:
+					# calavera
+					draw_circle(Vector2(bx, by - 4.0), 7.0, bone)
+					draw_rect(Rect2(bx - 4.0, by + 1.0, 8.0, 5.0), bone)
+					draw_circle(Vector2(bx - 2.5, by - 5.0), 1.8, Color(0.1, 0.05, 0.05))
+					draw_circle(Vector2(bx + 2.5, by - 5.0), 1.8, Color(0.1, 0.05, 0.05))
+				else:
+					var d: Vector2 = Vector2(cos(a), sin(a) * 0.4) * 11.0
+					draw_line(Vector2(bx, by) - d, Vector2(bx, by) + d, bone, 3.0)
+					draw_circle(Vector2(bx, by) - d, 2.6, bone)
+					draw_circle(Vector2(bx, by) + d, 2.6, bone)
+		"viento":
+			for k6 in 26:
+				var sp: float = 120.0 + float(k6 % 5) * 40.0
+				var sx: float = fposmod(float(k6) * 173.0 - clock * sp, 1300.0) - 20.0
+				var sy: float = ARENA_TOP + 20.0 + float((k6 * 61) % 470) + sin(clock * 2.0 + float(k6)) * 6.0
+				draw_line(Vector2(sx, sy), Vector2(sx + 40.0, sy - 3.0), Color(0.8, 0.75, 0.85, 0.28), 1.5)
+
+
+func _draw_terrain_label() -> void:
+	if sim.terrain == "llano" or show_tree or _overlay_open():
+		return
+	var td: Dictionary = sim.terrain_def()
+	var p: Vector2 = Vector2(24, 592)
+	var txt: String = "Terreno: %s" % String(td.get("name", ""))
+	var w: float = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 12.0
+	draw_rect(Rect2(p + Vector2(-6, -15), Vector2(w, 20)), Color(0, 0, 0, 0.55))
+	_txt(txt, p, 14, Color(0.95, 0.75, 0.5))
+	if Rect2(p + Vector2(-6, -15), Vector2(w, 20)).has_point(mouse_pos):
+		var dw: float = font.get_string_size(String(td["desc"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x + 14.0
+		draw_rect(Rect2(p + Vector2(-6, -44), Vector2(dw, 24)), Color(0, 0, 0, 0.85))
+		_txt(String(td["desc"]), p + Vector2(0, -27), 14, Color(0.95, 0.9, 0.85))
 
 
 func _zone_rect(depth: String) -> Rect2:

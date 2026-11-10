@@ -236,6 +236,23 @@ func run() -> void:
 			main.demon_anim.t = A.impact_delay("demonio", c) if c in ["rayo", "brasa"] else 0.6
 			await shot("demonio_" + c)
 		main.demon_anim = A.new("demonio")
+	if want("terreno"):
+		for tr in ["fisura", "osario", "viento"]:
+			s().reset()
+			s().terrain = tr
+			s().terrain_lane = 1
+			s()._invalidate()
+			s().start_wave()
+			s().spawn_queue = [{"t": 99999.0, "lane": 0, "kind": "campesino"}]
+			for k in ["campesino", "escudero", "campesino"]:
+				s()._spawn_enemy(k, 1)
+				s().enemies[-1]["x"] = 900.0 + 80.0 * float(s().enemies.size())
+			for i in 30:
+				main._process(1.0 / 30.0)
+			main.banner_t = 0.0
+			await shot("terreno_" + tr)
+		s().terrain = "llano"
+		s().reset()
 	if want("encargo"):
 		s().contracts_enabled = true
 		s().meta_mode = true

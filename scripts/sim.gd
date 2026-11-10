@@ -53,6 +53,8 @@ var augur: String = ""           # augurio elegido para la oleada actual o sigui
 var augur_offer: Array = []      # ids ofrecidos en esta preparación
 var _front_lane: int = -1
 var week_augur: String = ""      # reto semanal: augurio que dura toda la partida
+var terrain: String = "llano"    # terreno de la partida (balance.json → terrains)
+var terrain_lane: int = 1
 var contracts_enabled: bool = false  # encargo opcional al empezar la partida
 var contract: String = ""
 var contract_offer: Array = []
@@ -141,6 +143,9 @@ func reset() -> void:
 	contract = ""
 	contract_offer.clear()
 	run_track = {"brasa": 0, "rayo": 0, "levels": 0, "named_fell": false, "augur_missed": false}
+	terrain = "llano"
+	if remix_enabled:
+		_pick_terrain()
 	WAVES = SIEGES[siege_index]["waves"]
 	if is_endless():
 		var base: Dictionary = SIEGES[_siege_by_id(String(SIEGES[siege_index]["endless"]["base_siege"]))].duplicate()
@@ -468,6 +473,9 @@ func start_wave() -> bool:
 	spawn_queue = _build_spawns(WAVES[wave_index])
 	enemies.clear()
 	zones.clear()
+	var tz: Dictionary = terrain_def().get("zone", {})
+	if not tz.is_empty():
+		zones.append({"lane": terrain_lane, "x0": float(tz["x0"]), "x1": float(tz["x1"]), "t": 99999.0, "dps": float(tz["dps"]), "terrain": true})
 	phase = "combat"
 	wave_time = 0.0
 	brasa_cd = 0.0
@@ -638,6 +646,28 @@ func _gen_wave(i: int) -> Dictionary:
 		note = "Tu heraldo regresa, más duro."
 	return {"title": title, "note": note, "spawns": spawns, "generated": true,
 		"hp_mult": pow(float(en["hp_growth"]), float(k)), "dmg_mult": pow(float(en["dmg_growth"]), float(k))}
+
+
+func terrain_def() -> Dictionary:
+	for t in B.get("terrains", {}).get("list", []):
+		if String(t["id"]) == terrain:
+			return t
+	return {}
+
+
+func _pick_terrain() -> void:
+	var lst: Array = B.get("terrains", {}).get("list", [])
+	var tot: float = 0.0
+	for t in lst:
+		tot += float(t.get("weight", 1))
+	var r: float = rng.randf() * tot
+	for t2 in lst:
+		r -= float(t2.get("weight", 1))
+		if r <= 0.0:
+			terrain = String(t2["id"])
+			break
+	terrain_lane = rng.randi_range(0, 2)
+	_invalidate()
 
 
 func contract_def(id: String) -> Dictionary:
@@ -917,7 +947,7 @@ func _update_zones(dt: float) -> void:
 				continue
 			if e["x"] >= z["x0"] and e["x"] <= z["x1"]:
 				e["burn_t"] = maxf(e["burn_t"], 0.6)
-				e["burn_dps"] = maxf(e["burn_dps"], float(_stats("horno")["burn_dps"]))
+				e["burn_dps"] = maxf(e["burn_dps"], float(z["dps"]) if z.has("dps") else float(_stats("horno")["burn_dps"]))
 	zones = keep
 
 
@@ -1729,7 +1759,8 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 				return
 	elif not st.get("ignore_block", false) and _blocked_by_ally(e, 20.0):
 		return
-	e["x"] -= float(st["speed"]) * dt * _haste_mult(e) * (1.0 + augur_fx("enemy_speed"))
+	var terrain_slow: float = float(terrain_def().get("slow", 0.0)) if int(e["lane"]) == terrain_lane else 0.0
+	e["x"] -= float(st["speed"]) * dt * _haste_mult(e) * (1.0 + augur_fx("enemy_speed")) * (1.0 - terrain_slow)
 
 
 # Virote de torno: atraviesa a todas las criaturas de la fila (hasta 3) con daño decreciente.
@@ -2017,6 +2048,8 @@ func _fx_totals() -> Dictionary:
 	for bid in boons:
 		for f2 in draft_def(String(bid)).get("fx", []):
 			_fx_add(f2, 1)
+	for f4 in terrain_def().get("fx", []):
+		_fx_add(f4, 1)
 	for fam in active_sets():
 		for f3 in B["draft"]["sets"][fam].get("fx", []):
 			_fx_add(f3, 1)
