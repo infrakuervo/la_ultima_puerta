@@ -268,6 +268,14 @@ func run() -> void:
 			await shot("terreno_" + tr)
 		s().terrain = "llano"
 		s().reset()
+	if want("efecto"):
+		s().start_wave()
+		s().spawn_queue = [{"t": 99999.0, "lane": 0, "kind": "campesino"}]
+		main.fx_layer.spawn("brasa", Vector2(800, 380), 1.0)
+		for i in 4:
+			main._process(1.0 / 30.0)
+		await shot("efecto")
+		s().reset()
 	if want("encargo"):
 		s().contracts_enabled = true
 		s().meta_mode = true
