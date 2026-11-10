@@ -8,7 +8,7 @@ const W: float = 1280.0
 
 var open: bool = true            # se empieza en el menú
 var panel: String = "main"       # main | options | help
-var opts: Dictionary = {"volumen": 0.8, "velocidad": 1, "temblor": true, "tutorial_hecho": false}
+var opts: Dictionary = {"volumen": 0.8, "velocidad": 1, "temblor": true, "tutorial_hecho": false, "intro": true}
 var persist: bool = true
 var started: bool = false        # ya hay una partida empezada (Continuar)
 var sel_siege: int = 0
@@ -65,15 +65,17 @@ func buttons(m) -> Array:
 			y += 70.0
 			out.append({"id": "options", "rect": Rect2(x, y, 320, 58), "text": "Opciones"})
 		"options":
-			var y2: float = 250.0
+			var y2: float = 236.0
 			out.append({"id": "vol-", "rect": Rect2(x + 150, y2, 50, 50), "text": "−"})
 			out.append({"id": "vol+", "rect": Rect2(x + 290, y2, 50, 50), "text": "+"})
-			y2 += 80.0
+			y2 += 68.0
 			out.append({"id": "spd", "rect": Rect2(x + 150, y2, 190, 50), "text": "x%d" % int(opts["velocidad"])})
-			y2 += 80.0
+			y2 += 68.0
 			out.append({"id": "shake", "rect": Rect2(x + 150, y2, 190, 50), "text": "Sí" if bool(opts["temblor"]) else "No"})
-			y2 += 80.0
+			y2 += 68.0
 			out.append({"id": "tut", "rect": Rect2(x + 150, y2, 190, 50), "text": "Repetir" if bool(opts["tutorial_hecho"]) else "Activado"})
+			y2 += 68.0
+			out.append({"id": "intro", "rect": Rect2(x + 150, y2, 190, 50), "text": "Sí" if bool(opts["intro"]) else "No"})
 			out.append({"id": "back", "rect": Rect2(x, 590, 320, 58), "text": "Volver"})
 		"help":
 			out.append({"id": "back", "rect": Rect2(x, 600, 320, 58), "text": "Volver"})
@@ -151,6 +153,8 @@ func _do(m, id: String) -> void:
 			apply(m)
 		"tut":
 			opts["tutorial_hecho"] = false
+		"intro":
+			opts["intro"] = not bool(opts["intro"])
 	save_options()
 
 
@@ -182,9 +186,9 @@ func draw(m) -> void:
 	elif panel == "options":
 		m._txt("Opciones", Vector2(0, 190), 48, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		var x: float = W * 0.5 - 160.0
-		var rows: Array = [["Volumen", "%d%%" % int(round(float(opts["volumen"]) * 100.0))], ["Velocidad inicial", ""], ["Temblor de pantalla", ""], ["Tutorial", ""]]
+		var rows: Array = [["Volumen", "%d%%" % int(round(float(opts["volumen"]) * 100.0))], ["Velocidad inicial", ""], ["Temblor de pantalla", ""], ["Tutorial", ""], ["Vídeo de inicio", ""]]
 		for i in rows.size():
-			var yy: float = 283.0 + 80.0 * i
+			var yy: float = 269.0 + 68.0 * i
 			m._txt(rows[i][0], Vector2(x - 160, yy), 22, Color(0.95, 0.88, 0.8), HORIZONTAL_ALIGNMENT_RIGHT, 290.0)
 			if rows[i][1] != "":
 				m._txt(rows[i][1], Vector2(x + 200, yy), 22, Color(1.0, 0.9, 0.6), HORIZONTAL_ALIGNMENT_CENTER, 90.0)

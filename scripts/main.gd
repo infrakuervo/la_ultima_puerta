@@ -54,6 +54,10 @@ var demon_anim = Anim.new("demonio")
 var poses = Poses.new()
 var arena_offset: Vector2 = Vector2.ZERO   # temblor de cámara aplicado a la arena en este fotograma
 var _sim_dt: float = 0.0
+const INTRO_PATH: String = "res://art/video/intro_demonio.ogv"
+const INTRO_MAX: float = 12.0   # por si el vídeo no avisa al terminar
+var intro_layer: CanvasLayer = null
+var intro_t: float = 0.0
 var banner_text: String = ""
 var banner_t: float = 0.0
 var banner_dur: float = 1.0
@@ -89,6 +93,49 @@ func _ready() -> void:
 	menu.load_options()
 	menu.apply(self)
 	speed = int(menu.opts["velocidad"])
+	if not Engine.has_meta("sin_persistencia") and bool(menu.opts.get("intro", true)) and DisplayServer.get_name() != "headless":
+		_start_intro()
+
+
+# ----------------------------------------------------------------------------
+# Intro en vídeo (antes del menú). Se salta con clic o tecla; se quita en Opciones.
+# ----------------------------------------------------------------------------
+
+func _start_intro() -> void:
+	if not ResourceLoader.exists(INTRO_PATH):
+		return
+	var stream: VideoStream = load(INTRO_PATH)
+	if stream == null:
+		return
+	intro_layer = CanvasLayer.new()
+	intro_layer.layer = 10
+	add_child(intro_layer)
+	var bg: ColorRect = ColorRect.new()
+	bg.color = Color.BLACK
+	bg.size = Vector2(SCREEN_W, SCREEN_H)
+	intro_layer.add_child(bg)
+	var vp: VideoStreamPlayer = VideoStreamPlayer.new()
+	vp.stream = stream
+	vp.expand = true
+	vp.size = Vector2(SCREEN_W, SCREEN_H)
+	vp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vp.finished.connect(_end_intro)
+	intro_layer.add_child(vp)
+	var hint: Label = Label.new()
+	hint.text = "Clic o tecla para saltar"
+	hint.position = Vector2(SCREEN_W - 260, SCREEN_H - 40)
+	hint.modulate = Color(1, 1, 1, 0.45)
+	intro_layer.add_child(hint)
+	intro_t = 0.0
+	vp.play()
+
+
+func _end_intro() -> void:
+	if intro_layer == null:
+		return
+	intro_layer.queue_free()
+	intro_layer = null
+	fade = 1.0
 
 
 # ----------------------------------------------------------------------------
@@ -97,6 +144,11 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	delta = minf(delta, 0.1)
+	if intro_layer != null:
+		intro_t += delta
+		if intro_t > INTRO_MAX:
+			_end_intro()
+		return
 	clock += delta
 	mouse_pos = get_global_mouse_position()
 	fade = maxf(0.0, fade - delta * 2.5)
@@ -561,6 +613,11 @@ func _save_bestiary() -> void:
 # ----------------------------------------------------------------------------
 
 func _input(event: InputEvent) -> void:
+	if intro_layer != null:
+		if (event is InputEventMouseButton or event is InputEventKey) and event.pressed:
+			_end_intro()
+			get_viewport().set_input_as_handled()
+		return
 	if menu.open:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			menu.press(self, event.position)

@@ -12,7 +12,7 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 3. [x] Tizón / Sabuesos — `carrera` al moverse (velocidad suavizada leída de la simulación) y `mordisco` en `bite`/`presa`; sin reposo usa el sprite fijo con respiración por código. Al volver a casa se da la vuelta.
 4. [x] Horno — `reposo`, `carrera` y `mordisco` (en `bite` y `horno_spit`); el mordisco tiene su propio `height`/`anchor` en el JSON por el encuadre más abierto.
 5. [x] Animación por código — `scripts/poses.gd`: respiración en reposo, trote al moverse, embestida al atacar (bestias por evento; enemigos cuando su enfriamiento salta) y retroceso con el destello de golpe; preparación (Presa, apuntar) agacha un poco. La sombra se dibuja aparte, plana, y el cuerpo gira/escala desde los pies con `draw_set_transform(arena_offset + ...)`. Arreglado el reinicio a cero de la transformación en los charcos de brea. Capturas: `tools/shots.tscn` → `animacion`.
-6. [ ] Intro en vídeo (`art/video/intro_demonio.ogv`), saltable y desactivable en Opciones.
+6. [x] Intro en vídeo — `VideoStreamPlayer` en un `CanvasLayer` al abrir el juego, antes del menú; clic o tecla la salta (fundido al menú); tope de 12 s por si no avisa al terminar. Opción «Vídeo de inicio» (`intro` en `user://opciones.json`). No sale en las pruebas ni sin pantalla. Captura: `tools/shots.tscn` → `intro`.
 7. [ ] Peso y web: medir, reducir si pasa de ~40 MB, republicar y comprobar en Chromium.
 8. [ ] Rejugabilidad (ampliación del encargo: ver sección «Rejugabilidad»), incluye curva del árbol, música procedural con volúmenes aparte y logros/estadísticas.
 9. [ ] Cierre: PR #1, resumen y lista de animaciones que faltan para Flow. La tarea programada solo se desactiva si ya no queda margen.

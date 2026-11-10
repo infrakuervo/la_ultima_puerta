@@ -65,6 +65,12 @@ func add_beast(kind: String) -> void:
 
 
 func run() -> void:
+	if want("intro"):
+		main._start_intro()
+		await get_tree().create_timer(3.0).timeout
+		await shot("intro")
+		main._input(_key())
+		await shot("intro_saltada")
 	if want("menu"):
 		main.menu.open = true
 		main.menu.panel = "main"
@@ -212,3 +218,10 @@ func run() -> void:
 		main.demon_anim.play("derrota")
 		main.demon_anim.t = 99.0
 		await shot("derrota")
+
+
+func _key() -> InputEventKey:
+	var k: InputEventKey = InputEventKey.new()
+	k.keycode = KEY_SPACE
+	k.pressed = true
+	return k

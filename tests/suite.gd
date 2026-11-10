@@ -819,6 +819,8 @@ func test_ui_smoke() -> void:
 	get_tree().root.add_child(m)
 	await get_tree().process_frame
 	check(m.sim != null, "la vista crea la simulación")
+	check(m.intro_layer == null, "en las pruebas no sale la intro en vídeo")
+	check(ResourceLoader.exists(m.INTRO_PATH), "el vídeo de la intro existe")
 	m._on_press(Vector2(1130, 660))
 	check(m.sim.phase == "combat", "el botón Iniciar oleada arranca la oleada con el ratón")
 	m._on_press(Vector2(1100, 660))
@@ -876,6 +878,11 @@ func test_ui_smoke() -> void:
 		if b["id"] == "vol-":
 			m._input(_click(b["rect"].get_center()))
 	check(float(m.menu.opts["volumen"]) < v0, "el botón − baja el volumen")
+	var intro0: bool = bool(m.menu.opts["intro"])
+	for bi in m.menu.buttons(m):
+		if bi["id"] == "intro":
+			m._input(_click(bi["rect"].get_center()))
+	check(bool(m.menu.opts["intro"]) != intro0, "Opciones permite quitar el vídeo de inicio")
 	m.menu.panel = "main"
 	for b2 in m.menu.buttons(m):
 		if b2["id"] == "continue":
