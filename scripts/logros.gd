@@ -22,7 +22,7 @@ func _init() -> void:
 
 
 func new_run() -> void:
-	run = {"door_hit": false, "augur_all": true, "brasa_best": 0}
+	run = {"door_hit": false, "augur_all": true, "brasa_best": 0, "augurs": 0}
 	fresh.clear()
 
 
@@ -65,6 +65,8 @@ func on_event(sim, ev: Dictionary, challenge: bool) -> Array:
 				stats["partidas"] = int(stats["partidas"]) + 1
 			elif sim.augur == "" and sim.augurs_enabled:
 				run["augur_all"] = false
+			if sim.augur != "":
+				run["augurs"] = int(run.get("augurs", 0)) + 1
 			_try(out, "manada", _alive(sim) >= 6)
 		"wave_clear":
 			stats["oleadas"] = int(stats["oleadas"]) + 1

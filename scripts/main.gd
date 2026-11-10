@@ -2107,6 +2107,7 @@ func _draw_overlays() -> void:
 			sub += "  Reto semanal: %s" % ("¡nuevo récord!" if new_record else "récord %d/%d" % [int(records.get(record_key(), 0)), sim.wave_count()])
 		_txt(sub, Vector2(0, 214), 24, Color(0.9, 0.85, 0.8), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		_txt("Enemigos abatidos: %d    Puerta: %d / %d" % [sim.kills, int(ceil(sim.door_hp)), int(sim.door_max)], Vector2(0, 254), 22, Color(0.8, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt(_run_stats_line(), Vector2(0, 438), 16, Color(0.75, 0.8, 0.9), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var ep: String = sim.epitaph()
 		if ep != "":
 			_txt(ep, Vector2(0, 296), 24, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
@@ -2124,7 +2125,28 @@ func _draw_overlays() -> void:
 		draw_demon_at(Vector2(250, 590), 1.25)
 		var t: Dictionary = sim.named_creature()
 		if not t.is_empty():
-			Art.draw_creature(self, String(t["kind"]), Vector2(640, 468), clock, {"scars": int(t["scars"]), "scale": 0.85})
+			# Tizón a la derecha, frente al demonio
+			draw_circle(Vector2(1090, 500), 100.0, Color(1.0, 0.5, 0.2, 0.07))
+			Art.draw_creature(self, String(t["kind"]), Vector2(1090, 570), clock, {"scars": int(t["scars"]), "scale": 1.3})
+			_txt(String(t["name"]), Vector2(990, 596), 18, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, 200.0)
+
+
+## Estadísticas de la partida para la pantalla final.
+func _run_stats_line() -> String:
+	var best: Dictionary = {}
+	for c in sim.creatures:
+		if best.is_empty() or int(c["kills"]) > int(best["kills"]):
+			best = c
+	var parts: Array = []
+	if not best.is_empty() and int(best["kills"]) > 0:
+		var nm: String = String(best["name"]) if best["named"] else sim.label(String(best["kind"]))
+		parts.append("Mejor bestia: %s (%d bajas)" % [nm, int(best["kills"])])
+	parts.append("Mejor Brasa: %d" % int(logros.run.get("brasa_best", 0)))
+	parts.append("Dones: %d" % sim.boons.size())
+	parts.append("Augurios: %d" % int(logros.run.get("augurs", 0)))
+	if sim.terrain != "llano":
+		parts.append(String(sim.terrain_def().get("name", "")))
+	return "   ·   ".join(parts)
 
 
 func _overlay_open() -> bool:
