@@ -122,7 +122,7 @@ func _do(m, id: String) -> void:
 		var si: int = int(id.substr(3))
 		if m.siege_unlocked(si):
 			sel_siege = si
-			sel_wrath = mini(sel_wrath, m.max_wrath(si))
+			sel_wrath = m.max_wrath(si)
 		return
 	match id:
 		"continue":
@@ -133,7 +133,7 @@ func _do(m, id: String) -> void:
 			sel_siege = clampi(sel_siege, 0, m.sim.SIEGES.size() - 1)
 			if not m.siege_unlocked(sel_siege):
 				sel_siege = 0
-			sel_wrath = mini(sel_wrath, m.max_wrath(sel_siege))
+			sel_wrath = m.max_wrath(sel_siege)   # propone la Ira más alta abierta: invita a subir
 		"wr-":
 			sel_wrath = maxi(0, sel_wrath - 1)
 		"wr+":
