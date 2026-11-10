@@ -47,6 +47,22 @@
    "name": "Ojo",
    "color": "e8c850",
    "route": ""
+  },
+  {
+   "id": "abismo",
+   "name": "Abismo",
+   "color": "7fe0a0",
+   "route": "",
+   "unlock": "alba",
+   "unlock_text": "Gana el segundo asedio: la Orden del Alba"
+  },
+  {
+   "id": "inquisicion",
+   "name": "Inquisición",
+   "color": "f2e2b0",
+   "route": "",
+   "unlock": "inquisicion",
+   "unlock_text": "Gana el tercer asedio: la Inquisición"
   }
  ],
  "nodes": [
@@ -206,32 +222,6 @@
    ],
    "cost_base": 40,
    "cost_step": 7
-  },
-  {
-   "id": "brasa_maestria",
-   "branch": "brasa",
-   "name": "Maestría del fuego",
-   "desc": "+10% de daño y -6% de enfriamiento.",
-   "max": 3,
-   "row": 5,
-   "fx": [
-    {
-     "k": "brasa.dmg",
-     "mul": 0.1
-    },
-    {
-     "k": "brasa.cd",
-     "mul": -0.06
-    }
-   ],
-   "req": [
-    {
-     "id": "brasa_echo",
-     "rank": 1
-    }
-   ],
-   "cost_base": 40,
-   "cost_step": 8
   },
   {
    "id": "rayo_cadena",
@@ -413,36 +403,6 @@
    "cost_step": 7
   },
   {
-   "id": "rayo_tormenta",
-   "branch": "rayo",
-   "name": "Tormenta",
-   "desc": "+10% de daño y -10% de enfriamiento.",
-   "max": 2,
-   "row": 5,
-   "fx": [
-    {
-     "k": "rayo.dmg",
-     "mul": 0.1
-    },
-    {
-     "k": "rayo.cd",
-     "mul": -0.1
-    }
-   ],
-   "req": [
-    {
-     "id": "rayo_exec",
-     "rank": 1
-    },
-    {
-     "id": "rayo_stun",
-     "rank": 1
-    }
-   ],
-   "cost_base": 40,
-   "cost_step": 8
-  },
-  {
    "id": "door_hp",
    "branch": "demonio",
    "name": "Puerta reforzada",
@@ -612,32 +572,6 @@
    ],
    "cost_base": 34,
    "cost_step": 7
-  },
-  {
-   "id": "eco_sabueso",
-   "branch": "demonio",
-   "name": "Cría barata",
-   "desc": "-15% al coste de reclutar Sabuesos.",
-   "max": 3,
-   "row": 5,
-   "fx": [
-    {
-     "k": "eco.sabueso_cost",
-     "mul": -0.15
-    }
-   ],
-   "req": [
-    {
-     "id": "eco_cap",
-     "rank": 1
-    },
-    {
-     "id": "eco_interest",
-     "rank": 1
-    }
-   ],
-   "cost_base": 40,
-   "cost_step": 8
   },
   {
    "id": "beast_hp",
@@ -815,36 +749,6 @@
    "cost_step": 7
   },
   {
-   "id": "beast_furia",
-   "branch": "bestias",
-   "name": "Furia de la jauría",
-   "desc": "+12% de daño y +10% de vida.",
-   "max": 2,
-   "row": 5,
-   "fx": [
-    {
-     "k": "beast.dmg",
-     "mul": 0.12
-    },
-    {
-     "k": "beast.hp",
-     "mul": 0.1
-    }
-   ],
-   "req": [
-    {
-     "id": "beast_pack",
-     "rank": 1
-    },
-    {
-     "id": "beast_scar",
-     "rank": 1
-    }
-   ],
-   "cost_base": 40,
-   "cost_step": 8
-  },
-  {
    "id": "sab_hp",
    "branch": "jauria",
    "name": "Sabueso recio",
@@ -1020,36 +924,6 @@
    "cost_step": 7
   },
   {
-   "id": "sab_alfa",
-   "branch": "jauria",
-   "name": "Sabueso alfa",
-   "desc": "+25% de vida y daño de los Sabuesos.",
-   "max": 2,
-   "row": 5,
-   "fx": [
-    {
-     "k": "sabueso.hp",
-     "mul": 0.25
-    },
-    {
-     "k": "sabueso.dmg",
-     "mul": 0.25
-    }
-   ],
-   "req": [
-    {
-     "id": "sab_desgarro",
-     "rank": 1
-    },
-    {
-     "id": "sab_leash",
-     "rank": 1
-    }
-   ],
-   "cost_base": 40,
-   "cost_step": 8
-  },
-  {
    "id": "horno_hp",
    "branch": "horno",
    "name": "Costillas de brasa",
@@ -1209,36 +1083,6 @@
    ],
    "cost_base": 34,
    "cost_step": 7
-  },
-  {
-   "id": "horno_infierno",
-   "branch": "horno",
-   "name": "Infierno interior",
-   "desc": "+25% de daño de llamarada y -10% de enfriamiento.",
-   "max": 2,
-   "row": 5,
-   "fx": [
-    {
-     "k": "horno.spit_dmg",
-     "mul": 0.25
-    },
-    {
-     "k": "horno.inhale_cd",
-     "mul": -0.1
-    }
-   ],
-   "req": [
-    {
-     "id": "horno_inhale_max",
-     "rank": 2
-    },
-    {
-     "id": "horno_ground",
-     "rank": 1
-    }
-   ],
-   "cost_base": 40,
-   "cost_step": 8
   },
   {
    "id": "trueno_hp",
@@ -1412,36 +1256,6 @@
    "cost_step": 7
   },
   {
-   "id": "trueno_tormenta",
-   "branch": "trueno",
-   "name": "Tormenta de cobre",
-   "desc": "+25% de caída y +20% de descargas.",
-   "max": 2,
-   "row": 5,
-   "fx": [
-    {
-     "k": "trueno.land_dmg",
-     "mul": 0.25
-    },
-    {
-     "k": "trueno.chain_dmg",
-     "mul": 0.2
-    }
-   ],
-   "req": [
-    {
-     "id": "trueno_chain_range",
-     "rank": 1
-    },
-    {
-     "id": "trueno_return",
-     "rank": 1
-    }
-   ],
-   "cost_base": 40,
-   "cost_step": 8
-  },
-  {
    "id": "ojo_dmg",
    "branch": "ojo",
    "name": "Iris afilado",
@@ -1595,34 +1409,1367 @@
    "cost_step": 6
   },
   {
-   "id": "ojo_mirada",
-   "branch": "ojo",
-   "name": "Mirada del Abismo",
-   "desc": "+20% de daño y -8% de enfriamiento.",
+   "id": "brasa_tierra",
+   "branch": "brasa",
+   "name": "Tierra quemada",
+   "desc": "La Brasa deja el suelo ardiendo 5 s: quema a quien lo pise. A cambio tarda el doble en recargarse.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.brasa_ground",
+     "add": 5.0
+    },
+    {
+     "k": "brasa.cd",
+     "mul": 1.0
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_dmg",
+     "rank": 3
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "brasa_infierno",
+   "branch": "brasa",
+   "name": "Corazón del Infierno",
+   "desc": "La resonancia Infierno despierta con un solo don de fuego.",
+   "max": 1,
+   "row": 1,
+   "fx": [
+    {
+     "k": "set.need.fuego",
+     "add": -1
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_burn",
+     "rank": 1
+    }
+   ],
+   "cost_base": 35,
+   "cost_step": 10,
+   "side": true,
+   "boon": true
+  },
+  {
+   "id": "brasa_cometa",
+   "branch": "brasa",
+   "name": "Cometa",
+   "desc": "Una Brasa enorme: +18% de daño y +8% de radio por rango.",
    "max": 2,
    "row": 5,
    "fx": [
     {
-     "k": "ojo.dmg",
+     "k": "brasa.dmg",
+     "mul": 0.18
+    },
+    {
+     "k": "brasa.radius",
+     "mul": 0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_echo",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "brasa_ascuas"
+  },
+  {
+   "id": "brasa_ascuas",
+   "branch": "brasa",
+   "name": "Lluvia de ascuas",
+   "desc": "Brasas pequeñas y seguidas: -10% de enfriamiento y -10% de retardo por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "brasa.cd",
+     "mul": -0.1
+    },
+    {
+     "k": "brasa.delay",
+     "mul": -0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "brasa_echo",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "brasa_cometa"
+  },
+  {
+   "id": "rayo_arco",
+   "branch": "rayo",
+   "name": "Arco voltaico",
+   "desc": "El Rayo salta sin límite y sin bajar del 50% de su daño, pero solo salta a enemigos que arden.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.rayo_arc",
+     "add": 1
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_dmg",
+     "rank": 3
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "rayo_heraldo",
+   "branch": "rayo",
+   "name": "Heraldo de la Tempestad",
+   "desc": "Los dones de rayo salen un 75% más en el draft por rango.",
+   "max": 2,
+   "row": 1,
+   "fx": [
+    {
+     "k": "draft.family.rayo",
+     "mul": 0.75
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_cd",
+     "rank": 2
+    }
+   ],
+   "cost_base": 35,
+   "cost_step": 10,
+   "side": true,
+   "boon": true
+  },
+  {
+   "id": "rayo_verdugo",
+   "branch": "rayo",
+   "name": "Rayo verdugo",
+   "desc": "Un solo golpe letal: +15% de daño y +25% más contra los heridos por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "rayo.dmg",
+     "mul": 0.15
+    },
+    {
+     "k": "special.rayo_exec",
+     "add": 0.25
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_exec",
+     "rank": 1
+    },
+    {
+     "id": "rayo_stun",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "rayo_chispa"
+  },
+  {
+   "id": "rayo_chispa",
+   "branch": "rayo",
+   "name": "Chispa incesante",
+   "desc": "Rayos seguidos: -12% de enfriamiento y aturde 0,1 s más por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "rayo.cd",
+     "mul": -0.12
+    },
+    {
+     "k": "rayo.stun",
+     "add": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "rayo_exec",
+     "rank": 1
+    },
+    {
+     "id": "rayo_stun",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "rayo_verdugo"
+  },
+  {
+   "id": "door_espinas",
+   "branch": "demonio",
+   "name": "Puerta de espinas",
+   "desc": "Quien golpea la Puerta recibe 14 de daño. A cambio la Puerta tiene un 25% menos de vida.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.door_thorns",
+     "add": 14
+    },
+    {
+     "k": "door.hp",
+     "mul": -0.25
+    }
+   ],
+   "req": [
+    {
+     "id": "door_regen",
+     "rank": 1
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "eco_avaricia",
+   "branch": "demonio",
+   "name": "Pacto de Avaricia",
+   "desc": "La resonancia Avaricia despierta con un solo don de almas.",
+   "max": 1,
+   "row": 1,
+   "fx": [
+    {
+     "k": "set.need.alma",
+     "add": -1
+    }
+   ],
+   "req": [
+    {
+     "id": "eco_reward",
+     "rank": 2
+    }
+   ],
+   "cost_base": 35,
+   "cost_step": 10,
+   "side": true,
+   "boon": true
+  },
+  {
+   "id": "door_bastion",
+   "branch": "demonio",
+   "name": "Piedra del Bastión",
+   "desc": "Los dones de Puerta salen un 50% más y la resonancia Bastión es un 50% más fuerte, por rango.",
+   "max": 2,
+   "row": 4,
+   "fx": [
+    {
+     "k": "draft.family.puerta",
+     "mul": 0.5
+    },
+    {
+     "k": "set.power.puerta",
+     "mul": 0.5
+    }
+   ],
+   "req": [
+    {
+     "id": "door_hp",
+     "rank": 3
+    }
+   ],
+   "cost_base": 35,
+   "cost_step": 10,
+   "side": true,
+   "boon": true
+  },
+  {
+   "id": "door_baluarte",
+   "branch": "demonio",
+   "name": "Baluarte",
+   "desc": "La Puerta recibe un 10% menos de daño y recupera un 4% más tras cada oleada, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "door.armor",
+     "mul": -0.1
+    },
+    {
+     "k": "door.regen",
+     "add": 0.04
+    }
+   ],
+   "req": [
+    {
+     "id": "door_regen",
+     "rank": 2
+    },
+    {
+     "id": "eco_level",
+     "rank": 2
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "eco_mercader"
+  },
+  {
+   "id": "eco_mercader",
+   "branch": "demonio",
+   "name": "Mercader de almas",
+   "desc": "Sabuesos un 20% más baratos y +6 almas por oleada, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "eco.sabueso_cost",
+     "mul": -0.2
+    },
+    {
+     "k": "eco.wave_bonus",
+     "add": 6
+    }
+   ],
+   "req": [
+    {
+     "id": "door_regen",
+     "rank": 2
+    },
+    {
+     "id": "eco_level",
+     "rank": 2
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "door_baluarte"
+  },
+  {
+   "id": "beast_tizon",
+   "branch": "bestias",
+   "name": "Tizón inmortal",
+   "desc": "Tizón no cae: si lo derriban, se levanta a los 4 s con media vida y sin cicatriz. Las demás bestias tienen un 40% menos de vida.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.tizon_immortal",
+     "add": 1
+    },
+    {
+     "k": "special.others_hp",
+     "mul": -0.4
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_hp",
+     "rank": 3
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "beast_jauria",
+   "branch": "bestias",
+   "name": "Sangre de Jauría",
+   "desc": "La resonancia Jauría es un 50% más fuerte por rango.",
+   "max": 2,
+   "row": 1,
+   "fx": [
+    {
+     "k": "set.power.bestia",
+     "mul": 0.5
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_dmg",
+     "rank": 2
+    }
+   ],
+   "cost_base": 35,
+   "cost_step": 10,
+   "side": true,
+   "boon": true
+  },
+  {
+   "id": "beast_horda",
+   "branch": "bestias",
+   "name": "Horda",
+   "desc": "Muchas y juntas: +3% de daño por cada otra bestia viva y +6% de velocidad, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "special.pack",
+     "add": 0.03
+    },
+    {
+     "k": "beast.speed",
+     "mul": 0.06
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_pack",
+     "rank": 1
+    },
+    {
+     "id": "beast_scar",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "beast_alfa"
+  },
+  {
+   "id": "beast_alfa",
+   "branch": "bestias",
+   "name": "Alfa",
+   "desc": "Todo a Tizón: +20% de vida y de daño para él por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "special.named_hp",
      "mul": 0.2
     },
     {
-     "k": "ojo.cd",
+     "k": "special.named_dmg",
+     "mul": 0.2
+    }
+   ],
+   "req": [
+    {
+     "id": "beast_pack",
+     "rank": 1
+    },
+    {
+     "id": "beast_scar",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "beast_horda"
+  },
+  {
+   "id": "sab_camada",
+   "branch": "jauria",
+   "name": "Camada",
+   "desc": "Cada Sabueso que reclutas llega con un gemelo gratis. A cambio los Sabuesos (menos Tizón) tienen un 35% menos de vida.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.litter",
+     "add": 1
+    },
+    {
+     "k": "special.sab_hp",
+     "mul": -0.35
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_hp",
+     "rank": 2
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "sab_cepo",
+   "branch": "jauria",
+   "name": "Cepo",
+   "desc": "La Presa dura un 20% más y llega un 10% más lejos, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "sabueso.presa_time",
+     "mul": 0.2
+    },
+    {
+     "k": "sabueso.presa_range",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "sab_desgarro",
+     "rank": 1
+    },
+    {
+     "id": "sab_leash",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "sab_carnicero"
+  },
+  {
+   "id": "sab_carnicero",
+   "branch": "jauria",
+   "name": "Carnicero",
+   "desc": "Sabuesos: +20% de daño y muerden un 8% más rápido, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "sabueso.dmg",
+     "mul": 0.2
+    },
+    {
+     "k": "sabueso.cd",
      "mul": -0.08
     }
    ],
    "req": [
     {
-     "id": "ojo_chain_n",
-     "rank": 2
+     "id": "sab_desgarro",
+     "rank": 1
     },
     {
-     "id": "ojo_chain_range",
+     "id": "sab_leash",
      "rank": 1
     }
    ],
-   "cost_base": 40,
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "sab_cepo"
+  },
+  {
+   "id": "horno_ceniza",
+   "branch": "horno",
+   "name": "Estallido de ceniza",
+   "desc": "Con el Horno en pie, los enemigos que mueren ardiendo estallan: 14 de daño alrededor y prenden a los cercanos. A cambio el Horno tiene un 30% menos de vida.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.burn_burst",
+     "add": 14
+    },
+    {
+     "k": "horno.hp",
+     "mul": -0.3
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_burn",
+     "rank": 2
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "horno_boca",
+   "branch": "horno",
+   "name": "Boca del Infierno",
+   "desc": "+22% de daño de la llamarada por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "horno.spit_dmg",
+     "mul": 0.22
+    },
+    {
+     "k": "horno.minor_dmg",
+     "mul": 0.22
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_inhale_max",
+     "rank": 2
+    },
+    {
+     "id": "horno_ground",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "horno_fragua"
+  },
+  {
+   "id": "horno_fragua",
+   "branch": "horno",
+   "name": "Fragua lenta",
+   "desc": "El fuego del suelo dura un 40% más y quema un 20% más, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "horno.ground_time",
+     "mul": 0.4
+    },
+    {
+     "k": "horno.burn_dps",
+     "mul": 0.2
+    }
+   ],
+   "req": [
+    {
+     "id": "horno_inhale_max",
+     "rank": 2
+    },
+    {
+     "id": "horno_ground",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "horno_boca"
+  },
+  {
+   "id": "trueno_errante",
+   "branch": "trueno",
+   "name": "Tormenta errante",
+   "desc": "El Trueno ya no vuelve a su puesto: lucha donde cae y salta desde allí, un 30% más a menudo. A cambio recibe un 30% más de daño.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.trueno_roam",
+     "add": 1
+    },
+    {
+     "k": "trueno.jump_cd",
+     "mul": -0.3
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_cd",
+     "rank": 2
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "trueno_meteoro",
+   "branch": "trueno",
+   "name": "Meteoro",
+   "desc": "+25% de daño al aterrizar por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "trueno.land_dmg",
+     "mul": 0.25
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_chain_range",
+     "rank": 1
+    },
+    {
+     "id": "trueno_return",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "trueno_relampago"
+  },
+  {
+   "id": "trueno_relampago",
+   "branch": "trueno",
+   "name": "Relámpago en cadena",
+   "desc": "+20% de daño y +10% de radio de las descargas, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "trueno.chain_dmg",
+     "mul": 0.2
+    },
+    {
+     "k": "trueno.chain_range",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "trueno_chain_range",
+     "rank": 1
+    },
+    {
+     "id": "trueno_return",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "trueno_meteoro"
+  },
+  {
+   "id": "ojo_fijo",
+   "branch": "ojo",
+   "name": "Mirada fija",
+   "desc": "El Ojo ya no encadena: concentra todo en un blanco, con +120% de daño.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.ojo_focus",
+     "add": 1
+    },
+    {
+     "k": "ojo.dmg",
+     "mul": 1.2
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_dmg",
+     "rank": 3
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "ojo_vigia",
+   "branch": "ojo",
+   "name": "Vigía",
+   "desc": "+12% de daño y de alcance del Ojo por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "ojo.dmg",
+     "mul": 0.12
+    },
+    {
+     "k": "ojo.range",
+     "mul": 0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_cd",
+     "rank": 2
+    },
+    {
+     "id": "ojo_range",
+     "rank": 2
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "ojo_parpadeo"
+  },
+  {
+   "id": "ojo_parpadeo",
+   "branch": "ojo",
+   "name": "Parpadeo",
+   "desc": "-10% de enfriamiento y +12% de daño de la cadena, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "ojo.cd",
+     "mul": -0.1
+    },
+    {
+     "k": "ojo.chain_dmg",
+     "mul": 0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "ojo_cd",
+     "rank": 2
+    },
+    {
+     "id": "ojo_range",
+     "rank": 2
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "ojo_vigia"
+  },
+  {
+   "id": "abi_llamada",
+   "branch": "abismo",
+   "name": "Llamada del Abismo",
+   "desc": "Gárgola, Enjambre y Garfio salen un 40% más en el draft por rango.",
+   "max": 2,
+   "row": 0,
+   "fx": [
+    {
+     "k": "draft.kind.gargola",
+     "mul": 0.4
+    },
+    {
+     "k": "draft.kind.enjambre",
+     "mul": 0.4
+    },
+    {
+     "k": "draft.kind.garfio",
+     "mul": 0.4
+    }
+   ],
+   "req": [],
+   "cost_base": 14,
+   "cost_step": 6,
+   "boon": true
+  },
+  {
+   "id": "abi_gargola_hp",
+   "branch": "abismo",
+   "name": "Piel de ceniza",
+   "desc": "+12% de vida de la Gárgola por rango.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "gargola.hp",
+     "mul": 0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_llamada",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "abi_enjambre_burn",
+   "branch": "abismo",
+   "name": "Moscas de ascua",
+   "desc": "El Enjambre quema un 20% más fuerte y un 10% más de tiempo.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "enjambre.burn_dps",
+     "mul": 0.2
+    },
+    {
+     "k": "enjambre.burn_time",
+     "mul": 0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_llamada",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "abi_gargola_shock",
+   "branch": "abismo",
+   "name": "Onda de piedra",
+   "desc": "+20% de daño y +8% de radio de la onda de la Gárgola.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "gargola.shock_dmg",
+     "mul": 0.2
+    },
+    {
+     "k": "gargola.shock_mult",
+     "mul": 0.2
+    },
+    {
+     "k": "gargola.shock_r",
+     "mul": 0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_gargola_hp",
+     "rank": 2
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "abi_enjambre_n",
+   "branch": "abismo",
+   "name": "Nube espesa",
+   "desc": "El Enjambre ataca a un enemigo más por rango.",
+   "max": 2,
+   "row": 2,
+   "fx": [
+    {
+     "k": "enjambre.targets",
+     "add": 1
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_enjambre_burn",
+     "rank": 2
+    }
+   ],
+   "cost_base": 26,
    "cost_step": 8
+  },
+  {
+   "id": "abi_garfio_cd",
+   "branch": "abismo",
+   "name": "Cadena engrasada",
+   "desc": "-10% de enfriamiento del gancho por rango.",
+   "max": 4,
+   "row": 3,
+   "fx": [
+    {
+     "k": "garfio.hook_cd",
+     "mul": -0.1
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_gargola_hp",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "abi_garfio_stun",
+   "branch": "abismo",
+   "name": "Anzuelo cruel",
+   "desc": "El gancho aturde 0,3 s más y hace un 50% más de daño.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "garfio.hook_stun",
+     "add": 0.3
+    },
+    {
+     "k": "garfio.hook_dmg",
+     "mul": 0.5
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_enjambre_burn",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "abi_pacto",
+   "branch": "abismo",
+   "name": "Pacto del Abismo",
+   "desc": "Empiezas cada partida con una bestia del Abismo al azar. A cambio empiezas sin almas.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.abismo_start",
+     "add": 1
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_llamada",
+     "rank": 2
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "abi_guardia",
+   "branch": "abismo",
+   "name": "Guardia de piedra",
+   "desc": "Gárgola y Garfio: +18% de vida por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "gargola.hp",
+     "mul": 0.18
+    },
+    {
+     "k": "garfio.hp",
+     "mul": 0.18
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_garfio_cd",
+     "rank": 1
+    },
+    {
+     "id": "abi_garfio_stun",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "abi_plaga"
+  },
+  {
+   "id": "abi_plaga",
+   "branch": "abismo",
+   "name": "Plaga ardiente",
+   "desc": "El Enjambre ataca un 15% más a menudo y sus moscas hacen un 50% más de daño, por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "enjambre.cd",
+     "mul": -0.15
+    },
+    {
+     "k": "enjambre.swarm_dmg",
+     "mul": 0.5
+    }
+   ],
+   "req": [
+    {
+     "id": "abi_garfio_cd",
+     "rank": 1
+    },
+    {
+     "id": "abi_garfio_stun",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "abi_guardia"
+  },
+  {
+   "id": "inq_trofeos",
+   "branch": "inquisicion",
+   "name": "Trofeos de guerra",
+   "desc": "+6% de esencia por oleada superada, por rango.",
+   "max": 3,
+   "row": 0,
+   "fx": [
+    {
+     "k": "meta.wave",
+     "mul": 0.06
+    }
+   ],
+   "req": [],
+   "cost_base": 14,
+   "cost_step": 6
+  },
+  {
+   "id": "inq_hereje",
+   "branch": "inquisicion",
+   "name": "Hierro hereje",
+   "desc": "Héroes y jefes reciben un 6% más de daño por rango.",
+   "max": 4,
+   "row": 1,
+   "fx": [
+    {
+     "k": "special.vs_big",
+     "add": 0.06
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_trofeos",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "inq_velo",
+   "branch": "inquisicion",
+   "name": "Velo de ceniza",
+   "desc": "Los santuarios curan a los humanos y queman a tus bestias un 20% menos por rango.",
+   "max": 3,
+   "row": 1,
+   "fx": [
+    {
+     "k": "special.sanct",
+     "mul": -0.2
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_trofeos",
+     "rank": 1
+    }
+   ],
+   "cost_base": 16,
+   "cost_step": 4
+  },
+  {
+   "id": "inq_sellos",
+   "branch": "inquisicion",
+   "name": "Quiebrasellos",
+   "desc": "Los escudos sagrados de los enemigos aguantan un 20% menos por rango.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "special.shield",
+     "mul": -0.2
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_hereje",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "inq_notario",
+   "branch": "inquisicion",
+   "name": "Notario infernal",
+   "desc": "Los encargos pagan un 20% más por rango.",
+   "max": 3,
+   "row": 2,
+   "fx": [
+    {
+     "k": "special.contract",
+     "mul": 0.2
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_velo",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "inq_sordo",
+   "branch": "inquisicion",
+   "name": "Sordo al Juicio",
+   "desc": "El Juicio de los jefes hace un 15% menos de daño por rango.",
+   "max": 3,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.judge",
+     "mul": -0.15
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_sellos",
+     "rank": 1
+    }
+   ],
+   "cost_base": 22,
+   "cost_step": 5
+  },
+  {
+   "id": "inq_profeta",
+   "branch": "inquisicion",
+   "name": "Lengua de profeta",
+   "desc": "Los dones épicos salen un 30% más en el draft por rango.",
+   "max": 2,
+   "row": 3,
+   "fx": [
+    {
+     "k": "draft.rarity.epica",
+     "mul": 0.3
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_notario",
+     "rank": 1
+    }
+   ],
+   "cost_base": 26,
+   "cost_step": 8,
+   "boon": true
+  },
+  {
+   "id": "inq_hoguera",
+   "branch": "inquisicion",
+   "name": "Hoguera profana",
+   "desc": "En cada oleada arde una hoguera ante la Puerta que cura a tus bestias y quema a los humanos. A cambio la Puerta tiene un 20% menos de vida.",
+   "max": 1,
+   "row": 3,
+   "fx": [
+    {
+     "k": "special.profane",
+     "add": 1
+    },
+    {
+     "k": "door.hp",
+     "mul": -0.2
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_velo",
+     "rank": 2
+    }
+   ],
+   "cost_base": 80,
+   "cost_step": 0,
+   "keystone": true,
+   "side": true
+  },
+  {
+   "id": "inq_fuego",
+   "branch": "inquisicion",
+   "name": "Fuego sagrado",
+   "desc": "Los enemigos que arden reciben un 8% más de daño por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "special.burn_vuln",
+     "add": 0.08
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_sordo",
+     "rank": 1
+    },
+    {
+     "id": "inq_profeta",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "inq_cadenas"
+  },
+  {
+   "id": "inq_cadenas",
+   "branch": "inquisicion",
+   "name": "Cadenas benditas",
+   "desc": "Los enemigos aturdidos o retenidos reciben un 12% más de daño por rango.",
+   "max": 2,
+   "row": 5,
+   "fx": [
+    {
+     "k": "special.stun_vuln",
+     "add": 0.12
+    }
+   ],
+   "req": [
+    {
+     "id": "inq_sordo",
+     "rank": 1
+    },
+    {
+     "id": "inq_profeta",
+     "rank": 1
+    }
+   ],
+   "cost_base": 45,
+   "cost_step": 10,
+   "excl": "inq_fuego"
   }
- ]
+ ],
+ "legacy": {
+  "brasa_maestria": {
+   "cost_base": 40,
+   "cost_step": 8,
+   "max": 3
+  },
+  "rayo_tormenta": {
+   "cost_base": 40,
+   "cost_step": 8,
+   "max": 2
+  },
+  "eco_sabueso": {
+   "cost_base": 40,
+   "cost_step": 8,
+   "max": 3
+  },
+  "beast_furia": {
+   "cost_base": 40,
+   "cost_step": 8,
+   "max": 2
+  },
+  "sab_alfa": {
+   "cost_base": 40,
+   "cost_step": 8,
+   "max": 2
+  },
+  "horno_infierno": {
+   "cost_base": 40,
+   "cost_step": 8,
+   "max": 2
+  },
+  "trueno_tormenta": {
+   "cost_base": 40,
+   "cost_step": 8,
+   "max": 2
+  },
+  "ojo_mirada": {
+   "cost_base": 40,
+   "cost_step": 8,
+   "max": 2
+  }
+ },
+ "_doc": "keystone: piedra angular (cambia una regla, con contrapartida). excl: id del nodo que queda vetado al comprar este. side: se dibuja en la columna lateral. branches[].unlock: asedio que hay que ganar para abrir la rama. legacy: nodos retirados (para devolver su esencia a las partidas guardadas). Claves especiales: set.need.<familia> (dones para la resonancia), set.power.<familia>, draft.family.<familia>, draft.kind.<bestia>, draft.rarity.<rareza>."
 }

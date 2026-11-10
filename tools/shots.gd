@@ -28,8 +28,8 @@ func _frames(n: int) -> void:
 		await get_tree().process_frame
 
 
-func shot(name: String) -> void:
-	get_viewport().warp_mouse(Vector2(1275, 715))
+func shot(name: String, mouse: Vector2 = Vector2(1275, 715)) -> void:
+	get_viewport().warp_mouse(mouse)
 	await _frames(2)
 	await RenderingServer.frame_post_draw
 	var img: Image = get_viewport().get_texture().get_image()
@@ -224,10 +224,41 @@ func run() -> void:
 	if want("arbol"):
 		s().reset()
 		s().meta_mode = true
+		s().essence = 400
+		s().won = []
 		main.show_tree = true
+		main.tree_tab = "brasa"
 		await shot("arbol")
+		# árbol a medias: piedra angular, camino elegido (el otro cerrado) y ratón sobre un nodo
+		for id in ["brasa_radio", "brasa_radio", "brasa_dmg", "brasa_dmg", "brasa_dmg", "brasa_cd", "brasa_cd", "brasa_delay", "brasa_burn", "brasa_burn",
+				"brasa_stun", "brasa_echo", "brasa_tierra", "brasa_cometa", "door_hp", "door_hp", "door_hp", "eco_reward", "eco_reward", "door_regen", "door_espinas"]:
+			s().essence = 9999
+			s().buy_skill(id)
+		s().essence = 120
+		await shot("arbol_brasa", main._node_rect("brasa_ascuas").get_center())
+		await shot("arbol_piedra", main._node_rect("brasa_tierra").get_center())
+		main.tree_tab = "demonio"
+		await shot("arbol_demonio", main._node_rect("door_bastion").get_center())
+		main.tree_tab = "abismo"
+		await shot("arbol_sellada", main._node_rect("abi_pacto").get_center())
+		s().won = ["primer", "alba", "inquisicion"]
+		main.tree_tab = "inquisicion"
+		s().essence = 300
+		await shot("arbol_inquisicion", main._node_rect("inq_hoguera").get_center())
+		main.tree_tab = "rayo"
+		main._do_button("respec:")
+		await shot("arbol_reasignar", main._respec_rect(true).get_center())
+		main._respec_arm = ""
+		for bid in ["bestias", "jauria", "horno", "trueno", "ojo", "abismo"]:
+			main.tree_tab = bid
+			await shot("arbol_" + bid)
+		s().skills.clear()
+		s().skill_paid.clear()
+		s().won = []
+		s()._tree_changed()
 		s().meta_mode = false
 		main.show_tree = false
+		main.tree_tab = "brasa"
 	if want("ruta"):
 		s().reset()
 		s().phase = "route"

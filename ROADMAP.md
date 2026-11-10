@@ -3,6 +3,45 @@
 Memoria entre turnos. Al empezar cada turno: leer esto y seguir por el primer punto pendiente.
 Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, cada hora, minuto 16) creada.
 
+## Árbol 2 (rediseño del árbol de habilidades)
+Encargo: `docs/prompts/arbol_fable_5_2.md`. El árbol subía números pero no cambiaba cómo se juega.
+
+### Plan
+1. [x] **Piedras angulares** — una por rama (`keystone` en `data/skills.json`, rango único, 80 de base): cambian una regla y piden algo a cambio. Se leen en `sim.gd` con claves `special.*`.
+2. [x] **Caminos excluyentes** — los ocho remates «+X% y +Y%» (fila 5) se retiran y en su lugar hay una pareja con `excl`: comprar uno cierra el otro (estado `excluded`, tachado en la vista).
+3. [x] **El árbol habla con los dones** — nodos con `set.need.<familia>` (resonancia con un solo don), `set.power.<familia>` (resonancia más fuerte), `draft.family.<familia>`, `draft.kind.<bestia>` y `draft.rarity.<rareza>` (pesos del draft).
+4. [x] **Reasignar con coste** — `Sim.respec(rama)` devuelve el 75% (`meta.respec_refund`) de lo pagado de verdad (`skill_paid`, que guarda cada compra con su inflación); una rama o todo el árbol; solo entre partidas. Se guarda en `meta.json` → `pagado`.
+5. [x] **Ramas que se ganan** — Abismo (pack 2; se abre al ganar el Alba) e Inquisición (al ganar el tercer asedio). `branches[].unlock`; estado `sealed` con el requisito escrito.
+6. [x] **Vista nueva** — pestañas por rama a la izquierda, árbol de la rama en el centro (dos columnas y una lateral para piedra angular y nodos de dones) y panel de detalle fijo a la derecha con los botones de reasignar. Capturas: `tools/shots.tscn -- <dir> arbol` (13 capturas).
+7. [x] **Migración** — `Sim.load_tree()`: los nodos retirados devuelven su esencia entera (la pagada si hay registro; si no, estimada repitiendo la compra de barato a caro con inflación); aviso en el menú. Una partida a medias se carga y ajusta la Puerta al árbol nuevo.
+8. [ ] Bot con estilos de compra y medidas de equilibrio.
+9. [ ] Documentación, «Cómo se juega», web y PR.
+
+### Decisiones propias
+- **Los remates se quitan en vez de añadir una fila más.** Eran los nodos más «porcentaje» del árbol y su sitio es justo el de la elección final. Quien los tenía recupera toda su esencia.
+- **«Tarda el doble»** de Tierra quemada es el enfriamiento, no el retardo de caída: con 3 s de caída no se acierta a nadie y el fuego en el suelo ya premia apuntar por delante.
+- **Tizón inmortal** no es un muro eterno: cae 4 s y se levanta con media vida (un bloqueador que nunca cae cerraba un carril para siempre). A cambio no gana cicatrices, así que choca con «Orgullo de cicatrices»: es una decisión de build.
+- **Reasignar devuelve el 75%** de lo pagado, con su inflación (se apunta cada compra). Así nunca se gana esencia reasignando y el precio de probar otra build es claro. Solo entre partidas, para que no sirva de truco a mitad de asedio.
+- **Las ramas nuevas se ven selladas** con su requisito, y la vista pasa a pestañas: diez columnas no caben en 1280 px y un panel fijo de detalle deja leer las piedras angulares sin tooltip.
+- Las piedras angulares no tienen rangos ni inflación propia distinta: cuestan 80 de base, que con el árbol a medias son 110-140 de esencia (una partida entera).
+
+### Piedras angulares
+| Rama | Piedra | Regla | A cambio |
+|---|---|---|---|
+| Brasa | Tierra quemada | deja el suelo ardiendo 5 s | tarda el doble en recargarse |
+| Rayo | Arco voltaico | salta sin límite y sin bajar del 50% | solo salta a enemigos que arden |
+| Demonio | Puerta de espinas | quien golpea la Puerta recibe 14 de daño | Puerta −25% de vida |
+| Bestias | Tizón inmortal | Tizón se levanta a los 4 s, sin cicatriz | las demás bestias −40% de vida |
+| Jauría | Camada | cada Sabueso trae un gemelo gratis | Sabuesos −35% de vida |
+| Horno | Estallido de ceniza | los que mueren ardiendo estallan y prenden | Horno −30% de vida |
+| Trueno | Tormenta errante | no vuelve a su puesto y salta un 30% más | recibe +30% de daño |
+| Ojo | Mirada fija | +120% de daño a un solo blanco | ya no encadena |
+| Abismo | Pacto del Abismo | empiezas con una bestia del Abismo | empiezas sin almas |
+| Inquisición | Hoguera profana | hoguera que cura bestias y quema humanos | Puerta −20% de vida |
+
+### Medidas
+- **Antes** (bot torpe, `BAL_CLIMB=1 ... -- 100 8 20`): primera partida 50/100 (50%); bot hábil 85%. Carrera 8×20: 12, 88, 75, 62, 75, 100, 50, 88, 50, 38, 38, 62, 50, 25, 25, 25, 75, 62, 88, 50% → media 57%. Esencia invertida al final: ~7350.
+
 ## Noche 2 (animaciones de Flow)
 Tarea programada «La Última Puerta: seguir 2» (trig_01RebsH5yBQGN7zjmY9vLLuV, cada hora, minuto 59) creada.
 Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).

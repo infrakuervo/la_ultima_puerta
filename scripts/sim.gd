@@ -63,6 +63,12 @@ var contract_offer: Array = []
 var run_track: Dictionary = {}   # contadores de la partida para los encargos
 var unlocked: Array = []         # dones con "unlock" abiertos por logros (la vista los carga de meta.json)
 var boons: Array = []            # dones de la partida elegidos en el draft (ids del pool)
+var skill_paid: Dictionary = {}  # id de habilidad -> esencia pagada en total (para reasignar)
+var won: Array = []              # ids de asedios ganados (la vista lo carga de meta.json): abre ramas del árbol
+var LEGACY: Dictionary = {}      # nodos retirados del árbol (data/skills.json → legacy)
+var fire_pools: Array = []       # suelo ardiendo de la Brasa (Tierra quemada): {p, r, t, dps}
+var profane: Dictionary = {}     # hoguera profana (piedra angular de la Inquisición): {p, r} ({} si no hay)
+var _prof_t: float = 0.0
 
 
 func _init(seed_value: int = 1) -> void:
@@ -77,6 +83,7 @@ func _init(seed_value: int = 1) -> void:
 	ROUTES = w["routes"]
 	var sk: Dictionary = load_json("res://data/skills.json")
 	BRANCHES = sk["branches"]
+	LEGACY = sk.get("legacy", {})
 	for nd in sk["nodes"]:
 		SK[nd["id"]] = nd
 		SK_ORDER.append(nd["id"])
@@ -121,8 +128,9 @@ func reset() -> void:
 	defeat_wave = 0
 	if not meta_mode:
 		skills.clear()
+		skill_paid.clear()
 	_invalidate()
-	door_max = float(B["door"]["hp"]) * (1.0 + fmul("door.hp"))
+	door_max = _door_base()
 	door_hp = door_max
 	souls = int(B["economy"]["start_souls"])
 	creatures.clear()
@@ -137,6 +145,8 @@ func reset() -> void:
 	rayo_cd = 0.0
 	pending_brasas.clear()
 	tar_pools.clear()
+	fire_pools.clear()
+	profane = {}
 	draft.clear()
 	kills = 0
 	wave_time = 0.0
@@ -158,8 +168,18 @@ func reset() -> void:
 	var tizon: Dictionary = _new_creature("sabueso", {"x": 520.0, "lane": 1})
 	tizon["name"] = "Tizón"
 	tizon["named"] = true
+	tizon["max_hp"] = calc_max_hp(tizon)
+	tizon["hp"] = tizon["max_hp"]
 	creatures.append(tizon)
 	_note_seen("sabueso")
+	if fadd("special.abismo_start") > 0.0:
+		# Pacto del Abismo: una bestia del pack 2 de salida, sin almas
+		var ak: String = ["gargola", "enjambre", "garfio"][rng.randi() % 3]
+		var asp: Dictionary = find_spot(String(B[ak].get("spot", "front")))
+		if not asp.is_empty():
+			creatures.append(_new_creature(ak, asp))
+			_note_seen(ak)
+		souls = 0
 	message = "Coloca a tus monstruos y pulsa «Iniciar oleada»."
 	_offer_contracts()
 	_place_sanctuary()
@@ -337,12 +357,21 @@ func stat_mult(c: Dictionary) -> float:
 
 
 func hp_mult(c: Dictionary) -> float:
-	return stat_mult(c) * (1.0 + fmul("beast.hp"))
+	var m: float = stat_mult(c) * (1.0 + fmul("beast.hp"))
+	if c["named"]:
+		m *= 1.0 + fmul("special.named_hp")
+	else:
+		m *= maxf(0.2, 1.0 + fmul("special.others_hp"))
+		if c["kind"] == "sabueso":
+			m *= maxf(0.2, 1.0 + fmul("special.sab_hp"))
+	return m
 
 
 func dmg_mult(c: Dictionary) -> float:
 	var m: float = stat_mult(c) * (1.0 + fmul("beast.dmg") + augur_fx("beast_dmg"))
 	m *= 1.0 + fadd("special.scar_dmg") * float(c["scars"])
+	if c["named"]:
+		m *= 1.0 + fmul("special.named_dmg")
 	var others: int = 0
 	for o in creatures:
 		if o["id"] != c["id"] and not o["dead"] and not o["fallen"]:
@@ -418,6 +447,12 @@ func buy(item: String) -> bool:
 			var sc: Dictionary = _new_creature("sabueso", find_spot("front"))
 			sc["name"] = "Sabueso"
 			creatures.append(sc)
+			if fadd("special.litter") > 0.0:
+				var tw: Dictionary = find_spot("front")
+				if not tw.is_empty():
+					var twin: Dictionary = _new_creature("sabueso", tw)
+					twin["name"] = "Sabueso"
+					creatures.append(twin)
 		"ojo":
 			var existing: Dictionary = {}
 			for c in creatures:
@@ -485,6 +520,11 @@ func start_wave() -> bool:
 	rayo_cd = 0.0
 	pending_brasas.clear()
 	tar_pools.clear()
+	fire_pools.clear()
+	profane = {}
+	if fadd("special.profane") > 0.0:
+		var pc: Dictionary = B["meta"].get("profane", {})
+		profane = {"p": Vector2(float(pc.get("x", 470.0)), lane_y(1)), "r": float(pc.get("r", 120.0))}
 	for c in creatures:
 		_reset_combat_state(c)
 	events.append({"t": "wave_start", "wave": wave_index + 1})
@@ -503,6 +543,7 @@ func _reset_combat_state(c: Dictionary) -> void:
 	c["skill_cd"] = 0.0
 	c["hambre"] = 0
 	c["target"] = -1
+	c["revive_t"] = 0.0
 	c["hp"] = c["max_hp"]
 
 
@@ -692,18 +733,44 @@ func _update_sanctuary(dt: float) -> void:
 	var sd: Dictionary = SIEGES[siege_index]["sanctuary"]
 	var p: Vector2 = sanctuary["p"]
 	var r: float = float(sanctuary["r"])
+	var sk_m: float = maxf(0.2, 1.0 + fmul("special.sanct"))   # Velo de ceniza
 	for e in enemies:
 		var est: Dictionary = B["enemies"][e["kind"]]
 		if est.get("boss", false) or est.get("hero", false):
 			continue   # el santuario no cura a héroes ni jefes (sería un muro)
 		if not e["dead"] and epos(e).distance_to(p) <= r and float(e["hp"]) < float(e["max_hp"]):
-			e["hp"] = minf(float(e["max_hp"]), float(e["hp"]) + float(e["max_hp"]) * float(sd["heal"]) * step_t)
+			e["hp"] = minf(float(e["max_hp"]), float(e["hp"]) + float(e["max_hp"]) * float(sd["heal"]) * step_t * sk_m)
 			events.append({"t": "sanct_heal", "id": e["id"]})
 	for c in creatures:
 		if c["dead"] or c["fallen"] or c["air"]:
 			continue
 		if Vector2(float(c["x"]), lane_y(int(c["lane"]))).distance_to(p) <= r:
-			damage_creature(c, float(c["max_hp"]) * float(sd["burn"]) * step_t)
+			damage_creature(c, float(c["max_hp"]) * float(sd["burn"]) * step_t * sk_m)
+
+
+## Hoguera profana: el santuario al revés. Cura a las bestias de dentro y prende a los humanos.
+func _update_profane(dt: float) -> void:
+	if profane.is_empty():
+		return
+	_prof_t += dt
+	if _prof_t < 0.5:
+		return
+	var step_t: float = _prof_t
+	_prof_t = 0.0
+	var pc: Dictionary = B["meta"].get("profane", {})
+	var p: Vector2 = profane["p"]
+	var r: float = float(profane["r"])
+	for c in creatures:
+		if c["dead"] or c["fallen"] or c["air"]:
+			continue
+		if _creature_point(c).distance_to(p) <= r and float(c["hp"]) < float(c["max_hp"]):
+			c["hp"] = minf(float(c["max_hp"]), float(c["hp"]) + float(c["max_hp"]) * float(pc.get("heal", 0.03)) * step_t)
+	for e in enemies:
+		if e["dead"] or B["enemies"][e["kind"]].get("burn_immune", false):
+			continue
+		if epos(e).distance_to(p) <= r:
+			e["burn_t"] = maxf(e["burn_t"], 0.8)
+			e["burn_dps"] = maxf(e["burn_dps"], float(pc.get("dps", 6.0)))
 
 
 func terrain_def() -> Dictionary:
@@ -763,8 +830,14 @@ func run_load(d: Dictionary) -> bool:
 	spawn_queue.clear()
 	pending_brasas.clear()
 	tar_pools.clear()
+	fire_pools.clear()
+	profane = {}
 	events.clear()
 	_invalidate()
+	# el árbol puede haber cambiado desde que se guardó (migración, reasignación): la Puerta se ajusta
+	var nm: float = float(B["door"]["hp"]) * maxf(0.2, 1.0 + fmul("door.hp"))
+	door_hp = clampf(door_hp + nm - door_max, 1.0, nm)
+	door_max = nm
 	refresh_creatures()
 	message = "Partida recuperada: oleada %d." % (wave_index + 1)
 	return true
@@ -884,13 +957,15 @@ func _new_creature(kind: String, spot: Dictionary) -> Dictionary:
 		"id": next_id, "kind": kind, "name": label(kind), "named": false, "level": 1,
 		"lane": int(spot["lane"]), "home_lane": int(spot["lane"]),
 		"x": float(spot["x"]), "home_x": float(spot["x"]),
-		"hp": float(_stats(kind)["hp"]) * (1.0 + fmul("beast.hp")), "max_hp": float(_stats(kind)["hp"]) * (1.0 + fmul("beast.hp")),
+		"hp": 1.0, "max_hp": 1.0,
 		"cd": 0.0, "presa_cd": 0.0, "skill_cd": 0.0, "stun": 0.0, "windup": 0.0,
 		"state": "home", "t": 0.0, "scars": 0, "kills": 0,
 		"dead": false, "fallen": false, "loaned": false,
 		"hambre": 0, "target": -1, "air": false,
 		"from_x": 0.0, "to_x": 0.0, "from_lane": 0, "to_lane": 0,
 	}
+	c["max_hp"] = calc_max_hp(c)
+	c["hp"] = c["max_hp"]
 	next_id += 1
 	return c
 
@@ -910,6 +985,7 @@ func step(dt: float) -> void:
 			enemies[enemies.size() - 1]["x"] = float(sp["x"])
 	_update_zones(dt)
 	_update_sanctuary(dt)
+	_update_profane(dt)
 	for c in creatures:
 		_update_creature(c, dt)
 	_update_spells(dt)
@@ -953,6 +1029,12 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 	var mult: float = float(st.get("armor", 1.0)) if armored else 1.0
 	if armored:
 		mult *= _cover_mult(e)
+	if st.get("hero", false) or st.get("boss", false):
+		mult *= 1.0 + fadd("special.vs_big")
+	if e["burn_t"] > 0.0:
+		mult *= 1.0 + fadd("special.burn_vuln")
+	if e["stun"] > 0.0 or e["held"] > 0.0:
+		mult *= 1.0 + fadd("special.stun_vuln")
 	var dealt: float = amount * mult
 	if float(e.get("shield", 0.0)) > 0.0:
 		var ab: float = minf(float(e["shield"]), dealt)
@@ -971,6 +1053,31 @@ func damage_enemy(e: Dictionary, amount: float, src: int = -1, armored: bool = t
 		if not c.is_empty():
 			c["kills"] += 1
 		events.append({"t": "kill", "x": e["x"], "lane": e["lane"], "reward": reward, "id": e["id"], "kind": e["kind"], "y": epos(e).y})
+		if e["burn_t"] > 0.0 and fadd("special.burn_burst") > 0.0 and _horno_up():
+			_burn_burst(e)
+
+
+func _horno_up() -> bool:
+	for c in creatures:
+		if c["kind"] == "horno" and not c["dead"] and not c["fallen"]:
+			return true
+	return false
+
+
+## Estallido de ceniza: el que muere ardiendo daña y prende a los de alrededor.
+func _burn_burst(e: Dictionary) -> void:
+	var p: Vector2 = epos(e)
+	var r: float = float(B["meta"].get("burst_r", 85.0))
+	var n: int = 0
+	for o in enemies:
+		if o["dead"] or o["id"] == e["id"] or epos(o).distance_to(p) > r:
+			continue
+		n += 1
+		if not B["enemies"][o["kind"]].get("burn_immune", false):
+			o["burn_t"] = maxf(o["burn_t"], 2.0)
+			o["burn_dps"] = maxf(o["burn_dps"], float(e["burn_dps"]))
+		damage_enemy(o, fadd("special.burn_burst"), -1)
+	events.append({"t": "burn_burst", "p": p, "r": r, "hits": n})
 
 
 # El Muro de Marfil protege al aliado que camina justo detrás de él.
@@ -1011,6 +1118,8 @@ func damage_creature(c: Dictionary, amount: float) -> void:
 	if c["dead"] or c["fallen"] or c["air"]:
 		return
 	amount *= wrath_dmg()
+	if c["kind"] == "trueno" and fadd("special.trueno_roam") > 0.0:
+		amount *= 1.3
 	if c["state"] == "stone":
 		c["stored"] = float(c.get("stored", 0.0)) + amount
 		events.append({"t": "stone_absorb", "id": c["id"]})
@@ -1026,6 +1135,8 @@ func damage_creature(c: Dictionary, amount: float) -> void:
 		events.append({"t": "creature_down", "id": c["id"], "named": c["named"]})
 		if c["named"]:
 			run_track["named_fell"] = true
+			if fadd("special.tizon_immortal") > 0.0:
+				c["revive_t"] = float(B["meta"].get("tizon_revive", 4.0))
 
 
 func _update_zones(dt: float) -> void:
@@ -1039,6 +1150,19 @@ func _update_zones(dt: float) -> void:
 			if not e["dead"] and epos(e).distance_to(tp["p"]) <= tp["r"]:
 				e["tar"] = maxf(float(e.get("tar", 0.0)), 0.5)
 	tar_pools = pools
+	var fkeep: Array = []
+	for fp in fire_pools:
+		fp["t"] -= dt
+		if fp["t"] <= 0.0:
+			continue
+		fkeep.append(fp)
+		for e in enemies:
+			if e["dead"] or B["enemies"][e["kind"]].get("burn_immune", false):
+				continue
+			if epos(e).distance_to(fp["p"]) <= float(fp["r"]):
+				e["burn_t"] = maxf(e["burn_t"], 0.6)
+				e["burn_dps"] = maxf(e["burn_dps"], float(fp["dps"]))
+	fire_pools = fkeep
 	var keep: Array = []
 	for z in zones:
 		z["t"] -= dt
@@ -1113,15 +1237,16 @@ func cast_rayo(p: Vector2) -> bool:
 	var tp: Vector2 = epos(tgt)
 	_rayo_hit(tgt, float(c["dmg"]), c)
 	events.append({"t": "rayo", "from": demon_pos(), "to": tp, "target": tgt["id"]})
-	if fadd("special.rayo_chain") > 0.0:
+	var arc: bool = fadd("special.rayo_arc") > 0.0   # Arco voltaico: sin límite, solo a los que arden
+	if fadd("special.rayo_chain") > 0.0 or arc:
 		var hit: Array = [tgt["id"]]
 		var cur: Vector2 = tp
 		var k: float = 1.0
-		for j in int(c["chain_count"]):
+		for j in (int(B["meta"].get("arc_max", 24)) if arc else int(c["chain_count"])):
 			var nxt: Dictionary = {}
 			var sd: float = float(c["chain_range"])
 			for e in enemies:
-				if e["dead"] or hit.has(e["id"]):
+				if e["dead"] or hit.has(e["id"]) or (arc and e["burn_t"] <= 0.0):
 					continue
 				var d: float = epos(e).distance_to(cur)
 				if d <= sd:
@@ -1130,6 +1255,8 @@ func cast_rayo(p: Vector2) -> bool:
 			if nxt.is_empty():
 				break
 			k *= float(c["chain_frac"])
+			if arc:
+				k = maxf(k, 0.5)
 			_rayo_hit(nxt, float(c["dmg"]) * k, c)
 			events.append({"t": "rayo_chain", "from": cur, "to": epos(nxt), "target": nxt["id"]})
 			hit.append(nxt["id"])
@@ -1160,12 +1287,24 @@ func _update_spells(dt: float) -> void:
 					if float(c["stun"]) > 0.0:
 						e["stun"] = maxf(e["stun"], float(c["stun"]))
 		events.append({"t": "brasa_land", "p": b["p"], "r": b["r"], "hits": hits})
+		var gt: float = fadd("special.brasa_ground")
+		if gt > 0.0 and float(b["k"]) >= 1.0:
+			fire_pools.append({"p": b["p"], "r": float(b["r"]), "t": gt, "d": gt, "dps": float(c["burn_dps"]) * float(B["meta"].get("ground_burn", 1.6))})
 	pending_brasas = keep
 
 
 # --- Criaturas ---------------------------------------------------------------
 
 func _update_creature(c: Dictionary, dt: float) -> void:
+	if c["fallen"] and float(c.get("revive_t", 0.0)) > 0.0:
+		c["revive_t"] = float(c["revive_t"]) - dt
+		if float(c["revive_t"]) <= 0.0:
+			# Tizón inmortal: se levanta con media vida, sin cicatriz
+			_reset_combat_state(c)
+			c["fallen"] = false
+			c["hp"] = c["max_hp"] * 0.5
+			events.append({"t": "revived", "id": c["id"]})
+		return
 	if c["dead"] or c["fallen"]:
 		return
 	c["cd"] = maxf(0.0, c["cd"] - dt)
@@ -1469,7 +1608,7 @@ func _support_priority(kind: String) -> float:
 	return 0.0
 
 
-func _trueno_pick_target(c: Dictionary) -> Dictionary:
+func _trueno_pick_target(c: Dictionary, any_dir: bool = false) -> Dictionary:
 	var st: Dictionary = _stats("trueno")
 	# 1) la marca del Ojo manda, en cualquier carril.
 	for e in enemies:
@@ -1482,6 +1621,8 @@ func _trueno_pick_target(c: Dictionary) -> Dictionary:
 		if e2["dead"] or absi(int(e2["lane"]) - int(c["lane"])) > 1:
 			continue
 		var gap: float = e2["x"] - c["x"]
+		if any_dir:
+			gap = absf(gap)
 		if gap < float(st["min_gap"]) or gap > float(st["jump_range"]):
 			continue
 		var pr: float = _support_priority(e2["kind"])
@@ -1541,7 +1682,16 @@ func _ai_trueno(c: Dictionary, dt: float) -> void:
 			c["t"] += dt
 			var near: Dictionary = _melee_step(c, st, dt, c["to_x"])
 			var weak: bool = c["hp"] < c["max_hp"] * 0.35
-			if c["t"] >= float(st["return_after"]) or weak or (near.is_empty() and c["t"] > 1.2):
+			var roam: bool = fadd("special.trueno_roam") > 0.0   # Tormenta errante: no vuelve; salta desde donde está
+			if roam and not weak and c["skill_cd"] <= 0.0:
+				var rt: Dictionary = _trueno_pick_target(c, true)
+				if not rt.is_empty():
+					c["state"] = "crouch"
+					c["t"] = 0.0
+					c["target"] = rt["id"]
+					events.append({"t": "trueno_crouch", "id": c["id"], "target": rt["id"]})
+					return
+			if (c["t"] >= float(st["return_after"]) and not roam) or weak or (near.is_empty() and c["t"] > 1.2):
 				c["state"] = "return"
 				c["lane"] = c["home_lane"]
 		"return":
@@ -1606,7 +1756,7 @@ func _ai_ojo(c: Dictionary) -> void:
 	var was_burning: bool = tgt["burn_t"] > 0.0
 	damage_enemy(tgt, float(st["dmg"]), c["id"])
 	events.append({"t": "ojo_shot", "id": c["id"], "target": tgt["id"], "x": tgt["x"], "lane": tgt["lane"]})
-	if with_horno and was_burning:
+	if with_horno and was_burning and fadd("special.ojo_focus") <= 0.0:
 		_ojo_chain(c, tgt)
 
 
@@ -1705,6 +1855,9 @@ func _hit_door(amount: float, e: Dictionary) -> void:
 	amount *= wrath_dmg() * (1.0 + augur_fx("door_dmg")) * maxf(0.3, 1.0 + fmul("door.armor"))
 	door_hp -= amount
 	events.append({"t": "door_hit", "lane": e["lane"], "x": e["x"], "amount": amount})
+	var th: float = fadd("special.door_thorns")
+	if th > 0.0 and not e["dead"]:
+		damage_enemy(e, th, -1)
 
 
 func _update_enemy(e: Dictionary, dt: float) -> void:
@@ -1758,7 +1911,7 @@ func _update_enemy(e: Dictionary, dt: float) -> void:
 			for a3 in enemies:
 				if a3["dead"] or epos(a3).distance_to(epos(e)) > float(st["shield_radius"]):
 					continue
-				a3["shield"] = maxf(float(a3.get("shield", 0.0)), float(st["shield"]) * wrath_hp())
+				a3["shield"] = maxf(float(a3.get("shield", 0.0)), float(st["shield"]) * wrath_hp() * maxf(0.2, 1.0 + fmul("special.shield")))
 				n_sh += 1
 			events.append({"t": "shield_pulse", "x": e["x"], "lane": e["lane"], "r": float(st["shield_radius"]), "n": n_sh})
 	if st.has("judge_cd"):
@@ -1926,7 +2079,7 @@ func _boss_judgment(e: Dictionary, st: Dictionary, dt: float) -> void:
 				if c["dead"] or c["fallen"] or c["air"] or int(c["lane"]) != int(e["judge_lane"]):
 					continue
 				if float(c["x"]) < float(e["x"]):
-					damage_creature(c, float(st["judge_dmg"]))
+					damage_creature(c, float(st["judge_dmg"]) * maxf(0.2, 1.0 + fmul("special.judge")))
 					hit += 1
 			events.append({"t": "judgment", "lane": e["judge_lane"], "x": e["x"], "hit": hit})
 		return
@@ -2091,10 +2244,13 @@ func _wave_cleared() -> void:
 	for c in creatures:
 		if c["fallen"]:
 			c["fallen"] = false
-			c["scars"] += 1
+			if fadd("special.tizon_immortal") <= 0.0:
+				c["scars"] += 1
 			events.append({"t": "revived", "id": c["id"]})
 		_reset_combat_state(c)
 	zones.clear()
+	fire_pools.clear()
+	profane = {}
 	pending_brasas.clear()
 	wave_index += 1
 	if is_endless() and wave_index >= WAVES.size():
@@ -2104,7 +2260,7 @@ func _wave_cleared() -> void:
 		if meta_mode:
 			_gain_essence(int(B["meta"]["victory"]))
 		if contract != "" and contract_status() != "fail":
-			var rw: int = int(contract_def(contract).get("reward", 0))
+			var rw: int = int(round(float(contract_def(contract).get("reward", 0)) * (1.0 + fmul("special.contract"))))
 			if meta_mode:
 				_gain_essence(rw)
 			else:
@@ -2131,6 +2287,10 @@ func _wave_cleared() -> void:
 # Árbol de habilidades
 # ----------------------------------------------------------------------------
 
+func _door_base() -> float:
+	return float(B["door"]["hp"]) * maxf(0.2, 1.0 + fmul("door.hp"))
+
+
 func _invalidate() -> void:
 	_fx_valid = false
 	_fx_cache.clear()
@@ -2153,14 +2313,16 @@ func _fx_totals() -> Dictionary:
 			_fx_add(f2, 1)
 	for f4 in terrain_def().get("fx", []):
 		_fx_add(f4, 1)
-	for fam in active_sets():
-		for f3 in B["draft"]["sets"][fam].get("fx", []):
-			_fx_add(f3, 1)
+	# las resonancias van al final: active_sets() ya puede leer set.need.* y set.power.* del árbol
 	_fx_valid = true
+	for fam in active_sets():
+		var pw: float = 1.0 + fmul("set.power." + String(fam))
+		for f3 in B["draft"]["sets"][fam].get("fx", []):
+			_fx_add(f3, pw)
 	return _fx_cache
 
 
-func _fx_add(f: Dictionary, r: int) -> void:
+func _fx_add(f: Dictionary, r: float) -> void:
 	var k: String = f["k"]
 	if not _fx_cache.has(k):
 		_fx_cache[k] = {"mul": 0.0, "add": 0.0}
@@ -2183,9 +2345,14 @@ func active_sets() -> Array:
 	var sets: Dictionary = B["draft"].get("sets", {})
 	var fam: Dictionary = boon_families()
 	for k in fam:
-		if int(fam[k]) >= 2 and sets.has(k):
+		if int(fam[k]) >= set_need(String(k)) and sets.has(k):
 			out.append(String(k))
 	return out
+
+
+## Dones de una familia que hacen falta para su resonancia (2; 1 con el nodo del árbol que la adelanta).
+func set_need(fam: String) -> int:
+	return maxi(1, 2 + int(fadd("set.need." + fam)))
 
 
 func draft_def(id: String) -> Dictionary:
@@ -2266,8 +2433,13 @@ func make_draft() -> void:
 ## Peso en el draft: los dones de una familia que ya llevas salen más (empuja a una build).
 func _draft_weight(o: Dictionary, fam: Dictionary, fw: float) -> float:
 	var w: float = float(o.get("weight", 1))
-	if String(o["type"]) == "boon" and fam.has(String(o.get("icon", ""))):
-		w *= fw
+	if String(o["type"]) == "boon":
+		if fam.has(String(o.get("icon", ""))):
+			w *= fw
+		# nodos del árbol que hablan con los dones
+		w *= 1.0 + fmul("draft.family." + String(o.get("icon", ""))) + fmul("draft.rarity." + String(o.get("rarity", "comun")))
+	elif String(o["type"]) == "beast":
+		w *= 1.0 + fmul("draft.kind." + String(o["kind"]))
 	return w
 
 
@@ -2313,7 +2485,7 @@ func draft_pick(i: int) -> bool:
 			for fs in active_sets():
 				if not sets0.has(fs):
 					events.append({"t": "set", "family": fs})
-			var nm: float = float(B["door"]["hp"]) * (1.0 + fmul("door.hp"))
+			var nm: float = _door_base()
 			door_hp += nm - door_max
 			door_max = nm
 			refresh_creatures()
@@ -2348,14 +2520,31 @@ func skill_cost(id: String) -> int:
 	return int(round(float(base) * (1.0 + float(B["meta"].get("inflation", 0.0)) * float(skill_points_spent()))))
 
 
-# "max" | "route" | "locked" | "poor" | "ok"
+func branch_def(bid: String) -> Dictionary:
+	for b in BRANCHES:
+		if String(b["id"]) == bid:
+			return b
+	return {}
+
+
+## Rama abierta: las que se ganan piden haber vencido un asedio (solo en el modo permanente).
+func branch_open(bid: String) -> bool:
+	var un: String = String(branch_def(bid).get("unlock", ""))
+	return un == "" or not meta_mode or won.has(un)
+
+
+# "max" | "sealed" (rama sin ganar) | "route" | "excluded" (elegiste el otro camino) | "locked" | "poor" | "ok"
 func skill_state(id: String) -> String:
 	var nd: Dictionary = SK[id]
 	if skill_rank(id) >= int(nd["max"]):
 		return "max"
+	if not branch_open(String(nd["branch"])):
+		return "sealed"
 	for b in BRANCHES:
 		if not meta_mode and b["id"] == nd["branch"] and String(b["route"]) != "" and route != String(b["route"]):
 			return "route"
+	if nd.has("excl") and skill_rank(String(nd["excl"])) > 0:
+		return "excluded"
 	for r in nd["req"]:
 		if skill_rank(r["id"]) < int(r["rank"]):
 			return "locked"
@@ -2372,18 +2561,114 @@ func can_skill(id: String) -> bool:
 func buy_skill(id: String) -> bool:
 	if not can_skill(id):
 		return false
+	var cost: int = skill_cost(id)
 	if meta_mode:
-		essence -= skill_cost(id)
+		essence -= cost
 	else:
-		souls -= skill_cost(id)
+		souls -= cost
+	skill_paid[id] = int(skill_paid.get(id, 0)) + cost
 	skills[id] = skill_rank(id) + 1
-	_invalidate()
-	var nm: float = float(B["door"]["hp"]) * (1.0 + fmul("door.hp"))
-	door_hp += nm - door_max
-	door_max = nm
-	refresh_creatures()
+	_tree_changed()
 	events.append({"t": "skill", "id": id, "rank": skill_rank(id)})
 	return true
+
+
+func _tree_changed() -> void:
+	_invalidate()
+	var nm: float = _door_base()
+	door_hp = maxf(1.0, door_hp + nm - door_max) if phase != "defeat" else door_hp
+	door_max = nm
+	refresh_creatures()
+
+
+# --- Reasignar ---------------------------------------------------------------------
+
+## Esencia pagada en el árbol (toda, o solo la de una rama).
+func paid_total(branch: String = "") -> int:
+	var n: int = 0
+	for id in skill_paid:
+		if skill_rank(String(id)) > 0 and SK.has(id) and (branch == "" or String(SK[id]["branch"]) == branch):
+			n += int(skill_paid[id])
+	return n
+
+
+## Lo que devuelve reasignar: una parte (`meta.respec_refund`) de lo que se pagó de verdad.
+func respec_refund(branch: String = "") -> int:
+	return int(floor(float(paid_total(branch)) * float(B["meta"].get("respec_refund", 0.75))))
+
+
+## Se reasigna entre partidas: al acabar una o antes de la primera oleada.
+func can_respec(branch: String = "") -> bool:
+	if not meta_mode or paid_total(branch) <= 0:
+		return false
+	return phase == "victory" or phase == "defeat" or (phase == "prep" and wave_index == 0)
+
+
+func respec(branch: String = "") -> bool:
+	if not can_respec(branch):
+		return false
+	var back: int = respec_refund(branch)
+	for id in skills.keys():
+		if SK.has(id) and (branch == "" or String(SK[id]["branch"]) == branch):
+			skills.erase(id)
+			skill_paid.erase(id)
+	essence += back
+	_tree_changed()
+	events.append({"t": "respec", "branch": branch, "refund": back})
+	return true
+
+
+## Coste estimado de unos rangos guardados sin registro de pago (partidas anteriores a «Árbol 2»):
+## se repite la compra de más barato a más caro con la inflación. Devuelve id -> esencia.
+func estimate_paid(ranks: Dictionary) -> Dictionary:
+	var buys: Array = []
+	for id in ranks:
+		var nd: Dictionary = SK.get(id, LEGACY.get(id, {}))
+		if nd.is_empty():
+			continue
+		for r in mini(int(ranks[id]), int(nd["max"])):
+			buys.append([int(nd["cost_base"]) + int(nd["cost_step"]) * r, String(id)])
+	buys.sort_custom(func(a, b): return a[0] < b[0] or (a[0] == b[0] and a[1] < b[1]))
+	var out: Dictionary = {}
+	var infl: float = float(B["meta"].get("inflation", 0.0))
+	for i in buys.size():
+		out[buys[i][1]] = int(out.get(buys[i][1], 0)) + int(round(float(buys[i][0]) * (1.0 + infl * float(i))))
+	return out
+
+
+## Carga el árbol guardado (meta.json). Los nodos que ya no existen devuelven su esencia entera;
+## los rangos por encima del máximo actual, su parte. Devuelve la esencia devuelta (ya sumada).
+func load_tree(saved: Dictionary, paid: Dictionary) -> int:
+	skills.clear()
+	skill_paid.clear()
+	var est: Dictionary = estimate_paid(saved)
+	var back: int = 0
+	for id in saved:
+		var r: int = int(saved[id])
+		if r <= 0:
+			continue
+		var p: int = int(paid[id]) if paid.has(id) else int(est.get(id, 0))
+		if not SK.has(id):
+			back += p
+			continue
+		var mx: int = int(SK[id]["max"])
+		if r > mx:
+			var cut: int = int(round(float(p) * float(r - mx) / float(r)))
+			back += cut
+			p -= cut
+			r = mx
+		skills[id] = r
+		skill_paid[id] = p
+	# un camino excluyente comprado dos veces no puede venir de un guardado, pero por si acaso
+	for id2 in skills.keys():
+		var ex: String = String(SK[id2].get("excl", ""))
+		if ex != "" and skills.has(id2) and skills.has(ex) and String(id2) > ex:
+			back += int(skill_paid.get(id2, 0))
+			skills.erase(id2)
+			skill_paid.erase(id2)
+	essence += back
+	_invalidate()
+	return back
 
 
 func skill_points_spent() -> int:

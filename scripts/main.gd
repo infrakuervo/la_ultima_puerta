@@ -48,6 +48,8 @@ var mouse_pos: Vector2 = Vector2.ZERO
 var show_bestiary: bool = false
 var show_tree: bool = false
 var _tree_pos: Dictionary = {}
+var tree_tab: String = "brasa"    # rama que se ve en el árbol
+var _respec_arm: String = ""      # botón de reasignar pulsado una vez (pide confirmar)
 var spell: String = "brasa"
 var holding: bool = false
 
@@ -88,6 +90,7 @@ const TIPS: Dictionary = {
 	"grieta": "La Grieta no acaba: cada oleada es más dura. Aguanta todo lo que puedas para batir tu récord.",
 }    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
 var unlock_note: String = ""
+var tree_refund: int = 0          # esencia devuelta al cargar un árbol guardado con nodos que ya no existen
 var flash_red: float = 0.0
 var flash_white: float = 0.0
 var font: Font = null
@@ -355,7 +358,7 @@ func _on_event(ev: Dictionary) -> void:
 	var t: String = ev["t"]
 	menu.tut_event(self, ev)
 	poses.on_event(ev, sim)
-	if t in ["bought", "leveled", "placed", "draft_pick", "skill", "augur", "route_chosen"] and sim.phase == "prep":
+	if t in ["bought", "leveled", "placed", "draft_pick", "skill", "respec", "augur", "route_chosen"] and sim.phase == "prep":
 		save_run()
 	for lid in logros.on_event(sim, ev, not challenge.is_empty()):
 		var ld: Dictionary = logros.def(String(lid))
@@ -405,6 +408,13 @@ func _on_event(ev: Dictionary) -> void:
 			juice.add_trauma(0.21)
 			_add_fx({"type": "ring", "p": ev["p"], "r0": 10.0, "r1": float(ev["r"]), "col": Color(1.0, 0.55, 0.2, 0.9), "ttl": 0.45})
 			_add_fx({"type": "disc", "p": ev["p"], "r": float(ev["r"]), "col": Color(1.0, 0.5, 0.15, 0.35), "ttl": 0.5})
+		"burn_burst":
+			juice.burst(ev["p"], 14, Color(1.0, 0.6, 0.2), 200.0, 0.5, 2.5, 300.0, 80.0)
+			_add_fx({"type": "ring", "p": ev["p"], "r0": 8.0, "r1": float(ev["r"]), "col": Color(1.0, 0.45, 0.15, 0.8), "ttl": 0.35})
+		"respec":
+			banner_text = "Árbol reasignado: +%d de esencia" % int(ev["refund"])
+			banner_t = 2.0
+			banner_dur = 2.0
 		"rayo":
 			_play("rayo")
 			# el rayo sale de la mano en el fotograma de impacto del clip (si hay animación)
@@ -670,12 +680,16 @@ func _on_event(ev: Dictionary) -> void:
 			var first: bool = not siege_wins.has(sid)
 			if first or int(siege_wins[sid]) < sim.wrath:
 				siege_wins[sid] = sim.wrath
+				sim.won = siege_wins.keys()
 				if sim.wrath < int(sim.B["wrath"]["max"]):
 					unlock_note = "Se abre Ira %d en este asedio." % (sim.wrath + 1)
 			if first:
 				for sg in sim.SIEGES:
 					if String(sg.get("unlock", "")) == sid:
 						unlock_note = "Se abre: %s. %s" % [String(sg["name"]), unlock_note]
+				for brn in sim.BRANCHES:
+					if String(brn.get("unlock", "")) == sid:
+						unlock_note = "Rama nueva en el árbol: %s. %s" % [String(brn["name"]), unlock_note]
 			_save_bestiary()
 			_save_meta()
 		"defeat":
@@ -914,9 +928,24 @@ func _do_button(id: String) -> void:
 	if id.begins_with("draft:"):
 		sim.draft_pick(int(id.substr(6)))
 		return
+	var armed: String = _respec_arm
+	_respec_arm = ""
 	if id.begins_with("sk:"):
 		if sim.buy_skill(id.substr(3)):
 			_play("level")
+			_save_meta()
+		return
+	if id.begins_with("tab:"):
+		tree_tab = id.substr(4)
+		_play("click")
+		return
+	if id.begins_with("respec:"):
+		# dos clics: el primero arma el botón, el segundo reasigna
+		if armed != id:
+			_respec_arm = id
+			_play("click")
+		elif sim.respec(id.substr(7)):
+			_play("mutate")
 			_save_meta()
 		return
 	match id:
@@ -1103,6 +1132,7 @@ func _draw_arena_rest(painted: bool) -> void:
 	juice.draw_back(self)
 	_draw_terrain()
 	_draw_sanctuary()
+	_draw_profane()
 	_draw_demon()
 	# zonas de despliegue: solo se resaltan al colocar
 	if sim.phase == "prep":
@@ -1128,6 +1158,20 @@ func _draw_arena_rest(painted: bool) -> void:
 		draw_circle(Vector2.ZERO, rr, Color(0.12, 0.07, 0.04, 0.55 * ta))
 		draw_arc(Vector2.ZERO, rr, 0.0, TAU, 28, Color(0.5, 0.3, 0.12, 0.8 * ta), 2.0)
 		draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+	# suelo ardiendo de la Brasa (Tierra quemada)
+	for fp in sim.fire_pools:
+		var fa: float = clampf(float(fp["t"]) / 1.0, 0.0, 1.0)
+		var fpp: Vector2 = fp["p"]
+		var fr: float = float(fp["r"])
+		draw_set_transform(arena_offset + fpp, 0.0, Vector2(1.0, 0.5))
+		draw_circle(Vector2.ZERO, fr, Color(1.0, 0.35, 0.08, 0.22 * fa))
+		draw_arc(Vector2.ZERO, fr, 0.0, TAU, 32, Color(1.0, 0.55, 0.15, 0.7 * fa), 2.0)
+		draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+		for k in 9:
+			var ang: float = TAU * float(k) / 9.0 + float(k) * 1.7
+			var q: Vector2 = fpp + Vector2(cos(ang) * fr * 0.6, sin(ang) * fr * 0.3)
+			var fh: float = 12.0 + 8.0 * sin(clock * 9.0 + float(k) * 1.3)
+			draw_colored_polygon(PackedVector2Array([q + Vector2(-7, 4), q + Vector2(0, 4 - fh), q + Vector2(7, 4)]), Color(1.0, 0.5, 0.15, 0.7 * fa))
 	# hueco del Trueno
 	for c in sim.creatures:
 		if c["kind"] == "trueno" and not c["dead"] and c["state"] != "home":
@@ -1156,6 +1200,34 @@ func _draw_arena_rest(painted: bool) -> void:
 	juice.draw_front(self, font)
 	if sim.phase == "combat":
 		_draw_aim()
+
+
+## Hoguera profana (piedra angular de la Inquisición): el santuario al revés, en verde y morado.
+## En preparación se ve dónde arderá.
+func _draw_profane() -> void:
+	var p: Vector2 = Vector2.ZERO
+	var r: float = 0.0
+	if not sim.profane.is_empty():
+		p = sim.profane["p"]
+		r = float(sim.profane["r"])
+	elif sim.phase == "prep" and sim.fadd("special.profane") > 0.0:
+		var pc: Dictionary = sim.B["meta"].get("profane", {})
+		p = Vector2(float(pc.get("x", 470.0)), _lane_y(1))
+		r = float(pc.get("r", 120.0))
+	else:
+		return
+	var pulse: float = 0.5 + 0.5 * sin(clock * 2.6)
+	draw_set_transform(arena_offset + p, 0.0, Vector2(1.0, 0.5))
+	draw_circle(Vector2.ZERO, r, Color(0.5, 0.2, 0.7, 0.10 + 0.05 * pulse))
+	draw_arc(Vector2.ZERO, r, 0.0, TAU, 48, Color(0.55, 1.0, 0.6, 0.7), 3.0)
+	draw_arc(Vector2.ZERO, r * 0.8, 0.0, TAU, 48, Color(0.7, 0.4, 1.0, 0.4), 2.0)
+	draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+	for k in 5:
+		var q: Vector2 = p + Vector2(-16.0 + 8.0 * float(k), 4.0)
+		var fh: float = 26.0 + 12.0 * sin(clock * 8.0 + float(k) * 1.9) - absf(float(k) - 2.0) * 6.0
+		draw_colored_polygon(PackedVector2Array([q + Vector2(-7, 0), q + Vector2(0, -fh), q + Vector2(7, 0)]), Color(0.5, 1.0, 0.55, 0.75))
+	if sim.phase == "prep":
+		_txt("HOGUERA PROFANA", p + Vector2(-80, -r * 0.5 - 10), 15, Color(0.6, 1.0, 0.65), HORIZONTAL_ALIGNMENT_CENTER, 160.0)
 
 
 ## Santuario del tercer asedio: círculo dorado en el suelo con runas que giran.
@@ -1840,24 +1912,61 @@ func _draw_augurs() -> void:
 	_txt("Elegido: %s" % cname if chosen != "" else ("Sin encargo" if is_c else "Sin elegir: Calma"), Vector2(last.position.x + 10, last.end.y + 16), 13, Color(0.75, 0.65, 0.8))
 
 
-# --- Árbol de habilidades -------------------------------------------------------
+# --- Árbol de habilidades ---------------------------------------------------------
+# Pestañas por rama a la izquierda, el árbol de la rama elegida en el centro (dos columnas y una
+# lateral para la piedra angular y los nodos de dones) y un panel de detalle a la derecha.
 
-const TREE_X0: float = 24.0
-const TREE_DX: float = 154.0
-const TREE_Y0: float = 122.0
-const TREE_DY: float = 53.0
-const TREE_W: float = 144.0
-const TREE_H: float = 46.0
+const TREE_TAB_X: float = 16.0
+const TREE_TAB_W: float = 190.0
+const TREE_TAB_Y0: float = 90.0
+const TREE_TAB_DY: float = 51.0
+const TREE_TAB_H: float = 45.0
+const TREE_COL_A: float = 232.0
+const TREE_COL_B: float = 440.0
+const TREE_COL_MID: float = 336.0
+const TREE_COL_SIDE: float = 660.0
+const TREE_Y0: float = 140.0
+const TREE_DY: float = 76.0
+const TREE_W: float = 196.0
+const TREE_H: float = 52.0
+const TREE_PANEL: Rect2 = Rect2(872, 90, 392, 506)
 
 
 func _build_tree_pos() -> void:
 	_tree_pos.clear()
-	for ci in sim.BRANCHES.size():
-		var idx: int = 0
+	for br in sim.BRANCHES:
+		var rows: Dictionary = {}
 		for id in sim.SK_ORDER:
-			if sim.SK[id]["branch"] == sim.BRANCHES[ci]["id"]:
-				_tree_pos[id] = Rect2(TREE_X0 + ci * TREE_DX, TREE_Y0 + idx * TREE_DY, TREE_W, TREE_H)
-				idx += 1
+			var nd: Dictionary = sim.SK[id]
+			if nd["branch"] != br["id"]:
+				continue
+			var y: float = TREE_Y0 + float(int(nd["row"])) * TREE_DY
+			if bool(nd.get("side", false)):
+				_tree_pos[id] = Rect2(TREE_COL_SIDE, y, TREE_W, TREE_H)
+			else:
+				if not rows.has(int(nd["row"])):
+					rows[int(nd["row"])] = []
+				rows[int(nd["row"])].append(id)
+		for rw in rows:
+			var ids: Array = rows[rw]
+			# el padre de un nodo lateral va a la derecha: su línea no pasa por detrás de otro nodo
+			if ids.size() == 2 and _feeds_side(String(ids[0])) and not _feeds_side(String(ids[1])):
+				ids.reverse()
+			var y2: float = TREE_Y0 + float(rw) * TREE_DY
+			if ids.size() == 1:
+				_tree_pos[ids[0]] = Rect2(TREE_COL_MID, y2, TREE_W, TREE_H)
+			else:
+				for i in ids.size():
+					_tree_pos[ids[i]] = Rect2(TREE_COL_A + float(i) * (TREE_COL_B - TREE_COL_A), y2, TREE_W, TREE_H)
+
+
+func _feeds_side(id: String) -> bool:
+	for o in sim.SK_ORDER:
+		if bool(sim.SK[o].get("side", false)):
+			for rq in sim.SK[o]["req"]:
+				if String(rq["id"]) == id:
+					return true
+	return false
 
 
 func _node_rect(id: String) -> Rect2:
@@ -1866,10 +1975,31 @@ func _node_rect(id: String) -> Rect2:
 	return _tree_pos[id]
 
 
-func _tree_buttons() -> Array:
+func _tab_rect(i: int) -> Rect2:
+	return Rect2(TREE_TAB_X, TREE_TAB_Y0 + float(i) * TREE_TAB_DY, TREE_TAB_W, TREE_TAB_H)
+
+
+func _respec_rect(all: bool) -> Rect2:
+	return Rect2(TREE_PANEL.position.x + 12.0, TREE_PANEL.end.y - (46.0 if all else 92.0), TREE_PANEL.size.x - 24.0, 40.0)
+
+
+func _tab_ids() -> Array:
 	var out: Array = []
 	for id in sim.SK_ORDER:
+		if sim.SK[id]["branch"] == tree_tab:
+			out.append(id)
+	return out
+
+
+func _tree_buttons() -> Array:
+	var out: Array = []
+	for i in sim.BRANCHES.size():
+		out.append({"id": "tab:" + String(sim.BRANCHES[i]["id"]), "rect": _tab_rect(i), "text": "", "sub": "", "on": true})
+	for id in _tab_ids():
 		out.append({"id": "sk:" + id, "rect": _node_rect(id), "text": "", "sub": "", "on": sim.can_skill(id)})
+	if sim.meta_mode:
+		out.append({"id": "respec:" + tree_tab, "rect": _respec_rect(false), "text": "", "sub": "", "on": sim.can_respec(tree_tab)})
+		out.append({"id": "respec:", "rect": _respec_rect(true), "text": "", "sub": "", "on": sim.can_respec("")})
 	out.append({"id": "tree_close", "rect": Rect2(490, 624, 300, 72), "text": "Cerrar árbol", "sub": "T / Esc", "on": true})
 	return out
 
@@ -1881,107 +2011,263 @@ func _branch_color(id: String) -> Color:
 	return Color.WHITE
 
 
+func _branch_ranks(bid: String) -> int:
+	var n: int = 0
+	for id in sim.skills:
+		if sim.SK.has(id) and sim.SK[id]["branch"] == bid:
+			n += int(sim.skills[id])
+	return n
+
+
+func _diamond(c: Vector2, r: float, col: Color) -> void:
+	draw_colored_polygon(PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, 0), c + Vector2(0, r), c + Vector2(-r, 0)]), col)
+
+
 func _draw_tree() -> void:
 	if not show_tree:
 		return
-	draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0.03, 0.01, 0.03, 0.93))
+	draw_rect(Rect2(0, 78, SCREEN_W, 526), Color(0.03, 0.01, 0.03, 0.95))
 	draw_rect(Rect2(0, 606, SCREEN_W, 30), Color(0.05, 0.02, 0.03))
 	_txt("ÁRBOL DE HABILIDADES", Vector2(24, 666), 24, Color(1.0, 0.85, 0.55))
-	_txt("%d esencia" % sim.essence, Vector2(1000, 666), 26, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_RIGHT, 256.0)
+	_txt("%d esencia" % sim.currency() if sim.meta_mode else "%d almas" % sim.currency(), Vector2(1000, 666), 26, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_RIGHT, 256.0)
 	if sim.meta_mode:
 		var infl: float = float(sim.B["meta"].get("inflation", 0.0)) * float(sim.skill_points_spent())
 		_txt("%d rangos · cada rango encarece los demás un %d%% (ahora +%d%%)" % [sim.skill_points_spent(), int(round(float(sim.B["meta"].get("inflation", 0.0)) * 100.0)), int(round(infl * 100.0))], Vector2(24, 694), 13, Color(0.7, 0.65, 0.75))
-	for ci in sim.BRANCHES.size():
-		var br: Dictionary = sim.BRANCHES[ci]
-		var bc: Color = _branch_color(String(br["id"]))
-		var title: String = String(br["name"])
-		if String(br["route"]) != "":
-			title += " (ruta)"
-		_txt(title, Vector2(TREE_X0 + ci * TREE_DX, 114), 15, bc, HORIZONTAL_ALIGNMENT_CENTER, TREE_W)
+	_draw_tree_tabs()
+	var br: Dictionary = sim.branch_def(tree_tab)
+	var bc: Color = _branch_color(tree_tab)
+	var open: bool = sim.branch_open(tree_tab)
+	var title: String = String(br["name"])
+	if String(br["route"]) != "":
+		title += "  (ruta de %s)" % String(sim.ROUTES[String(br["route"])]["hero_name"])
+	_txt(title, Vector2(TREE_COL_A, 118), 22, bc)
+	if not open:
+		_txt("SELLADA · " + String(br.get("unlock_text", "")), Vector2(TREE_COL_A + 120.0, 117), 15, Color(1.0, 0.75, 0.4))
+	var ids: Array = _tab_ids()
 	# líneas de requisito
-	for id in sim.SK_ORDER:
+	for id in ids:
 		var nd: Dictionary = sim.SK[id]
 		var rc: Rect2 = _node_rect(id)
 		for rq in nd["req"]:
 			var pr: Rect2 = _node_rect(String(rq["id"]))
 			var met: bool = sim.skill_rank(String(rq["id"])) >= int(rq["rank"])
-			var lc: Color = _branch_color(String(nd["branch"]))
+			var lc: Color = bc
 			lc.a = 0.7 if met else 0.22
-			draw_line(pr.get_center(), rc.get_center(), lc, 2.0 if met else 1.5)
+			var p0: Vector2 = Vector2(pr.get_center().x, pr.end.y)
+			var p1: Vector2 = Vector2(rc.get_center().x, rc.position.y)
+			if bool(nd.get("side", false)):
+				p0 = Vector2(pr.end.x, pr.get_center().y)
+				p1 = Vector2(rc.position.x, rc.get_center().y)
+			elif pr.position.y >= rc.position.y:
+				p0 = pr.get_center()
+				p1 = rc.get_center()
+			draw_line(p0, p1, lc, 2.0 if met else 1.5)
 	var hov_id: String = ""
-	for id in sim.SK_ORDER:
+	for id in ids:
 		var nd2: Dictionary = sim.SK[id]
 		var r: Rect2 = _node_rect(id)
 		var st: String = sim.skill_state(id)
-		var bc2: Color = _branch_color(String(nd2["branch"]))
 		var fill: Color = Color(0.12, 0.07, 0.09)
-		var edge: Color = bc2.darkened(0.55)
+		var edge: Color = bc.darkened(0.55)
 		var tc: Color = Color(0.5, 0.45, 0.45)
 		match st:
 			"max":
-				fill = bc2.darkened(0.55)
-				edge = bc2
+				fill = bc.darkened(0.55)
+				edge = bc
 				tc = Color(1, 1, 1)
 			"ok":
 				fill = Color(0.2, 0.11, 0.1)
-				edge = bc2
+				edge = bc
 				tc = Color(1.0, 0.95, 0.85)
 			"poor":
 				fill = Color(0.16, 0.09, 0.09)
-				edge = bc2.darkened(0.25)
+				edge = bc.darkened(0.25)
 				tc = Color(0.75, 0.68, 0.65)
+			"excluded", "sealed":
+				fill = Color(0.07, 0.05, 0.06)
+				edge = Color(0.28, 0.22, 0.22)
+				tc = Color(0.42, 0.38, 0.38)
 		if skill_rank_pos(id):
-			fill = fill.lerp(bc2.darkened(0.5), 0.5)
+			fill = fill.lerp(bc.darkened(0.5), 0.5)
 		var hov: bool = r.has_point(mouse_pos)
 		if hov:
 			hov_id = id
 			fill = fill.lightened(0.18)
+		var key: bool = bool(nd2.get("keystone", false))
+		if key:
+			var gold: Color = Color(1.0, 0.82, 0.35, 1.0 if st != "sealed" and st != "locked" else 0.45)
+			draw_rect(r.grow(4.0), gold, false, 2.0)
+			_txt("PIEDRA ANGULAR", Vector2(r.position.x, r.position.y - 9), 11, gold, HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		elif bool(nd2.get("boon", false)) and bool(nd2.get("side", false)):
+			_txt("HABLA CON LOS DONES", Vector2(r.position.x, r.position.y - 9), 11, Color(0.75, 0.6, 1.0, 0.9), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 		draw_rect(r, fill)
 		draw_rect(r, edge, false, 2.0 if st != "ok" else 3.0)
-		_txt(String(nd2["name"]), Vector2(r.position.x + 4, r.position.y + 18), 13, tc, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 8.0)
+		_txt(String(nd2["name"]), Vector2(r.position.x + 6, r.position.y + 20), 14, tc, HORIZONTAL_ALIGNMENT_LEFT, r.size.x - (30.0 if key else 12.0))
+		if key:
+			_diamond(Vector2(r.end.x - 16, r.position.y + 16), 7.0, Color(1.0, 0.82, 0.35) if skill_rank_pos(id) else Color(0.5, 0.42, 0.25))
 		var rank_txt: String = "%d/%d" % [sim.skill_rank(id), int(nd2["max"])]
 		var cost: int = sim.skill_cost(id)
-		var sub: String = rank_txt + ("   máx" if cost < 0 else "   %d esencia" % cost)
-		if st == "route":
-			sub = rank_txt + "   (ruta)"
-		_txt(sub, Vector2(r.position.x + 4, r.position.y + 38), 12, tc.darkened(0.1), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 8.0)
+		var sub: String = rank_txt + ("   máx" if cost < 0 else "   %d %s" % [cost, "esencia" if sim.meta_mode else "almas"])
+		match st:
+			"route":
+				sub = rank_txt + "   (ruta)"
+			"excluded":
+				sub = "camino cerrado"
+			"sealed":
+				sub = "rama sellada"
+		_txt(sub, Vector2(r.position.x + 6, r.position.y + 42), 12, tc.darkened(0.1), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 12.0)
+		if st == "excluded":
+			draw_line(r.position + Vector2(6, r.size.y - 6), Vector2(r.end.x - 6, r.position.y + 6), Color(0.6, 0.25, 0.2, 0.7), 2.0)
+		# pareja excluyente: rótulo entre los dos
+		if nd2.has("excl") and String(id) < String(nd2["excl"]):
+			var o: Rect2 = _node_rect(String(nd2["excl"]))
+			var x0: float = minf(r.position.x, o.position.x)
+			var x1: float = maxf(r.end.x, o.end.x)
+			var chosen: bool = skill_rank_pos(id) or skill_rank_pos(String(nd2["excl"]))
+			var lab: String = "CAMINO ELEGIDO" if chosen else "ELIGE UN CAMINO: EL OTRO SE CIERRA"
+			var lw: float = font.get_string_size(lab, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x + 12.0
+			draw_rect(Rect2((x0 + x1) * 0.5 - lw * 0.5, r.position.y - 19, lw, 15), Color(0.03, 0.01, 0.03))
+			_txt(lab, Vector2(x0, r.position.y - 8), 11, Color(1.0, 0.6, 0.45), HORIZONTAL_ALIGNMENT_CENTER, x1 - x0)
+	_draw_tree_panel(hov_id)
+
+
+func _draw_tree_tabs() -> void:
+	for i in sim.BRANCHES.size():
+		var b: Dictionary = sim.BRANCHES[i]
+		var bid: String = String(b["id"])
+		var r: Rect2 = _tab_rect(i)
+		var bc: Color = _branch_color(bid)
+		var open: bool = sim.branch_open(bid)
+		var sel: bool = bid == tree_tab
+		var fill: Color = Color(0.2, 0.1, 0.1) if sel else Color(0.1, 0.06, 0.08)
+		if r.has_point(mouse_pos):
+			fill = fill.lightened(0.12)
+		draw_rect(r, fill)
+		draw_rect(Rect2(r.position, Vector2(6, r.size.y)), bc if open else bc.darkened(0.6))
+		draw_rect(r, bc if sel else Color(0.3, 0.2, 0.22), false, 3.0 if sel else 1.0)
+		_txt(String(b["name"]), Vector2(r.position.x + 14, r.position.y + 20), 16, bc if open else Color(0.5, 0.45, 0.45), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 44.0)
+		var sub: String = "%d rangos" % _branch_ranks(bid)
+		if not open:
+			sub = "sellada"
+		elif String(b["route"]) != "":
+			sub += " · ruta"
+		_txt(sub, Vector2(r.position.x + 14, r.position.y + 38), 12, Color(0.7, 0.65, 0.65), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 44.0)
+		# marcas: piedra angular comprada y nodos que se pueden comprar ahora
+		var can: bool = false
+		var key: bool = false
+		for id in sim.SK_ORDER:
+			if sim.SK[id]["branch"] != bid:
+				continue
+			if sim.can_skill(id):
+				can = true
+			if bool(sim.SK[id].get("keystone", false)) and sim.skill_rank(id) > 0:
+				key = true
+		if key:
+			_diamond(Vector2(r.end.x - 34, r.get_center().y), 7.0, Color(1.0, 0.82, 0.35))
+		if can:
+			draw_circle(Vector2(r.end.x - 14, r.get_center().y), 5.0, Color(0.6, 1.0, 0.6))
+		elif not open:
+			# candado
+			var lp: Vector2 = Vector2(r.end.x - 20, r.get_center().y)
+			draw_arc(lp + Vector2(0, -3), 5.0, PI, TAU, 10, Color(0.6, 0.55, 0.5), 2.0)
+			draw_rect(Rect2(lp + Vector2(-7, -3), Vector2(14, 11)), Color(0.6, 0.55, 0.5))
+
+
+func _panel_text(text: String, y: float, size: int, col: Color) -> float:
+	var w: float = TREE_PANEL.size.x - 28.0
+	draw_multiline_string(font, Vector2(TREE_PANEL.position.x + 14, y + size), text, HORIZONTAL_ALIGNMENT_LEFT, w, size, -1, col)
+	return y + font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, w, size).y + 8.0
+
+
+func _draw_tree_panel(hov_id: String) -> void:
+	var bc: Color = _branch_color(tree_tab)
+	draw_rect(TREE_PANEL, Color(0.07, 0.04, 0.06))
+	draw_rect(TREE_PANEL, bc.darkened(0.4), false, 2.0)
+	var y: float = TREE_PANEL.position.y + 12.0
+	var cur: String = "esencia" if sim.meta_mode else "almas"
 	if hov_id != "":
-		_draw_skill_tip(hov_id)
+		var nd: Dictionary = sim.SK[hov_id]
+		y = _panel_text(String(nd["name"]), y, 22, Color(1.0, 0.9, 0.6))
+		var tags: Array = ["rango %d / %d" % [sim.skill_rank(hov_id), int(nd["max"])]]
+		if bool(nd.get("keystone", false)):
+			tags.append("piedra angular")
+		if nd.has("excl"):
+			tags.append("camino excluyente")
+		if bool(nd.get("boon", false)):
+			tags.append("habla con los dones")
+		y = _panel_text(" · ".join(tags), y, 13, bc)
+		y = _panel_text(String(nd["desc"]), y + 4.0, 17, Color(0.94, 0.9, 0.86))
+		if nd.has("excl"):
+			y = _panel_text("Comprarlo cierra el otro camino: %s." % String(sim.SK[String(nd["excl"])]["name"]), y, 14, Color(1.0, 0.6, 0.45))
+		y += 6.0
+		match sim.skill_state(hov_id):
+			"locked":
+				var need: Array = []
+				for rq in nd["req"]:
+					if sim.skill_rank(String(rq["id"])) < int(rq["rank"]):
+						need.append("%s %d" % [String(sim.SK[rq["id"]]["name"]), int(rq["rank"])])
+				y = _panel_text("Requiere: " + ", ".join(need), y, 15, Color(0.85, 0.7, 0.6))
+			"route":
+				y = _panel_text("Se abre al elegir esta ruta.", y, 15, Color(0.85, 0.7, 0.6))
+			"sealed":
+				y = _panel_text("Rama sellada. %s." % String(sim.branch_def(tree_tab).get("unlock_text", "")), y, 15, Color(1.0, 0.75, 0.4))
+			"excluded":
+				y = _panel_text("Camino cerrado: elegiste %s. Reasigna la rama para cambiar." % String(sim.SK[String(nd["excl"])]["name"]), y, 15, Color(1.0, 0.55, 0.45))
+			"poor":
+				y = _panel_text("Cuesta %d %s (te faltan %d)." % [sim.skill_cost(hov_id), cur, sim.skill_cost(hov_id) - sim.currency()], y, 15, Color(0.85, 0.7, 0.6))
+			"ok":
+				y = _panel_text("Clic para comprar: %d %s." % [sim.skill_cost(hov_id), cur], y, 15, Color(0.6, 1.0, 0.6))
+			"max":
+				y = _panel_text("Al máximo.", y, 15, Color(0.8, 0.8, 0.8))
+	else:
+		var br: Dictionary = sim.branch_def(tree_tab)
+		y = _panel_text(String(br["name"]), y, 22, bc)
+		if not sim.branch_open(tree_tab):
+			y = _panel_text("Rama sellada. %s." % String(br.get("unlock_text", "")), y, 16, Color(1.0, 0.75, 0.4))
+		else:
+			y = _panel_text("%d rangos · %d %s invertida" % [_branch_ranks(tree_tab), sim.paid_total(tree_tab), cur], y, 14, Color(0.8, 0.75, 0.75))
+		y = _panel_text("Tu build", y + 6.0, 16, Color(1.0, 0.9, 0.6))
+		var keys: Array = []
+		var paths: Array = []
+		for id in sim.SK_ORDER:
+			if sim.skill_rank(id) <= 0:
+				continue
+			if bool(sim.SK[id].get("keystone", false)):
+				keys.append(String(sim.SK[id]["name"]))
+			elif sim.SK[id].has("excl"):
+				paths.append(String(sim.SK[id]["name"]))
+		y = _panel_text("Piedras angulares: " + (", ".join(keys) if not keys.is_empty() else "ninguna todavía"), y, 14, Color(1.0, 0.82, 0.35))
+		y = _panel_text("Caminos: " + (", ".join(paths) if not paths.is_empty() else "sin elegir"), y, 14, Color(1.0, 0.6, 0.45))
+		y = _panel_text("La piedra angular de cada rama cambia una regla y pide algo a cambio. Al final de la rama se elige un camino y el otro se cierra.", y + 6.0, 13, Color(0.7, 0.65, 0.7))
+	if not sim.meta_mode:
+		return
+	# reasignar
+	var pct: int = int(round(float(sim.B["meta"].get("respec_refund", 0.75)) * 100.0))
+	var note: String = "Reasignar devuelve el %d%% de lo pagado." % pct
+	if sim.paid_total("") > 0 and not sim.can_respec(""):
+		note = "Reasignar: solo entre partidas (antes de la primera oleada o al acabar)."
+	_txt(note, Vector2(TREE_PANEL.position.x + 14, _respec_rect(false).position.y - 8), 12, Color(0.7, 0.65, 0.7), HORIZONTAL_ALIGNMENT_LEFT, TREE_PANEL.size.x - 28.0)
+	for all in [false, true]:
+		var r: Rect2 = _respec_rect(all)
+		var rid: String = "respec:" + ("" if all else tree_tab)
+		var on: bool = sim.can_respec("" if all else tree_tab)
+		var armed: bool = _respec_arm == rid
+		var fill: Color = Color(0.45, 0.12, 0.08) if armed else (Color(0.22, 0.12, 0.14) if on else Color(0.1, 0.07, 0.08))
+		if on and r.has_point(mouse_pos):
+			fill = fill.lightened(0.15)
+		draw_rect(r, fill)
+		draw_rect(r, Color(1.0, 0.6, 0.4) if armed else (Color(0.7, 0.45, 0.4) if on else Color(0.3, 0.22, 0.22)), false, 2.0)
+		var lab: String = "Reasignar todo el árbol" if all else "Reasignar esta rama"
+		var back: int = sim.respec_refund("" if all else tree_tab)
+		if armed:
+			lab = "¿Seguro? Clic otra vez: +%d %s" % [back, cur]
+		elif back > 0:
+			lab += "  (+%d)" % back
+		_txt(lab, Vector2(r.position.x, r.position.y + 26), 15, Color(1.0, 0.92, 0.8) if on else Color(0.5, 0.45, 0.45), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 
 
 func skill_rank_pos(id: String) -> bool:
 	return sim.skill_rank(id) > 0
-
-
-func _draw_skill_tip(id: String) -> void:
-	var nd: Dictionary = sim.SK[id]
-	var lines: Array = []
-	lines.append("%s   rango %d / %d" % [String(nd["name"]), sim.skill_rank(id), int(nd["max"])])
-	lines.append(String(nd["desc"]))
-	var st: String = sim.skill_state(id)
-	if st == "locked":
-		var need: Array = []
-		for rq in nd["req"]:
-			if sim.skill_rank(String(rq["id"])) < int(rq["rank"]):
-				need.append("%s %d" % [String(sim.SK[rq["id"]]["name"]), int(rq["rank"])])
-		lines.append("Requiere: " + ", ".join(need))
-	elif st == "route":
-		lines.append("Se abre al elegir esta ruta.")
-	elif st == "poor":
-		lines.append("Cuesta %d esencia (te faltan %d)." % [sim.skill_cost(id), sim.skill_cost(id) - sim.currency()])
-	elif st == "ok":
-		lines.append("Clic para comprar: %d esencia." % sim.skill_cost(id))
-	var w: float = 470.0
-	var h: float = 14.0 + 22.0 * lines.size()
-	var r: Rect2 = _node_rect(id)
-	var p: Vector2 = Vector2(clampf(r.position.x, 8.0, SCREEN_W - w - 8.0), r.end.y + 6.0)
-	if p.y + h > 600.0:
-		p.y = r.position.y - h - 6.0
-	draw_rect(Rect2(p, Vector2(w, h)), Color(0, 0, 0, 0.92))
-	draw_rect(Rect2(p, Vector2(w, h)), _branch_color(String(nd["branch"])), false, 2.0)
-	for i in lines.size():
-		var col: Color = Color(1.0, 0.9, 0.6) if i == 0 else Color(0.92, 0.88, 0.84)
-		_txt(String(lines[i]), p + Vector2(10, 22 + 22 * i), 15, col, HORIZONTAL_ALIGNMENT_LEFT, w - 20.0)
 
 
 func _draw_draft() -> void:
@@ -2087,7 +2373,7 @@ func _draw_boons() -> void:
 func _draw_buttons() -> void:
 	for b in _buttons():
 		var id: String = String(b["id"])
-		if id.begins_with("sk:") or id.begins_with("draft:"):
+		if id.begins_with("sk:") or id.begins_with("draft:") or id.begins_with("tab:") or id.begins_with("respec:"):
 			continue
 		if id == "route_verdugo" or id == "route_inquisidor":
 			continue
@@ -2285,10 +2571,11 @@ func _load_meta() -> void:
 	var wins: Dictionary = data.get("asedios", {})
 	for k in wins:
 		siege_wins[String(k)] = int(wins[k])
-	var sk: Dictionary = data.get("habilidades", {})
-	for id in sk:
-		if sim.SK.has(id):
-			sim.skills[id] = mini(int(sk[id]), int(sim.SK[id]["max"]))
+	sim.won = siege_wins.keys()
+	# nodos retirados o recortados devuelven su esencia (migración de «Árbol 2»)
+	tree_refund = sim.load_tree(data.get("habilidades", {}), data.get("pagado", {}))
+	if tree_refund > 0 or not data.has("pagado"):
+		_save_meta()
 
 
 func _save_meta() -> void:
@@ -2296,7 +2583,7 @@ func _save_meta() -> void:
 		return
 	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.WRITE)
 	if f != null:
-		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins, "records": records, "logros_data": logros.to_save(), "historial": history}, "  "))
+		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "pagado": sim.skill_paid, "asedios": siege_wins, "records": records, "logros_data": logros.to_save(), "historial": history}, "  "))
 
 
 ## Guarda la partida a medias (solo en preparación). Se recupera con «Continuar» al volver.

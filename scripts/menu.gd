@@ -217,6 +217,8 @@ func draw(m) -> void:
 		m._txt("Defiende la puerta del Infierno. Cría bestias. Que no pase nadie.", Vector2(0, 240), 22, Color(0.9, 0.78, 0.7), HORIZONTAL_ALIGNMENT_CENTER, W)
 		if m.sim.meta_mode:
 			m._txt("Esencia: %d    Rangos del árbol: %d" % [m.sim.essence, m.sim.skill_points_spent()], Vector2(0, 290), 18, Color(0.7, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, W)
+			if m.tree_refund > 0:
+				m._txt("El árbol ha cambiado: recuperas %d de esencia de los nodos retirados." % m.tree_refund, Vector2(0, 314), 16, Color(1.0, 0.82, 0.35), HORIZONTAL_ALIGNMENT_CENTER, W)
 		m._txt("Esc: menú    B: bestiario    T: árbol    F: velocidad", Vector2(0, 700), 15, Color(0.7, 0.6, 0.55), HORIZONTAL_ALIGNMENT_CENTER, W)
 	elif panel == "options":
 		m._txt("Opciones", Vector2(0, 190), 48, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)

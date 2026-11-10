@@ -45,6 +45,13 @@ func run() -> void:
 	test_terrain()
 	test_save_run()
 	test_inquisicion()
+	test_arbol2_datos()
+	test_arbol2_excluyentes()
+	test_arbol2_reasignar()
+	test_arbol2_ramas()
+	test_arbol2_migracion()
+	test_arbol2_piedras()
+	test_arbol2_dones()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -930,10 +937,50 @@ func test_ui_smoke() -> void:
 	check(m.challenge.is_empty() and m.sim.week_augur == "", "una partida normal quita el reto")
 	m.sim.remix_enabled = false
 	m.sim.reset()
+	# árbol con pestañas: nada se solapa ni se sale, y se dibujan todas las ramas
 	m.show_tree = true
-	m.queue_redraw()
+	var area: Rect2 = Rect2(210, 90, 660, 510)
+	var solapes: Array = []
+	for br in m.sim.BRANCHES:
+		var ids: Array = []
+		for id in m.sim.SK_ORDER:
+			if m.sim.SK[id]["branch"] == br["id"]:
+				ids.append(id)
+		for i in ids.size():
+			var ri: Rect2 = m._node_rect(ids[i])
+			if not area.encloses(ri.grow(4.0)):
+				solapes.append("%s fuera" % ids[i])
+			for j in range(i + 1, ids.size()):
+				if ri.grow(5.0).intersects(m._node_rect(ids[j])):
+					solapes.append("%s/%s" % [ids[i], ids[j]])
+	check(solapes.is_empty(), "los nodos de cada rama no se solapan ni se salen de su zona %s" % str(solapes))
+	check(m._tab_rect(m.sim.BRANCHES.size() - 1).end.y <= 600.0 and m._tab_rect(0).end.x < area.position.x, "las diez pestañas caben a la izquierda")
+	check(not m.TREE_PANEL.intersects(area) and m.TREE_PANEL.end.y <= 600.0, "el panel de detalle no pisa el árbol")
+	m.sim.meta_mode = true
+	m.sim.essence = 5000
+	m.sim.reset()
+	m._on_press(m._tab_rect(2).get_center())
+	check(m.tree_tab == String(m.sim.BRANCHES[2]["id"]), "clic en una pestaña cambia de rama")
+	m._on_press(m._node_rect("door_hp").get_center())
+	check(m.sim.skill_rank("door_hp") == 1, "se compra en la rama de la pestaña abierta")
+	m._on_press(m._node_rect("brasa_radio").get_center())
+	check(m.sim.skill_rank("brasa_radio") == 0, "los nodos de otra pestaña no reciben el clic")
+	var ess0: int = m.sim.essence
+	m._on_press(m._respec_rect(true).get_center())
+	check(m.sim.skill_points_spent() > 0 and m._respec_arm != "", "el primer clic en Reasignar solo pide confirmar")
+	m._on_press(m._respec_rect(true).get_center())
+	check(m.sim.skill_points_spent() == 0 and m.sim.essence > ess0, "el segundo clic reasigna y devuelve esencia")
+	m._on_press(m._tab_rect(8).get_center())
+	check(m.sim.skill_state("abi_llamada") == "sealed", "la rama del Abismo sale sellada hasta ganar el Alba")
+	m._on_press(m._node_rect("abi_llamada").get_center())
+	check(m.sim.skill_rank("abi_llamada") == 0, "en una rama sellada no se compra")
+	for br2 in m.sim.BRANCHES:
+		m.tree_tab = String(br2["id"])
+		m.mouse_pos = Vector2(-10, -10)
+		m.queue_redraw()
+		await get_tree().process_frame
 	await get_tree().process_frame
-	await get_tree().process_frame
+	m.sim.meta_mode = false
 	m.show_tree = false
 	m.queue_redraw()
 	await get_tree().process_frame
@@ -1728,3 +1775,407 @@ func test_anim() -> void:
 	sm.enemies.clear()
 	po.update(sm, 1.0 / 30.0, 1.0 / 30.0)
 	check(not po.units.has(int(e0["id"])), "las unidades que desaparecen se olvidan")
+
+
+# --- Árbol 2: piedras angulares, caminos excluyentes, dones, reasignar y ramas que se ganan ---
+
+func meta_sim(seed_v: int = 7):
+	var s = new_sim(seed_v)
+	s.meta_mode = true
+	s.essence = 999999
+	s.won = ["primer", "alba", "inquisicion"]
+	s.reset()
+	return s
+
+
+## Compra un nodo y, antes, lo que haga falta de sus requisitos.
+func buy_path(s, id: String, rank: int = 1) -> void:
+	for rq in s.SK[id]["req"]:
+		buy_path(s, String(rq["id"]), int(rq["rank"]))
+	while s.skill_rank(id) < rank:
+		if not s.buy_skill(id):
+			return
+
+
+## Da rangos sin pagar (para probar un efecto aislado).
+func grant(s, id: String, rank: int = 1) -> void:
+	s.skills[id] = rank
+	s._tree_changed()
+
+
+func test_arbol2_datos() -> void:
+	print("Árbol 2: datos")
+	var s = new_sim()
+	var bad: Array = []
+	for br in s.BRANCHES:
+		var keys: int = 0
+		var pair: Array = []
+		for id in s.SK_ORDER:
+			var nd: Dictionary = s.SK[id]
+			if nd["branch"] != br["id"]:
+				continue
+			if bool(nd.get("keystone", false)):
+				keys += 1
+				if int(nd["max"]) != 1:
+					bad.append("%s max" % id)
+			if nd.has("excl"):
+				pair.append(id)
+				var o: Dictionary = s.SK.get(String(nd["excl"]), {})
+				if o.is_empty() or String(o.get("excl", "")) != id or o["branch"] != nd["branch"]:
+					bad.append("%s excl" % id)
+		if keys != 1 or pair.size() != 2:
+			bad.append("%s: %d piedras, %d caminos" % [br["id"], keys, pair.size()])
+	check(bad.is_empty(), "cada rama tiene una piedra angular y una pareja excluyente %s" % str(bad))
+	check(s.BRANCHES.size() == 10 and String(s.branch_def("abismo")["unlock"]) == "alba" and String(s.branch_def("inquisicion")["unlock"]) == "inquisicion", "hay diez ramas y dos se ganan con asedios")
+	var sieges: Array = []
+	for sg in s.SIEGES:
+		sieges.append(String(sg["id"]))
+	check(sieges.has("alba") and sieges.has("inquisicion"), "los asedios que abren ramas existen")
+	var no_legacy: bool = true
+	for lid in s.LEGACY:
+		if s.SK.has(lid):
+			no_legacy = false
+	check(s.LEGACY.size() == 8 and no_legacy, "los ocho remates retirados quedan apuntados para devolver su esencia")
+
+
+func test_arbol2_excluyentes() -> void:
+	print("Árbol 2: caminos excluyentes")
+	var s = meta_sim()
+	buy_path(s, "brasa_cometa")
+	check(s.skill_rank("brasa_cometa") == 1, "se compra un camino")
+	check(s.skill_state("brasa_ascuas") == "excluded" and not s.can_skill("brasa_ascuas"), "el otro camino queda cerrado por elección")
+	check(not s.buy_skill("brasa_ascuas") and s.skill_rank("brasa_ascuas") == 0, "no se compra el camino cerrado aunque sobre esencia")
+	check(s.buy_skill("brasa_cometa") and s.skill_rank("brasa_cometa") == 2, "el camino elegido se puede seguir subiendo")
+	check(s.skill_state("rayo_verdugo") != "excluded", "elegir en una rama no cierra nada en otra")
+	check(s.respec("brasa") and s.skill_state("brasa_ascuas") == "locked", "reasignar la rama vuelve a abrir la elección")
+	buy_path(s, "brasa_ascuas")
+	check(s.skill_rank("brasa_ascuas") == 1 and s.skill_state("brasa_cometa") == "excluded", "tras reasignar se puede elegir el otro")
+
+
+func test_arbol2_reasignar() -> void:
+	print("Árbol 2: reasignar con coste")
+	var s = meta_sim()
+	s.essence = 3000
+	var c0: int = s.skill_cost("brasa_radio")
+	buy_path(s, "brasa_tierra")
+	buy_path(s, "door_regen", 2)
+	buy_path(s, "beast_dmg", 3)
+	var paid: int = 3000 - s.essence
+	check(paid > 0 and s.paid_total() == paid, "lo pagado queda apuntado (%d)" % paid)
+	check(s.paid_total("brasa") + s.paid_total("demonio") + s.paid_total("bestias") == paid, "lo pagado por rama suma el total")
+	var pct: float = float(s.B["meta"]["respec_refund"])
+	check(pct >= 0.7 and pct <= 0.8, "reasignar devuelve entre el 70 y el 80%")
+	check(s.respec_refund() == int(floor(paid * pct)), "la devolución es esa parte de lo pagado de verdad, con su inflación")
+	var pb: int = s.paid_total("bestias")
+	var e1: int = s.essence
+	check(s.respec("bestias") and s.essence == e1 + int(floor(pb * pct)), "reasignar una rama devuelve su parte")
+	check(s.skill_rank("beast_dmg") == 0 and s.skill_rank("brasa_tierra") == 1 and s.paid_total() == paid - pb, "solo se vacía esa rama")
+	var rest: int = s.paid_total()
+	var e2: int = s.essence
+	check(s.respec() and s.essence == e2 + int(floor(rest * pct)), "reasignar todo devuelve el resto")
+	check(s.skills.is_empty() and s.skill_paid.is_empty() and s.skill_cost("brasa_radio") == c0, "el árbol queda vacío y sin inflación")
+	check(s.essence <= 3000 and s.essence >= 3000 - paid + int(floor(paid * pct)) - 2, "la esencia cuadra: nunca se gana reasignando")
+	check(s.door_max == float(s.B["door"]["hp"]) and absf(s._stats("brasa")["cd"] - float(s.B["spells"]["brasa"]["cd"])) < 0.001, "los efectos desaparecen al reasignar")
+	check(not s.respec(), "sin nada comprado no hay nada que reasignar")
+	s.buy_skill("brasa_radio")
+	s.start_wave()
+	check(not s.can_respec(), "en combate no se reasigna")
+	s.enemies.clear()
+	s.spawn_queue.clear()
+	s._check_end()
+	s.draft.clear()
+	check(s.phase == "prep" and s.wave_index == 1 and not s.can_respec(), "a mitad de partida tampoco")
+	s.door_hp = 0.0
+	s.phase = "combat"
+	s._check_end()
+	check(s.phase == "defeat" and s.can_respec(), "al acabar la partida sí")
+	var ns = new_sim()
+	ns.souls = 500
+	ns.buy_skill("brasa_radio")
+	check(not ns.can_respec(), "sin modo permanente no hay reasignación")
+
+
+func test_arbol2_ramas() -> void:
+	print("Árbol 2: ramas que se ganan")
+	var s = meta_sim()
+	s.won = []
+	check(not s.branch_open("abismo") and not s.branch_open("inquisicion") and s.branch_open("brasa"), "sin asedios ganados las dos ramas nuevas están selladas")
+	check(s.skill_state("abi_llamada") == "sealed" and not s.buy_skill("abi_llamada"), "en una rama sellada no se compra")
+	s.won = ["primer"]
+	check(s.skill_state("abi_llamada") == "sealed", "ganar el primer asedio no abre el Abismo")
+	s.won = ["primer", "alba"]
+	check(s.skill_state("abi_llamada") == "ok" and s.buy_skill("abi_llamada"), "ganar el Alba abre la rama del Abismo")
+	check(s.skill_state("inq_trofeos") == "sealed", "la Inquisición sigue sellada")
+	s.won = ["primer", "alba", "inquisicion"]
+	check(s.buy_skill("inq_trofeos"), "ganar el tercer asedio abre la rama de la Inquisición")
+	var ns = new_sim()
+	check(ns.branch_open("abismo"), "fuera del modo permanente no hay ramas selladas")
+
+
+func test_arbol2_migracion() -> void:
+	print("Árbol 2: migración de datos viejos")
+	var s = new_sim()
+	s.meta_mode = true
+	s.essence = 50
+	var viejo: Dictionary = {"brasa_radio": 5, "brasa_dmg": 2, "brasa_burn": 2, "brasa_delay": 1, "brasa_stun": 1, "brasa_echo": 1, "brasa_maestria": 2, "sab_alfa": 1, "nodo_inventado": 3, "door_hp": 9}
+	var est: Dictionary = s.estimate_paid(viejo)
+	var total_est: int = 0
+	for k in est:
+		total_est += int(est[k])
+	var back: int = s.load_tree(viejo, {})
+	check(not s.skills.has("brasa_maestria") and not s.skills.has("sab_alfa") and not s.skills.has("nodo_inventado"), "los nodos retirados desaparecen del árbol")
+	check(s.skill_rank("brasa_radio") == 5 and s.skill_rank("brasa_echo") == 1, "los rangos que siguen existiendo se conservan")
+	check(s.skill_rank("door_hp") == 5, "un rango por encima del máximo se recorta")
+	check(back > 0 and s.essence == 50 + back, "la esencia de lo retirado se devuelve entera (%d)" % back)
+	check(back >= int(est["brasa_maestria"]) + int(est["sab_alfa"]), "se devuelve al menos lo que costaron los remates")
+	check(s.paid_total() + back == total_est, "lo que queda apuntado más lo devuelto es lo estimado: no se crea ni se pierde esencia")
+	check(int(est["brasa_maestria"]) > 40 + 48, "la estimación cuenta la inflación (compra de barato a caro)")
+	var s2 = new_sim()
+	s2.meta_mode = true
+	var back2: int = s2.load_tree({"brasa_radio": 2, "brasa_maestria": 1}, {"brasa_radio": 30, "brasa_maestria": 111})
+	check(back2 == 111 and s2.essence == 111 and s2.paid_total() == 30, "con registro de pago se devuelve justo lo pagado")
+	check(s2.load_tree({"brasa_radio": 2}, {"brasa_radio": 30}) == 0, "un árbol al día no devuelve nada")
+	# partida a medias guardada con el árbol viejo: se carga y la Puerta se ajusta al árbol nuevo
+	var a = meta_sim(31)
+	grant(a, "door_hp", 5)
+	a.reset()
+	a.wave_index = 2
+	var txt: String = var_to_str(a.run_save())
+	var b = meta_sim(1)
+	check(b.run_load(str_to_var(txt)), "una partida a medias se carga tras cambiar el árbol")
+	check(b.door_max == b._door_base() and b.door_hp <= b.door_max and b.door_hp >= 1.0, "la Puerta se ajusta al árbol nuevo (%d/%d)" % [int(b.door_hp), int(b.door_max)])
+	check(b.creatures.size() == a.creatures.size() and b.creatures[0]["hp"] == b.creatures[0]["max_hp"], "las bestias se recalculan")
+
+
+func _far_enemy(s, kind: String, lane: int, x: float) -> Dictionary:
+	s._spawn_enemy(kind, lane)
+	var e: Dictionary = s.enemies[s.enemies.size() - 1]
+	e["x"] = x
+	return e
+
+
+func test_arbol2_piedras() -> void:
+	print("Árbol 2: piedras angulares")
+	# Tierra quemada
+	var s = meta_sim()
+	var cd0: float = float(s._stats("brasa")["cd"])
+	grant(s, "brasa_tierra")
+	check(absf(float(s._stats("brasa")["cd"]) - cd0 * 2.0) < 0.01, "Tierra quemada: la Brasa tarda el doble en recargarse")
+	to_combat(s)
+	s.cast_brasa(Vector2(800, s.lane_y(1)))
+	for i in int(2.0 / Sim.TICK):
+		s.step(Sim.TICK)
+	check(s.fire_pools.size() == 1, "Tierra quemada: al caer deja el suelo ardiendo")
+	var late: Dictionary = _far_enemy(s, "escudero", 1, 800.0)
+	s.step(Sim.TICK)
+	check(late["burn_t"] > 0.0, "quien pisa el suelo ardiendo se quema aunque llegue después")
+	for i in int(6.0 / Sim.TICK):
+		s.step(Sim.TICK)
+	check(s.fire_pools.is_empty(), "el fuego del suelo se apaga")
+	var sn = meta_sim()
+	to_combat(sn)
+	sn.cast_brasa(Vector2(800, sn.lane_y(1)))
+	for i in int(2.0 / Sim.TICK):
+		sn.step(Sim.TICK)
+	check(sn.fire_pools.is_empty(), "sin la piedra angular la Brasa no deja fuego")
+	# Arco voltaico
+	var r = meta_sim()
+	grant(r, "rayo_cadena")
+	grant(r, "rayo_arco")
+	to_combat(r)
+	var es: Array = []
+	for i in 5:
+		es.append(_far_enemy(r, "escudero", 1, 600.0 + 40.0 * i))
+	r.cast_rayo(r.epos(es[0]))
+	var hit0: int = 0
+	for e in es:
+		if e["hp"] < e["max_hp"]:
+			hit0 += 1
+	check(hit0 == 1, "Arco voltaico: sin enemigos ardiendo el Rayo no salta")
+	r.rayo_cd = 0.0
+	for e in es:
+		e["burn_t"] = 5.0
+		e["hp"] = e["max_hp"]
+	r.cast_rayo(r.epos(es[0]))
+	var hit1: int = 0
+	for e in es:
+		if e["hp"] < e["max_hp"]:
+			hit1 += 1
+	check(hit1 == 5, "Arco voltaico: salta por todos los que arden, sin límite (%d)" % hit1)
+	# Puerta de espinas
+	var d = meta_sim()
+	var dm0: float = d.door_max
+	grant(d, "door_espinas")
+	check(absf(d.door_max - dm0 * 0.75) < 0.01, "Puerta de espinas: un 25% menos de vida")
+	to_combat(d)
+	var att: Dictionary = _far_enemy(d, "escudero", 1, 150.0)
+	d._hit_door(5.0, att)
+	check(att["hp"] < att["max_hp"], "Puerta de espinas: quien la golpea recibe daño")
+	# Tizón inmortal
+	var t = meta_sim()
+	var sab: Dictionary = spawn_beast(t, "sabueso", 0, 500.0)
+	var hp_other: float = float(sab["max_hp"])
+	var tz: Dictionary = t.named_creature()
+	var hp_tz: float = float(tz["max_hp"])
+	grant(t, "beast_tizon")
+	check(absf(float(sab["max_hp"]) - hp_other * 0.6) < 0.01 and float(tz["max_hp"]) == hp_tz, "Tizón inmortal: las demás bestias pierden un 40% de vida y él no")
+	to_combat(t)
+	t.damage_creature(tz, 99999.0)
+	check(tz["fallen"], "Tizón inmortal: cae un momento")
+	for i in int(4.3 / Sim.TICK):
+		t.step(Sim.TICK)
+	check(not tz["fallen"] and absf(float(tz["hp"]) - float(tz["max_hp"]) * 0.5) < 1.0 and int(tz["scars"]) == 0, "y se levanta a los 4 s con media vida y sin cicatriz")
+	# Camada
+	var c = meta_sim()
+	grant(c, "sab_camada")
+	c.souls = 500
+	var n0: int = c.creatures.size()
+	var s_before: int = c.souls
+	c.buy("sabueso")
+	check(c.creatures.size() == n0 + 2 and c.souls == s_before - c.cost_of("sabueso"), "Camada: un Sabueso comprado trae un gemelo gratis")
+	check(absf(float(c.creatures[n0]["max_hp"]) - float(c._stats("sabueso")["hp"]) * 0.65) < 0.01 and float(c.named_creature()["max_hp"]) == float(c._stats("sabueso")["hp"]), "Camada: los Sabuesos tienen un 35% menos de vida, Tizón no")
+	# Estallido de ceniza
+	for with_horno in [true, false]:
+		var h = meta_sim()
+		grant(h, "horno_ceniza")
+		to_combat(h)
+		if with_horno:
+			spawn_beast(h, "horno", 2, 450.0)
+		var e1: Dictionary = _far_enemy(h, "campesino", 1, 800.0)
+		var e2: Dictionary = _far_enemy(h, "escudero", 1, 830.0)
+		e1["burn_t"] = 3.0
+		e1["burn_dps"] = 5.0
+		h.damage_enemy(e1, 9999.0)
+		if with_horno:
+			check(e2["hp"] < e2["max_hp"] and e2["burn_t"] > 0.0, "Estallido de ceniza: el que muere ardiendo daña y prende a los de al lado")
+		else:
+			check(e2["hp"] == e2["max_hp"], "Estallido de ceniza: sin Horno en pie no hay estallido")
+	var hh = meta_sim()
+	var hhp: float = float(hh._stats("horno")["hp"])
+	grant(hh, "horno_ceniza")
+	check(absf(float(hh._stats("horno")["hp"]) - hhp * 0.7) < 0.01, "Estallido de ceniza: el Horno tiene un 30% menos de vida")
+	# Tormenta errante
+	for roam in [true, false]:
+		var tr = meta_sim()
+		if roam:
+			grant(tr, "trueno_errante")
+		to_combat(tr)
+		var th: Dictionary = spawn_beast(tr, "trueno", 1, 500.0)
+		th["state"] = "rear"
+		th["x"] = 900.0
+		th["to_x"] = 900.0
+		th["t"] = 100.0
+		th["skill_cd"] = 5.0
+		_far_enemy(tr, "escudero", 1, 930.0)
+		tr.step(Sim.TICK)
+		if roam:
+			check(th["state"] == "rear", "Tormenta errante: el Trueno no vuelve a su puesto")
+			var hp0: float = float(th["hp"])
+			tr.damage_creature(th, 10.0)
+			check(absf((hp0 - float(th["hp"])) - 13.0 * tr.wrath_dmg()) < 0.01, "Tormenta errante: recibe un 30% más de daño")
+		else:
+			check(th["state"] == "return", "sin la piedra angular el Trueno vuelve pasado su tiempo")
+	# Mirada fija
+	for focus in [true, false]:
+		var o = meta_sim()
+		var od: float = float(o._stats("ojo")["dmg"])
+		if focus:
+			grant(o, "ojo_fijo")
+			check(absf(float(o._stats("ojo")["dmg"]) - od * 2.2) < 0.01, "Mirada fija: +120% de daño")
+		to_combat(o)
+		spawn_beast(o, "ojo", 1, 300.0)
+		spawn_beast(o, "horno", 2, 450.0)
+		for i in 3:
+			var be: Dictionary = _far_enemy(o, "escudero", 1, 600.0 + 30.0 * i)
+			be["burn_t"] = 9.0
+		var seen: Array = []
+		for i in 5:
+			o.step(Sim.TICK)
+			for ev in o.events:
+				seen.append(ev["t"])
+		if focus:
+			check(seen.has("ojo_shot") and not seen.has("ojo_chain"), "Mirada fija: el Ojo ya no encadena")
+		else:
+			check(seen.has("ojo_chain"), "sin la piedra angular el Ojo encadena sobre los que arden")
+	# Pacto del Abismo
+	var p = meta_sim()
+	grant(p, "abi_pacto")
+	p.reset()
+	check(p.creatures.size() == 2 and ["gargola", "enjambre", "garfio"].has(String(p.creatures[1]["kind"])), "Pacto del Abismo: empiezas con una bestia del Abismo")
+	check(p.souls == 0, "Pacto del Abismo: empiezas sin almas")
+	# Hoguera profana
+	var q = meta_sim()
+	var qd: float = q.door_max
+	grant(q, "inq_hoguera")
+	check(absf(q.door_max - qd * 0.8) < 0.01, "Hoguera profana: la Puerta pierde un 20% de vida")
+	q.start_wave()
+	q.spawn_queue = [{"t": 99999.0, "lane": 0, "kind": "campesino"}]
+	check(not q.profane.is_empty(), "Hoguera profana: arde al empezar la oleada")
+	var qt: Dictionary = q.named_creature()
+	qt["x"] = float(q.profane["p"].x)
+	qt["home_x"] = qt["x"]
+	qt["lane"] = 1
+	qt["hp"] = float(qt["max_hp"]) * 0.5
+	var qe: Dictionary = _far_enemy(q, "escudero", 1, float(q.profane["p"].x) + 60.0)
+	qe["stun"] = 5.0
+	var far: Dictionary = _far_enemy(q, "escudero", 0, 1200.0)
+	far["stun"] = 5.0
+	var qhp: float = float(qt["hp"])
+	for i in int(1.2 / Sim.TICK):
+		q.step(Sim.TICK)
+	check(float(qt["hp"]) > qhp, "Hoguera profana: cura a las bestias de dentro")
+	check(qe["burn_t"] > 0.0 and far["burn_t"] <= 0.0, "Hoguera profana: quema a los humanos de dentro y no a los de fuera")
+
+
+func test_arbol2_dones() -> void:
+	print("Árbol 2: el árbol habla con los dones")
+	var s = meta_sim()
+	s.boons = ["pacto_fuego"]
+	s._invalidate()
+	check(not s.active_sets().has("fuego"), "con un solo don de fuego no hay resonancia")
+	grant(s, "brasa_infierno")
+	check(s.set_need("fuego") == 1 and s.active_sets().has("fuego"), "Corazón del Infierno: Infierno despierta con un solo don")
+	check(s.fmul("brasa.burn_time") >= 1.0, "y su efecto se aplica")
+	check(s.set_need("rayo") == 2, "las demás resonancias siguen pidiendo dos")
+	var b = meta_sim()
+	b.boons = ["muralla", "sello"]
+	b._invalidate()
+	var arm0: float = b.fmul("door.armor")
+	grant(b, "door_bastion", 2)
+	check(arm0 < 0.0 and absf(b.fmul("door.armor") - arm0 * 2.0) < 0.001, "Piedra del Bastión: la resonancia Bastión es el doble de fuerte con dos rangos")
+	var d = meta_sim()
+	var o_rayo: Dictionary = d.draft_def("tormenta")
+	var o_fuego: Dictionary = d.draft_def("pacto_fuego")
+	var o_garg: Dictionary = d.draft_def("gargola")
+	var o_epic: Dictionary = d.draft_def("diezmo_eterno")
+	var w_r: float = d._draft_weight(o_rayo, {}, 1.8)
+	var w_f: float = d._draft_weight(o_fuego, {}, 1.8)
+	var w_g: float = d._draft_weight(o_garg, {}, 1.8)
+	var w_e: float = d._draft_weight(o_epic, {}, 1.8)
+	grant(d, "rayo_heraldo", 2)
+	grant(d, "abi_llamada", 2)
+	grant(d, "inq_profeta", 2)
+	check(absf(d._draft_weight(o_rayo, {}, 1.8) - w_r * 2.5) < 0.001, "Heraldo de la Tempestad: los dones de rayo pesan más en el draft")
+	check(d._draft_weight(o_fuego, {}, 1.8) == w_f, "y los de otras familias igual que antes")
+	check(absf(d._draft_weight(o_garg, {}, 1.8) - w_g * 1.8) < 0.001, "Llamada del Abismo: las bestias del Abismo salen más")
+	check(absf(d._draft_weight(o_epic, {}, 1.8) - w_e * 1.6) < 0.001, "Lengua de profeta: los dones épicos salen más")
+	# nodos de la Inquisición
+	var q = meta_sim()
+	to_combat(q)
+	var boss: Dictionary = _far_enemy(q, "verdugo", 1, 800.0)
+	var hp0: float = float(boss["hp"])
+	q.damage_enemy(boss, 10.0)
+	var base_d: float = hp0 - float(boss["hp"])
+	grant(q, "inq_hereje", 4)
+	var hp1: float = float(boss["hp"])
+	q.damage_enemy(boss, 10.0)
+	check(absf((hp1 - float(boss["hp"])) - base_d * 1.24) < 0.01, "Hierro hereje: héroes y jefes reciben más daño")
+	grant(q, "inq_fuego", 2)
+	var pe: Dictionary = _far_enemy(q, "escudero", 0, 800.0)
+	var a0: float = float(pe["hp"])
+	q.damage_enemy(pe, 10.0)
+	var plain: float = a0 - float(pe["hp"])
+	pe["burn_t"] = 3.0
+	var a1: float = float(pe["hp"])
+	q.damage_enemy(pe, 10.0)
+	check(absf((a1 - float(pe["hp"])) - plain * 1.16) < 0.01, "Fuego sagrado: los que arden reciben más daño")
