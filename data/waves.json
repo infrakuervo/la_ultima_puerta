@@ -593,7 +593,7 @@
     },
     {
      "title": "El Gran Maestre",
-     "note": "Juzga un carril entero: cuando lo marque, aparta a tus bestias o resiste. Llama a su escolta al sangrar.",
+     "note": "Juzga un carril: aparta a tus bestias o resiste. Al sangrar llama a su escolta.",
      "spawns": [
       {
        "lane": 1,
@@ -656,6 +656,312 @@
     "jitter": 0.2,
     "keep_first": true
    }
+  },
+  {
+   "id": "inquisicion",
+   "name": "Tercer asedio: la Inquisición",
+   "desc": "Ocho oleadas con santuarios que curan a los humanos y queman a tus bestias. Flagelantes, Purificadores y el Gran Inquisidor.",
+   "unlock": "alba",
+   "sanctuary": {
+    "_doc": "Cada oleada aparece en un punto al azar del campo (se ve al preparar): cura a los humanos dentro (heal, fracción de vida por s) y quema a las bestias dentro (burn). r crece en la última oleada (boss_r).",
+    "r": 110,
+    "boss_r": 150,
+    "heal": 0.035,
+    "burn": 0.045,
+    "x0": 470,
+    "x1": 980
+   },
+   "remix": {
+    "commons": [
+     "campesino",
+     "escudero",
+     "ballestero",
+     "clerigo",
+     "flagelante",
+     "purificador"
+    ],
+    "elites": [
+     "capataz",
+     "muro",
+     "tirador",
+     "lumbrero",
+     "tajo",
+     "campana",
+     "paladin",
+     "sacerdotisa"
+    ],
+    "swap": 0.45,
+    "elite_swap": 0.6,
+    "jitter": 0.2,
+    "keep_first": true
+   },
+   "waves": [
+    {
+     "title": "Los herejes arden",
+     "note": "El santuario cura a los humanos de dentro y quema a tus bestias.",
+     "spawns": [
+      {
+       "kind": "campesino",
+       "count": 8,
+       "lane": -1
+      },
+      {
+       "kind": "flagelante",
+       "count": 6,
+       "lane": -1,
+       "delay": 4.0
+      },
+      {
+       "kind": "ballestero",
+       "count": 2,
+       "lane": -1,
+       "delay": 6.0
+      }
+     ]
+    },
+    {
+     "title": "Flagelantes",
+     "note": "Rápidos y muchos. Sácalos del santuario con la Brasa.",
+     "spawns": [
+      {
+       "kind": "flagelante",
+       "count": 12,
+       "lane": -1
+      },
+      {
+       "kind": "escudero",
+       "count": 3,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "clerigo",
+       "count": 1,
+       "lane": -1,
+       "delay": 5.0
+      },
+      {
+       "kind": "flagelante",
+       "count": 6,
+       "lane": -1,
+       "delay": 10.0
+      }
+     ]
+    },
+    {
+     "title": "Purificadores",
+     "note": "Disparan fuego de lejos y no arden. El Rayo los alcanza.",
+     "spawns": [
+      {
+       "kind": "escudero",
+       "count": 4,
+       "lane": -1
+      },
+      {
+       "kind": "purificador",
+       "count": 3,
+       "lane": -1,
+       "delay": 2.0
+      },
+      {
+       "kind": "campesino",
+       "count": 10,
+       "lane": -1,
+       "delay": 4.0
+      },
+      {
+       "kind": "capataz",
+       "count": 1,
+       "lane": -1,
+       "delay": 6.0
+      }
+     ]
+    },
+    {
+     "title": "La procesión",
+     "note": "Escudos, clérigos y la Campana. Luego eliges heraldo.",
+     "after": "route",
+     "spawns": [
+      {
+       "kind": "escudero",
+       "count": 6,
+       "lane": -1
+      },
+      {
+       "kind": "clerigo",
+       "count": 2,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "campana",
+       "count": 1,
+       "lane": -1,
+       "delay": 6.0
+      },
+      {
+       "kind": "purificador",
+       "count": 2,
+       "lane": -1,
+       "delay": 5.0
+      },
+      {
+       "kind": "flagelante",
+       "count": 10,
+       "lane": -1,
+       "delay": 8.0
+      },
+      {
+       "kind": "muro",
+       "count": 1,
+       "lane": -1,
+       "delay": 9.0
+      }
+     ]
+    },
+    {
+     "title": "El heraldo de la hoguera",
+     "note": "Tu heraldo vuelve con la Inquisición.",
+     "after": "forge",
+     "spawns": [
+      {
+       "kind": "@hero",
+       "count": 1,
+       "lane": -1
+      },
+      {
+       "kind": "flagelante",
+       "count": 10,
+       "lane": -1,
+       "delay": 2.0
+      },
+      {
+       "kind": "purificador",
+       "count": 2,
+       "lane": -1,
+       "delay": 4.0
+      },
+      {
+       "kind": "escudero",
+       "count": 3,
+       "lane": -1,
+       "delay": 6.0
+      }
+     ]
+    },
+    {
+     "title": "Fuego purificador",
+     "note": "Purificadores escudados por una Sacerdotisa.",
+     "spawns": [
+      {
+       "kind": "purificador",
+       "count": 5,
+       "lane": -1
+      },
+      {
+       "kind": "sacerdotisa",
+       "count": 1,
+       "lane": -1,
+       "delay": 2.0
+      },
+      {
+       "kind": "escudero",
+       "count": 5,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "flagelante",
+       "count": 12,
+       "lane": -1,
+       "delay": 6.0
+      },
+      {
+       "kind": "tirador",
+       "count": 1,
+       "lane": -1,
+       "delay": 8.0
+      }
+     ]
+    },
+    {
+     "title": "Auto de fe",
+     "note": "Toda la Inquisición. Aparta a tus bestias del santuario.",
+     "loan_ojo": true,
+     "spawns": [
+      {
+       "kind": "flagelante",
+       "count": 14,
+       "lane": -1
+      },
+      {
+       "kind": "escudero",
+       "count": 6,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "purificador",
+       "count": 4,
+       "lane": -1,
+       "delay": 4.0
+      },
+      {
+       "kind": "lumbrero",
+       "count": 1,
+       "lane": -1,
+       "delay": 5.0
+      },
+      {
+       "kind": "paladin",
+       "count": 2,
+       "lane": -1,
+       "delay": 7.0
+      },
+      {
+       "kind": "tajo",
+       "count": 1,
+       "lane": -1,
+       "delay": 9.0
+      },
+      {
+       "kind": "campana",
+       "count": 1,
+       "lane": -1,
+       "delay": 10.0
+      }
+     ]
+    },
+    {
+     "title": "El Gran Inquisidor",
+     "note": "Juzga un carril y llama a su escolta. Santuario más grande.",
+     "spawns": [
+      {
+       "kind": "gran_inquisidor",
+       "count": 1,
+       "lane": 1
+      },
+      {
+       "kind": "escudero",
+       "count": 4,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "purificador",
+       "count": 3,
+       "lane": -1,
+       "delay": 5.0
+      },
+      {
+       "kind": "flagelante",
+       "count": 10,
+       "lane": -1,
+       "delay": 6.0
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "grieta",

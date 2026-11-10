@@ -611,6 +611,10 @@ func _on_event(ev: Dictionary) -> void:
 			_play("mutate")
 		"contract_done":
 			contract_note = "Encargo cumplido: %s  (+%d %s)" % [String(sim.contract_def(String(ev["id"]))["name"]), int(ev["reward"]), "esencia" if sim.meta_mode else "almas"]
+		"sanct_heal":
+			var hp1: Vector2 = _enemy_pos(int(ev["id"]))
+			if hp1.x > 0.0:
+				juice.burst(hp1 + Vector2(0, -50), 2, Color(1.0, 0.92, 0.5), 60.0, 0.6, 2.0, -80.0)
 		"augur_done":
 			_float(Vector2(640, 240), "Augurio cumplido: %s" % String(sim.augur_def(String(ev["id"])).get("name", "")), Color(0.85, 0.65, 1.0), 1.8)
 		"draft_pick":
@@ -1098,6 +1102,7 @@ func _draw_arena_rest(painted: bool) -> void:
 		Art.draw_door(draw_ctx(), door_rect, clampf(sim.door_hp / sim.door_max, 0.0, 1.0), 0.0)
 	juice.draw_back(self)
 	_draw_terrain()
+	_draw_sanctuary()
 	_draw_demon()
 	# zonas de despliegue: solo se resaltan al colocar
 	if sim.phase == "prep":
@@ -1151,6 +1156,31 @@ func _draw_arena_rest(painted: bool) -> void:
 	juice.draw_front(self, font)
 	if sim.phase == "combat":
 		_draw_aim()
+
+
+## Santuario del tercer asedio: círculo dorado en el suelo con runas que giran.
+func _draw_sanctuary() -> void:
+	if sim.sanctuary.is_empty():
+		return
+	var p: Vector2 = sim.sanctuary["p"]
+	var r: float = float(sim.sanctuary["r"])
+	var pulse: float = 0.5 + 0.5 * sin(clock * 2.2)
+	draw_set_transform(arena_offset + p, 0.0, Vector2(1.0, 0.5))
+	draw_circle(Vector2.ZERO, r, Color(1.0, 0.9, 0.5, 0.10 + 0.05 * pulse))
+	draw_arc(Vector2.ZERO, r, 0.0, TAU, 48, Color(1.0, 0.88, 0.45, 0.75), 3.0)
+	draw_arc(Vector2.ZERO, r * 0.82, 0.0, TAU, 48, Color(1.0, 0.88, 0.45, 0.35), 2.0)
+	for i in 12:
+		var a: float = clock * 0.4 + TAU * float(i) / 12.0
+		var q: Vector2 = Vector2(cos(a), sin(a)) * r * 0.91
+		draw_line(q - Vector2(cos(a + 1.5), sin(a + 1.5)) * 6.0, q + Vector2(cos(a + 1.5), sin(a + 1.5)) * 6.0, Color(1.0, 0.95, 0.6, 0.8), 2.0)
+	draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+	# columna de luz
+	var lc: Color = Color(1.0, 0.9, 0.55, 0.07 + 0.04 * pulse)
+	var lt: Color = Color(1.0, 0.9, 0.55, 0.0)
+	draw_polygon(PackedVector2Array([p + Vector2(-r * 0.6, 0), p + Vector2(-r * 0.15, -170), p + Vector2(r * 0.15, -170), p + Vector2(r * 0.6, 0)]),
+		PackedColorArray([lc, lt, lt, lc]))
+	if sim.phase == "prep":
+		_txt("SANTUARIO", p + Vector2(-60, -r * 0.5 - 10), 15, Color(1.0, 0.9, 0.55), HORIZONTAL_ALIGNMENT_CENTER, 120.0)
 
 
 ## Terreno de la partida: grieta de lava, huesos o viento, en su carril.
@@ -1677,7 +1707,11 @@ func _draw_hud() -> void:
 	_txt(title, Vector2(240, 36), 24, Color(1.0, 0.85, 0.55))
 	var note: String = String(w.get("note", ""))
 	if sim.phase == "prep" and note != "":
-		_txt(note, Vector2(240, 62), 17, Color(0.8, 0.7, 0.65))
+		# la nota no debe meterse bajo la barra de la Puerta (x 900): letra más pequeña si no cabe
+		var nfs: int = 17
+		while nfs > 12 and font.get_string_size(note, HORIZONTAL_ALIGNMENT_LEFT, -1, nfs).x > 645.0:
+			nfs -= 1
+		_txt(note, Vector2(240, 62), nfs, Color(0.8, 0.7, 0.65))
 	elif sim.phase != "prep":
 		_txt(_phase_hint(), Vector2(240, 62), 17, Color(0.8, 0.7, 0.65))
 	_txt("PUERTA", Vector2(900, 34), 18, Color(1.0, 0.7, 0.5))

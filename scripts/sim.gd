@@ -53,6 +53,8 @@ var augur: String = ""           # augurio elegido para la oleada actual o sigui
 var augur_offer: Array = []      # ids ofrecidos en esta preparación
 var _front_lane: int = -1
 var week_augur: String = ""      # reto semanal: augurio que dura toda la partida
+var sanctuary: Dictionary = {}   # santuario del tercer asedio: {p: Vector2, r} ({} si no hay)
+var _sanct_t: float = 0.0
 var terrain: String = "llano"    # terreno de la partida (balance.json → terrains)
 var terrain_lane: int = 1
 var contracts_enabled: bool = false  # encargo opcional al empezar la partida
@@ -160,6 +162,7 @@ func reset() -> void:
 	_note_seen("sabueso")
 	message = "Coloca a tus monstruos y pulsa «Iniciar oleada»."
 	_offer_contracts()
+	_place_sanctuary()
 
 
 # ----------------------------------------------------------------------------
@@ -540,6 +543,7 @@ func _prepare_next() -> void:
 			events.append({"t": "loan_ojo", "id": o["id"]})
 	message = "Oleada %d: %s" % [wave_index + 1, w["title"]]
 	_offer_augurs()
+	_place_sanctuary()
 
 
 # ----------------------------------------------------------------------------
@@ -664,6 +668,41 @@ func _gen_wave(i: int) -> Dictionary:
 		"hp_mult": pow(float(en["hp_growth"]), float(k)), "dmg_mult": pow(float(en["dmg_growth"]), float(k))}
 
 
+## Santuario (asedios con "sanctuary"): un círculo en un punto al azar del campo que cura a los
+## humanos de dentro y quema a las bestias. Se coloca al preparar, para que el jugador lo vea.
+func _place_sanctuary() -> void:
+	sanctuary = {}
+	var sd: Dictionary = SIEGES[siege_index].get("sanctuary", {})
+	if sd.is_empty():
+		return
+	var last: bool = wave_index >= WAVES.size() - 1
+	var x: float = rng.randf_range(float(sd["x0"]), float(sd["x1"]))
+	var y: float = lerpf(lane_y(0), lane_y(2), rng.randf())
+	sanctuary = {"p": Vector2(x, y), "r": float(sd["boss_r"] if last else sd["r"])}
+
+
+func _update_sanctuary(dt: float) -> void:
+	if sanctuary.is_empty():
+		return
+	_sanct_t += dt
+	if _sanct_t < 0.5:
+		return
+	var step_t: float = _sanct_t
+	_sanct_t = 0.0
+	var sd: Dictionary = SIEGES[siege_index]["sanctuary"]
+	var p: Vector2 = sanctuary["p"]
+	var r: float = float(sanctuary["r"])
+	for e in enemies:
+		if not e["dead"] and epos(e).distance_to(p) <= r and float(e["hp"]) < float(e["max_hp"]):
+			e["hp"] = minf(float(e["max_hp"]), float(e["hp"]) + float(e["max_hp"]) * float(sd["heal"]) * step_t)
+			events.append({"t": "sanct_heal", "id": e["id"]})
+	for c in creatures:
+		if c["dead"] or c["fallen"] or c["air"]:
+			continue
+		if Vector2(float(c["x"]), lane_y(int(c["lane"]))).distance_to(p) <= r:
+			damage_creature(c, float(c["max_hp"]) * float(sd["burn"]) * step_t)
+
+
 func terrain_def() -> Dictionary:
 	for t in B.get("terrains", {}).get("list", []):
 		if String(t["id"]) == terrain:
@@ -693,7 +732,7 @@ func _pick_terrain() -> void:
 const SAVE_KEYS: Array = ["wave_index", "door_hp", "door_max", "souls", "creatures", "route", "relic", "next_id",
 	"draft", "kills", "WAVES", "siege_index", "wrath", "augur", "augur_offer", "contract", "contract_offer",
 	"run_track", "boons", "terrain", "terrain_lane", "week_augur", "remix_enabled", "augurs_enabled",
-	"contracts_enabled", "draft_enabled"]
+	"contracts_enabled", "draft_enabled", "sanctuary"]
 
 
 ## Estado de la partida en preparación, para guardarlo con var_to_str. {} si no se puede.
@@ -867,6 +906,7 @@ func step(dt: float) -> void:
 		if sp.has("x"):
 			enemies[enemies.size() - 1]["x"] = float(sp["x"])
 	_update_zones(dt)
+	_update_sanctuary(dt)
 	for c in creatures:
 		_update_creature(c, dt)
 	_update_spells(dt)

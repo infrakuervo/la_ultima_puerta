@@ -251,6 +251,27 @@ func run() -> void:
 			main.demon_anim.t = A.impact_delay("demonio", c) if c in ["rayo", "brasa"] else 0.6
 			await shot("demonio_" + c)
 		main.demon_anim = A.new("demonio")
+	if want("inquisicion"):
+		s().set_siege(s()._siege_by_id("inquisicion"), 0)
+		s().reset()
+		for k in ["horno", "alacran", "ojo"]:
+			add_beast(k)
+		await shot("inquisicion_prep")
+		s().start_wave()
+		s().spawn_queue = [{"t": 99999.0, "lane": 0, "kind": "campesino"}]
+		var ii: int = 0
+		for k in ["flagelante", "purificador", "flagelante", "escudero", "purificador", "flagelante"]:
+			s()._spawn_enemy(k, ii % 3)
+			s().enemies[-1]["x"] = 760.0 + 90.0 * float(ii)
+			ii += 1
+		s()._spawn_enemy("gran_inquisidor", 1)
+		s().enemies[-1]["x"] = 1150.0
+		for i in 45:
+			main._process(1.0 / 30.0)
+		main.banner_t = 0.0
+		await shot("inquisicion")
+		s().set_siege(0, 0)
+		s().reset()
 	if want("terreno"):
 		for tr in ["fisura", "osario", "viento"]:
 			s().reset()

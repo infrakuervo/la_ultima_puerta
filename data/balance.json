@@ -29,7 +29,10 @@
   "paladin": "Paladín del Alba",
   "sacerdotisa": "Sacerdotisa de la Luz",
   "ariete": "Ariete Bendito",
-  "gran_maestre": "El Gran Maestre"
+  "gran_maestre": "El Gran Maestre",
+  "flagelante": "Flagelante",
+  "purificador": "Purificador",
+  "gran_inquisidor": "El Gran Inquisidor"
  },
  "arena": {
   "door_x": 130,
@@ -388,6 +391,72 @@
     "sacerdotisa",
     "zapador",
     "zapador"
+   ]
+  },
+  "flagelante": {
+   "hp": 45,
+   "speed": 62,
+   "dmg": 6,
+   "cd": 1.1,
+   "reach": 30,
+   "door_dmg": 4,
+   "reward": 3,
+   "sprite": "campesino_v01",
+   "tint": [
+    1.25,
+    0.7,
+    0.65
+   ],
+   "scale": 0.95
+  },
+  "purificador": {
+   "hp": 75,
+   "speed": 34,
+   "dmg": 13,
+   "cd": 2.2,
+   "range": 340,
+   "ranged": true,
+   "door_dmg": 3,
+   "burn_immune": true,
+   "reward": 9,
+   "sprite": "ballestero_v01",
+   "tint": [
+    1.35,
+    0.85,
+    0.55
+   ],
+   "scale": 1.05
+  },
+  "gran_inquisidor": {
+   "hp": 2600,
+   "speed": 20,
+   "dmg": 28,
+   "cd": 1.5,
+   "reach": 46,
+   "door_dmg": 16,
+   "hero": true,
+   "boss": true,
+   "unstoppable": true,
+   "reward": 130,
+   "sprite": "inquisidor_elite",
+   "tint": [
+    1.45,
+    0.75,
+    0.6
+   ],
+   "scale": 1.5,
+   "judge_cd": 8.0,
+   "judge_wind": 1.4,
+   "judge_dmg": 38,
+   "summon_at": [
+    0.7,
+    0.4
+   ],
+   "summon": [
+    "purificador",
+    "flagelante",
+    "flagelante",
+    "sacerdotisa"
    ]
   }
  },
