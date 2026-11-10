@@ -44,6 +44,7 @@ func run() -> void:
 	test_contracts()
 	test_terrain()
 	test_save_run()
+	test_inquisicion()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1625,6 +1626,38 @@ func test_save_run() -> void:
 	check(b.brasa_radius() == a.brasa_radius(), "los efectos de los dones vuelven a aplicarse")
 	to_combat(a)
 	check(a.run_save().is_empty(), "en combate no se guarda")
+
+
+func test_inquisicion() -> void:
+	print("Tercer asedio: santuario")
+	var s = new_sim(8)
+	var qi: int = s._siege_by_id("inquisicion")
+	check(qi > 0 and s.SIEGES[qi].has("sanctuary") and String(s.SIEGES[qi]["unlock"]) == "alba", "la Inquisición está en los datos y se abre con el Alba")
+	s.set_siege(qi, 0)
+	s.reset()
+	check(not s.sanctuary.is_empty(), "hay santuario ya al preparar la primera oleada")
+	to_combat(s)
+	s.sanctuary["p"] = Vector2(800.0, s.lane_y(1))
+	for c0 in s.creatures:
+		c0["x"] = 200.0
+		c0["home_x"] = 200.0
+	var e: Dictionary = add_enemy(s, "escudero", 1, 800.0)
+	e["yo"] = 0.0
+	e["hp"] = 50.0
+	e["stun"] = 5.0
+	run_ticks(s, 20)
+	check(float(e["hp"]) > 50.0, "el santuario cura a los humanos de dentro (%.0f)" % float(e["hp"]))
+	s.enemies.clear()
+	var c: Dictionary = s.named_creature()
+	c["x"] = 800.0
+	c["home_x"] = 800.0
+	c["lane"] = 1
+	c["home_lane"] = 1
+	var hp_c: float = float(c["hp"])
+	run_ticks(s, 20)
+	check(float(c["hp"]) < hp_c or c["fallen"], "el santuario quema a las bestias de dentro")
+	var s0 = new_sim(8)
+	check(s0.sanctuary.is_empty(), "los otros asedios no tienen santuario")
 
 
 func test_anim() -> void:

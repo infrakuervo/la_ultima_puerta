@@ -19,6 +19,11 @@
    "unlock": "furia"
   },
   {
+   "id": "hoguera",
+   "name": "Hoguera apagada",
+   "desc": "Gana el tercer asedio."
+  },
+  {
    "id": "ira_encendida",
    "name": "Ira encendida",
    "desc": "Gana un asedio con Ira 3 o más.",

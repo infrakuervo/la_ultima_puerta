@@ -2366,7 +2366,11 @@ func record_key() -> String:
 func weekly_challenge() -> Dictionary:
 	var week: int = int(Time.get_unix_time_from_system() / 604800.0)
 	var augs: Array = sim.B["augurs"]["list"]
-	var sg: int = 1 if week % 2 == 1 and siege_unlocked(1) else 0
+	var opts: Array = []
+	for i in sim.SIEGES.size():
+		if not sim.SIEGES[i].has("endless") and siege_unlocked(i):
+			opts.append(i)
+	var sg: int = int(opts[week % opts.size()]) if not opts.is_empty() else 0
 	return {"key": "reto:%d" % week, "week": week, "siege": sg, "wrath": 1, "augur": String(augs[week % augs.size()]["id"]), "seed": week * 7919 + 17}
 
 

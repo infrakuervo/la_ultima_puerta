@@ -97,6 +97,7 @@ func on_event(sim, ev: Dictionary, challenge: bool) -> Array:
 			var sid: String = sim.siege_id()
 			_try(out, "puerta_resiste", sid == "primer")
 			_try(out, "alba_rota", sid == "alba")
+			_try(out, "hoguera", sid == "inquisicion")
 			_try(out, "ira_encendida", sim.wrath >= 3)
 			_try(out, "intocable", not bool(run["door_hit"]))
 			_try(out, "supersticioso", bool(run["augur_all"]) and sim.augurs_enabled)
