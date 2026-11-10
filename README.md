@@ -47,7 +47,7 @@ Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tsc
 - **La Grieta:** modo sin fin con oleadas generadas que no paran de crecer; guarda tu récord.
 - **Reto semanal:** misma semilla para todos durante la semana, con un augurio fijo y récord propio.
 - **Logros y estadísticas** en el menú; **música procedural** que sube con el combate (volumen aparte de los efectos); velocidad x1/x2/x3.
-- El árbol encarece cada rango comprado, así la Ira sigue siendo un reto durante muchas partidas.
+- El árbol encarece cada rango comprado (2,2% por rango), así la Ira sigue siendo un reto durante muchas partidas.
 - **Encargos** opcionales al empezar (Solo fuego, Tizón invicto, Austero…) que dan esencia si se cumplen, y **terreno** distinto en cada partida (fisura de lava, osario, viento del Abismo).
 - La partida se **guarda sola entre oleadas**: al volver, «Continuar» la recupera.
 
@@ -152,6 +152,8 @@ Informe: `godot --headless --path . res://tools/balance.tscn -- 120 10 8` (prime
 | Árbol de 80 / 150 / 300 de esencia | 100% | 85% / 98% / 100% |
 
 Las derrotas se concentran en la oleada 6 y algunas en la 4; nadie pierde en las tres primeras.
+
+Tras «Árbol 2» (12 carreras de 20 partidas subiendo Ira, por estilo de compra): primera partida 50%; media de la carrera 59% (mixto), 57% (fuego) y 60% (manada), antes 57% con el árbol antiguo. Los árboles de fuego y manada comparten solo el 13% de sus rangos. Detalle en `ROADMAP.md`, «Árbol 2».
 
 ## Segundo asedio, Ira y bestias del pack 2
 

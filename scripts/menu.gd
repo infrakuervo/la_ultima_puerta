@@ -312,7 +312,12 @@ func draw(m) -> void:
 			var sid: String = String(sg["id"])
 			var st_txt: String = ""
 			if not un:
-				st_txt = "Bloqueado: gana el %s" % String(m.sim.SIEGES[0]["name"]).to_lower()
+				# el asedio que lo abre (antes decía siempre «el primer asedio»)
+				var need: String = String(m.sim.SIEGES[0]["name"])
+				for sg2 in m.sim.SIEGES:
+					if String(sg2["id"]) == String(m.sim.SIEGES[i].get("unlock", "")):
+						need = String(sg2["name"]).get_slice(":", 0)
+				st_txt = "Bloqueado: gana el %s" % need.to_lower()
 			elif sg.has("endless"):
 				st_txt = "Récord: %d oleadas" % int(m.records.get("grieta", 0))
 			elif m.siege_wins.has(sid):

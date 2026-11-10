@@ -14,13 +14,13 @@ Encargo: `docs/prompts/arbol_fable_5_2.md`. El árbol subía números pero no ca
 5. [x] **Ramas que se ganan** — Abismo (pack 2; se abre al ganar el Alba) e Inquisición (al ganar el tercer asedio). `branches[].unlock`; estado `sealed` con el requisito escrito.
 6. [x] **Vista nueva** — pestañas por rama a la izquierda, árbol de la rama en el centro (dos columnas y una lateral para piedra angular y nodos de dones) y panel de detalle fijo a la derecha con los botones de reasignar. Capturas: `tools/shots.tscn -- <dir> arbol` (13 capturas).
 7. [x] **Migración** — `Sim.load_tree()`: los nodos retirados devuelven su esencia entera (la pagada si hay registro; si no, estimada repitiendo la compra de barato a caro con inflación); aviso en el menú. Una partida a medias se carga y ajusta la Puerta al árbol nuevo.
-8. [ ] Bot con estilos de compra y medidas de equilibrio.
-9. [ ] Documentación, «Cómo se juega», web y PR.
+8. [x] **Bot con estilos de compra** — `tests/bot.gd` → `STYLES`: `mixto` (sin plan: las seis ramas de siempre, ninguna piedra angular), `fuego` (Brasa, Rayo, Horno e Inquisición; Tierra quemada + Arco voltaico + Estallido de ceniza) y `manada` (Bestias, Jauría, Demonio, Trueno y Abismo; Camada + Puerta de espinas). Lista de deseos, ahorra para la piedra angular, elige el heraldo de su rama y prefiere en el draft los dones que su árbol empuja. `tools/balance.tscn` repite la carrera con cada estilo y compara árboles; `BAL_GRANT=<id>` mide una piedra angular suelta.
+9. [x] Documentación (CLAUDE.md, README.md, «Cómo se juega»), web republicada y PR #1 actualizado.
 
 ### Decisiones propias
 - **Los remates se quitan en vez de añadir una fila más.** Eran los nodos más «porcentaje» del árbol y su sitio es justo el de la elección final. Quien los tenía recupera toda su esencia.
 - **«Tarda el doble»** de Tierra quemada es el enfriamiento, no el retardo de caída: con 3 s de caída no se acierta a nadie y el fuego en el suelo ya premia apuntar por delante.
-- **Tizón inmortal** no es un muro eterno: cae 4 s y se levanta con media vida (un bloqueador que nunca cae cerraba un carril para siempre). A cambio no gana cicatrices, así que choca con «Orgullo de cicatrices»: es una decisión de build.
+- **Tizón inmortal** no es un muro eterno: cae 3 s y se levanta con media vida (un bloqueador que nunca cae cerraba un carril para siempre). A cambio no gana cicatrices, así que choca con «Orgullo de cicatrices»: es una decisión de build.
 - **Reasignar devuelve el 75%** de lo pagado, con su inflación (se apunta cada compra). Así nunca se gana esencia reasignando y el precio de probar otra build es claro. Solo entre partidas, para que no sirva de truco a mitad de asedio.
 - **Las ramas nuevas se ven selladas** con su requisito, y la vista pasa a pestañas: diez columnas no caben en 1280 px y un panel fijo de detalle deja leer las piedras angulares sin tooltip.
 - Las piedras angulares no tienen rangos ni inflación propia distinta: cuestan 80 de base, que con el árbol a medias son 110-140 de esencia (una partida entera).
@@ -30,17 +30,60 @@ Encargo: `docs/prompts/arbol_fable_5_2.md`. El árbol subía números pero no ca
 |---|---|---|---|
 | Brasa | Tierra quemada | deja el suelo ardiendo 5 s | tarda el doble en recargarse |
 | Rayo | Arco voltaico | salta sin límite (cada salto pierde ≥15%) | solo salta a enemigos que arden |
-| Demonio | Puerta de espinas | quien golpea la Puerta recibe 14 de daño | Puerta −25% de vida |
-| Bestias | Tizón inmortal | Tizón se levanta a los 4 s, sin cicatriz | las demás bestias −40% de vida |
-| Jauría | Camada | cada Sabueso trae un gemelo gratis | Sabuesos −35% de vida |
+| Demonio | Puerta de espinas | quien golpea la Puerta recibe 18 de daño (×Ira) | Puerta −25% de vida |
+| Bestias | Tizón inmortal | Tizón se levanta a los 3 s, sin cicatriz | las demás bestias −15% de vida |
+| Jauría | Camada | cada Sabueso trae un gemelo gratis | Sabuesos −25% de vida |
 | Horno | Estallido de ceniza | los que mueren ardiendo estallan y prenden | Horno −30% de vida |
 | Trueno | Tormenta errante | no vuelve a su puesto y salta un 30% más | recibe +30% de daño |
-| Ojo | Mirada fija | +120% de daño a un solo blanco | ya no encadena |
+| Ojo | Mirada fija | +80% de daño a un solo blanco | ya no encadena |
 | Abismo | Pacto del Abismo | empiezas con una bestia del Abismo | empiezas sin almas |
 | Inquisición | Hoguera profana | hoguera que cura bestias y quema humanos | Puerta −20% de vida |
 
-### Medidas
-- **Antes** (bot torpe, `BAL_CLIMB=1 ... -- 100 8 20`): primera partida 50/100 (50%); bot hábil 85%. Carrera 8×20: 12, 88, 75, 62, 75, 100, 50, 88, 50, 38, 38, 62, 50, 25, 25, 25, 75, 62, 88, 50% → media 57%. Esencia invertida al final: ~7350.
+### Medidas (bot torpe)
+`BAL_CLIMB=1 godot --headless --path . res://tools/balance.tscn -- 100 12 20` (primera partida ×100 y carrera de 20 partidas ×12 por estilo; antes, ×8 con el único bot que había).
+
+| Medida | Antes | Después |
+|---|---|---|
+| Primera partida (sin árbol) | 50/100 (50%) | 50/100 (50%): sin árbol la simulación es la misma |
+| Primera partida, bot hábil | 85% | 85% |
+| Carrera, media de 20 partidas | 57% | mixto 59% · fuego 57% · manada 60% |
+| Peor partida de la carrera | 12% (la 1.ª, sin árbol) y 25% | 17% (la 1.ª); mínimos 17% / 8% / 33% |
+| Rachas del 100% | una partida (la 6.ª) | dos seguidas como mucho (mixto 17-18, al entrar en la Inquisición) |
+| Esencia invertida en la partida 20 | ~7350 | ~7400 |
+
+Por partida (victorias de 12 carreras, %):
+- mixto: 17, 100, 92, 50, 42, 50, 50, 75, 75, 58, 33, 33, 17, 33, 50, 75, 100, 100, 58, 67
+- fuego: 17, 92, 67, 50, 33, 83, 67, 75, 75, 42, 42, 25, 17, 8, 33, 67, 75, 92, 100, 75
+- manada: 17, 83, 92, 42, 67, 92, 75, 75, 83, 58, 50, 67, 67, 58, 92, 33, 33, 50, 33, 42
+- antes (8 carreras): 12, 88, 75, 62, 75, 100, 50, 88, 50, 38, 38, 62, 50, 25, 25, 25, 75, 62, 88, 50
+
+**Árboles distintos, tasas parecidas** (el objetivo de verdad): distancia entre árboles al final de la carrera (1 − rangos compartidos / rangos totales; 0 = iguales): fuego / manada 0,87, mixto / fuego 0,67, mixto / manada 0,57; entre dos carreras del mismo estilo 0,06. Fuego acaba con 30 rangos en Brasa, 31 en Rayo y 29 en Horno; manada con 27 en Bestias, 25 en Jauría, 25 en Demonio, 22 en Trueno y 21 en Abismo. Las tres medias caben en 3 puntos.
+
+Cada estilo tiene su asedio malo: fuego se atasca en el Alba con Ira 3 (paladines que no arden, escudos: 8-25% durante tres partidas) y luego sube rápido por la Inquisición; manada cruza el Alba sin frenar y sufre en la Inquisición (los santuarios queman a las bestias: 33-50%). Es justo donde reasignar tiene sentido.
+
+**Piedras angulares sueltas** (`BAL_SOLO_ESS=1 BAL_ESS=600 BAL_WRATH=2 BAL_GRANT=<id> ... -- 60 0 0`, primer asedio con Ira 2 y un árbol mixto de 600; sin piedra 53%; ±6 puntos de ruido): en la primera pasada Tizón inmortal daba 27% (las demás bestias perdían un 40% de vida) y Mirada fija 70% (+120%). Tras el ajuste: Tierra quemada ~52%, Arco voltaico 43-57% (medido antes de su último cambio; sin fuego alrededor resta: es para builds de quemadura), Puerta de espinas 60%, Tizón inmortal 37% con −25% (se dejó en −15%), Camada 60%, Estallido de ceniza 45-58%, Tormenta errante 48-52%, Mirada fija 62%, Pacto del Abismo 62-68%, Hoguera profana 53-55%. Ninguna es gratis y ninguna es obligatoria.
+
+**Ajustes hechos al medir** (todo en JSON salvo dos líneas):
+- Estilo manada 44% → 60%: Camada −35% → −25% de vida, Horda +4% por bestia y +6% de vida, Carnicero +25% / −10%, Puerta de espinas 14 → 18 y multiplicada por la Ira (si no, a Ira 3 no hacía nada).
+- El Arco voltaico tenía un suelo del 50% por salto y hasta 24 saltos: con «Cadena potente» y una multitud ardiendo eran ~13 rayos por lanzamiento. Ahora cada salto pierde al menos un 15% (`meta.arc_frac`).
+- El árbol nuevo rinde más por esencia (con 7500, la Inquisición con Ira 3 pasó del 29% al 71-100% según estilo): inflación 2% → 2,2%. Ira 5 sigue siendo el techo (12 / 12 / 42%).
+- El bot «mixto» compraba lo más barato de todo el árbol y tiraba la esencia en nodos situacionales (Abismo sin bestias del Abismo, nodos de dones sin buscar esos dones): 42%. Un jugador sin plan no hace eso; ahora reparte por las seis ramas de siempre (59%).
+
+### Resumen
+- El árbol pasa de 69 nodos «+X%» en 8 ramas a **110 nodos en 10 ramas**: una piedra angular y una pareja excluyente por rama, siete nodos que hablan con los dones, reasignación al 75% y dos ramas que se ganan con el segundo y el tercer asedio.
+- Vista nueva con pestañas, columna lateral y panel de detalle; 13 capturas revisadas a ojo (`tools/shots.tscn -- <dir> arbol`), más `piedras` (suelo ardiendo y Hoguera profana) y la prueba automática de solapes.
+- Migración probada con un `meta.json` antiguo en la vista real: devuelve 372 de esencia de cinco rangos de remates y lo dice en el menú.
+- Pruebas: **423 comprobaciones, 0 fallos** (96 nuevas: datos, exclusión, reasignación, ramas, migración, las diez piedras angulares, dones e interfaz).
+- De paso: la tarjeta del tercer asedio decía «gana el primer asedio»; ahora nombra el asedio que lo abre.
+
+### Lo que haría después
+1. **La escalera de asedios.** La Inquisición con Ira 0 es más fácil que el Alba con Ira 3, así que quien llega con 6000 de esencia gana 2-4 partidas seguidas al entrar (ya pasaba antes: 96% con 3000). Subir la base de la Inquisición o hacer que su Ira mínima dependa de la ganada en el Alba.
+2. **Jugar las piedras angulares a mano.** El bot dice que están equilibradas, no que sean divertidas. Las que más cambian la partida (Tierra quemada, Arco voltaico, Camada, Tormenta errante) necesitan manos; Hoguera profana y Puerta de espinas son más pasivas y quizá piden algo más vistoso.
+3. **Una piedra angular más por rama** y que también se excluyan entre sí (hoy se pueden tener las diez). Con dos por rama la elección de build sería más dura.
+4. **Segundo vistazo en el draft** (cambiar las opciones una vez por partida) como nodo del Demonio: es el nodo de dones que más pedía el diseño y necesita un botón en la tarjeta del draft.
+5. **Arte de las ramas nuevas**: iconos por nodo (hoy son cajas con texto) y un sprite para Gárgola, Enjambre y Garfio, que ahora tienen rama propia.
+6. **Reasignar gratis una vez** al abrirse una rama nueva, para invitar a probarla.
+7. El bot no usa Tizón inmortal + Alfa ni Mirada fija en ninguna carrera: añadir un cuarto estilo («campeón») para medir esa build.
 
 ## Noche 2 (animaciones de Flow)
 Tarea programada «La Última Puerta: seguir 2» (trig_01RebsH5yBQGN7zjmY9vLLuV, cada hora, minuto 59) creada.
