@@ -897,6 +897,28 @@ func test_ui_smoke() -> void:
 		if b2["id"] == "continue":
 			m._input(_click(b2["rect"].get_center()))
 	check(not m.menu.open, "Continuar vuelve a la partida")
+	# tarjetas de augurio y de encargo con el ratón
+	m.show_tree = false
+	m.sim.augurs_enabled = true
+	m.sim._offer_augurs()
+	var ars: Array = m._augur_rects()
+	check(ars.size() == 2 and String(ars[0]["kind"]) == "augur", "en preparación salen dos tarjetas de augurio")
+	if ars.size() == 2:
+		m._on_press(ars[1]["rect"].get_center())
+		check(m.sim.augur == String(ars[1]["id"]), "clic en una tarjeta elige ese augurio")
+		m._on_press(ars[1]["rect"].get_center())
+		check(m.sim.augur == "", "otro clic en la misma tarjeta vuelve a Calma")
+	m.sim.augurs_enabled = false
+	m.sim.augur_offer.clear()
+	m.sim.contracts_enabled = true
+	m.sim.reset()
+	var crs: Array = m._augur_rects()
+	check(crs.size() == 2 and String(crs[0]["kind"]) == "contract", "al empezar salen dos tarjetas de encargo")
+	if crs.size() == 2:
+		m._on_press(crs[0]["rect"].get_center())
+		check(m.sim.contract == String(crs[0]["id"]), "clic en una tarjeta elige ese encargo")
+	m.sim.contracts_enabled = false
+	m.sim.reset()
 	m.sim.remix_enabled = true
 	m.start_challenge()
 	var wa: String = str(m.sim.WAVES)
