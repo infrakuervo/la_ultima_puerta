@@ -1383,6 +1383,21 @@ func test_boons() -> void:
 	check(s.door_max > d0, "Muralla de huesos sube la vida de la Puerta")
 	s.wave_index = 1
 	check(not s._draft_ok(s.draft_def("eco_brasa")), "los dones épicos no salen tras la primera oleada")
+	# resonancias: dos dones de la misma familia
+	var bt0: float = float(s._stats("brasa")["burn_time"])
+	check(s.active_sets().is_empty(), "un solo don de fuego no da resonancia")
+	s.wave_index = 3
+	s.draft = [{"id": "eco_brasa", "type": "boon", "kind": "", "title": "", "desc": "", "amount": 0.0, "rarity": "epica", "icon": "fuego"}]
+	s.events.clear()
+	s.draft_pick(0)
+	check(s.active_sets().has("fuego") and float(s._stats("brasa")["burn_time"]) > bt0, "dos dones de fuego activan Infierno (la Brasa quema más)")
+	var ev_set: bool = false
+	for ev in s.events:
+		ev_set = ev_set or String(ev["t"]) == "set"
+	check(ev_set, "se avisa al activar una resonancia")
+	var fam: Dictionary = s.boon_families()
+	check(s._draft_weight(s.draft_def("tormenta"), fam, 1.8) < s._draft_weight(s.draft_def("furia"), fam, 1.8) * 2.0 + 0.01, "pesos del draft calculables")
+	check(s._draft_weight(s.draft_def("sello"), fam, 1.8) > float(s.draft_def("sello")["weight"]), "los dones de una familia que ya llevas salen más")
 	s.reset()
 	check(s.boons.is_empty() and is_equal_approx(s.brasa_radius(), r0) and is_equal_approx(s.door_max, d0), "los dones se pierden al empezar otra partida")
 

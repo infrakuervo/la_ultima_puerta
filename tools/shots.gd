@@ -194,8 +194,11 @@ func run() -> void:
 		for id in ["eco_brasa", "tormenta", "manada"]:
 			var d: Dictionary = s().draft_def(id)
 			s().draft.append({"id": id, "type": "boon", "kind": "", "title": d["title"], "desc": d["desc"], "amount": 0.0, "rarity": d["rarity"], "icon": d["icon"]})
-		s().boons = ["pacto_fuego", "usura", "muralla"]
 		await shot("draft_dones")
+		s().draft.clear()
+		s().boons = ["pacto_fuego", "eco_brasa", "usura", "muralla", "sello"]
+		s()._invalidate()
+		await shot("dones_hud")
 		s().boons.clear()
 		s().draft.clear()
 	if want("bestiario"):

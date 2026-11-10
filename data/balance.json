@@ -771,9 +771,106 @@
       "mul": 0.25
      }
     ]
+   },
+   {
+    "id": "sello",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "puerta",
+    "weight": 1,
+    "title": "Sello del Abismo",
+    "desc": "Esta partida: la Puerta +20% de vida y +25 almas por oleada.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.2
+     },
+     {
+      "k": "eco.wave_bonus",
+      "add": 25
+     }
+    ]
    }
   ],
-  "_doc": "rarity: comun | rara | epica (marco y peso). type boon: efecto para el resto de la partida, con fx como los del árbol (se suman a _fx_totals). min_wave: oleada mínima (1 = tras la primera). unlock: true = solo sale si el jugador consiguió el logro que lo abre (data/logros.json)."
+  "_doc": "rarity: comun | rara | epica (marco y peso). type boon: efecto para el resto de la partida, con fx como los del árbol (se suman a _fx_totals). min_wave: oleada mínima (1 = tras la primera). unlock: true = solo sale si el jugador consiguió el logro que lo abre (data/logros.json).",
+  "sets": {
+   "_doc": "Resonancias: con 2 dones de la misma familia (icon) se suma este efecto. Los dones de una familia que ya tienes salen más (family_weight).",
+   "family_weight": 1.8,
+   "fuego": {
+    "name": "Infierno",
+    "desc": "La Brasa quema el doble de tiempo y un 60% más fuerte.",
+    "fx": [
+     {
+      "k": "brasa.burn_time",
+      "mul": 1.0
+     },
+     {
+      "k": "brasa.burn_dps",
+      "mul": 0.6
+     }
+    ]
+   },
+   "rayo": {
+    "name": "Tempestad",
+    "desc": "El Rayo aturde 0,25 s y salta a otro blanco más.",
+    "fx": [
+     {
+      "k": "rayo.stun",
+      "add": 0.25
+     },
+     {
+      "k": "rayo.chain_count",
+      "add": 1
+     }
+    ]
+   },
+   "bestia": {
+    "name": "Jauría",
+    "desc": "Bestias +20% de velocidad, +15% de daño y regeneran un 1% por segundo.",
+    "fx": [
+     {
+      "k": "beast.speed",
+      "mul": 0.2
+     },
+     {
+      "k": "beast.dmg",
+      "mul": 0.15
+     },
+     {
+      "k": "special.regen",
+      "add": 0.01
+     }
+    ]
+   },
+   "alma": {
+    "name": "Avaricia",
+    "desc": "+30% de almas por baja y subir de nivel cuesta un 20% menos.",
+    "fx": [
+     {
+      "k": "eco.reward",
+      "mul": 0.3
+     },
+     {
+      "k": "eco.level_cost",
+      "mul": -0.2
+     }
+    ]
+   },
+   "puerta": {
+    "name": "Bastión",
+    "desc": "La Puerta +25% de vida y recibe un 25% menos de daño.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.25
+     },
+     {
+      "k": "door.armor",
+      "mul": -0.25
+     }
+    ]
+   }
+  }
  },
  "meta": {
   "wave_base": 10,

@@ -572,6 +572,13 @@ func _on_event(ev: Dictionary) -> void:
 			_add_fx({"type": "disc", "p": Vector2((150.0 + float(ev["x"])) * 0.5, jy2), "r": 60.0, "col": Color(1.0, 0.95, 0.7, 0.0), "ttl": 0.1})
 			_add_fx({"type": "line", "a": Vector2(150, jy2 - 10), "b": Vector2(ev["x"], jy2 - 10), "col": Color(1.0, 0.97, 0.75), "w": 40.0, "ttl": 0.35})
 			flash_white = 0.35
+		"set":
+			var sd: Dictionary = sim.B["draft"]["sets"][String(ev["family"])]
+			banner_text = "Resonancia: %s" % String(sd["name"])
+			banner_t = 2.2
+			banner_dur = 2.2
+			flash_white = 0.3
+			_play("mutate")
 		"augur_done":
 			_float(Vector2(640, 240), "Augurio cumplido: %s" % String(sim.augur_def(String(ev["id"])).get("name", "")), Color(0.85, 0.65, 1.0), 1.8)
 		"draft_pick":
@@ -1807,6 +1814,16 @@ func draw_boon_icon(icon: String, c: Vector2, r: float) -> void:
 
 ## Dones de la partida: iconos pequeños arriba a la izquierda de la arena (nombre al pasar el ratón).
 func _draw_boons() -> void:
+	var sets: Array = sim.active_sets()
+	for si in sets.size():
+		var sd: Dictionary = sim.B["draft"]["sets"][String(sets[si])]
+		var sp: Vector2 = Vector2(24, 140 + 22 * si)
+		var col: Color = BOON_COL.get(String(sets[si]), Color(1, 0.8, 0.5))
+		draw_rect(Rect2(sp + Vector2(-6, -16), Vector2(font.get_string_size("◆ " + String(sd["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x + 12, 21)), Color(0, 0, 0, 0.55))
+		_txt("◆ %s" % String(sd["name"]), sp, 15, col)
+		if Rect2(sp + Vector2(0, -16), Vector2(140, 20)).has_point(mouse_pos):
+			draw_rect(Rect2(sp + Vector2(-6, 6), Vector2(470, 26)), Color(0, 0, 0, 0.8))
+			_txt(String(sd["desc"]), sp + Vector2(0, 24), 14, Color(0.95, 0.9, 0.85))
 	for i in sim.boons.size():
 		var d: Dictionary = sim.draft_def(String(sim.boons[i]))
 		var c: Vector2 = Vector2(30 + 34 * i, 104)

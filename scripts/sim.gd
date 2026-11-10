@@ -1493,7 +1493,7 @@ func _blocked_by_ally(e: Dictionary, gap: float) -> bool:
 
 
 func _hit_door(amount: float, e: Dictionary) -> void:
-	amount *= wrath_dmg() * (1.0 + augur_fx("door_dmg"))
+	amount *= wrath_dmg() * (1.0 + augur_fx("door_dmg")) * maxf(0.3, 1.0 + fmul("door.armor"))
 	door_hp -= amount
 	events.append({"t": "door_hit", "lane": e["lane"], "x": e["x"], "amount": amount})
 
@@ -1934,6 +1934,9 @@ func _fx_totals() -> Dictionary:
 	for bid in boons:
 		for f2 in draft_def(String(bid)).get("fx", []):
 			_fx_add(f2, 1)
+	for fam in active_sets():
+		for f3 in B["draft"]["sets"][fam].get("fx", []):
+			_fx_add(f3, 1)
 	_fx_valid = true
 	return _fx_cache
 
@@ -1944,6 +1947,26 @@ func _fx_add(f: Dictionary, r: int) -> void:
 		_fx_cache[k] = {"mul": 0.0, "add": 0.0}
 	_fx_cache[k]["mul"] += float(f.get("mul", 0.0)) * r
 	_fx_cache[k]["add"] += float(f.get("add", 0.0)) * r
+
+
+## Familias de dones (icon) con 2 o más: resonancias activas.
+func boon_families() -> Dictionary:
+	var fam: Dictionary = {}
+	for bid in boons:
+		var ic: String = String(draft_def(String(bid)).get("icon", ""))
+		if ic != "":
+			fam[ic] = int(fam.get(ic, 0)) + 1
+	return fam
+
+
+func active_sets() -> Array:
+	var out: Array = []
+	var sets: Dictionary = B["draft"].get("sets", {})
+	var fam: Dictionary = boon_families()
+	for k in fam:
+		if int(fam[k]) >= 2 and sets.has(k):
+			out.append(String(k))
+	return out
 
 
 func draft_def(id: String) -> Dictionary:
@@ -1999,14 +2022,16 @@ func make_draft() -> void:
 	for o in cfg["pool"]:
 		if _draft_ok(o):
 			cands.append(o)
+	var fam: Dictionary = boon_families()
+	var fw: float = float(cfg.get("sets", {}).get("family_weight", 1.0))
 	while draft.size() < int(cfg["count"]) and not cands.is_empty():
 		var tot: float = 0.0
 		for o in cands:
-			tot += float(o.get("weight", 1))
+			tot += _draft_weight(o, fam, fw)
 		var r: float = rng.randf() * tot
 		var idx: int = cands.size() - 1
 		for i in cands.size():
-			r -= float(cands[i].get("weight", 1))
+			r -= _draft_weight(cands[i], fam, fw)
 			if r <= 0.0:
 				idx = i
 				break
@@ -2017,6 +2042,14 @@ func make_draft() -> void:
 			"amount": float(o.get("amount", 0)), "rarity": String(o.get("rarity", "comun")), "icon": String(o.get("icon", ""))})
 	if not draft.is_empty():
 		events.append({"t": "draft"})
+
+
+## Peso en el draft: los dones de una familia que ya llevas salen más (empuja a una build).
+func _draft_weight(o: Dictionary, fam: Dictionary, fw: float) -> float:
+	var w: float = float(o.get("weight", 1))
+	if String(o["type"]) == "boon" and fam.has(String(o.get("icon", ""))):
+		w *= fw
+	return w
 
 
 func _draft_ok(o: Dictionary) -> bool:
@@ -2055,8 +2088,12 @@ func draft_pick(i: int) -> bool:
 		"essence":
 			_gain_essence(int(o["amount"]))
 		"boon":
+			var sets0: Array = active_sets()
 			boons.append(String(o["id"]))
 			_invalidate()
+			for fs in active_sets():
+				if not sets0.has(fs):
+					events.append({"t": "set", "family": fs})
 			var nm: float = float(B["door"]["hp"]) * (1.0 + fmul("door.hp"))
 			door_hp += nm - door_max
 			door_max = nm
