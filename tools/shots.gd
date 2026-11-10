@@ -265,7 +265,9 @@ func run() -> void:
 		s().meta_mode = true
 		s().reset()
 		s().choose_contract(String(s().contract_offer[1]))
+		main.tip = {"id": "encargo", "text": main.TIPS["encargo"], "t": 1.0}
 		await shot("encargo")
+		main.tip = {}
 		s().contracts_enabled = false
 		s().meta_mode = false
 		s().reset()

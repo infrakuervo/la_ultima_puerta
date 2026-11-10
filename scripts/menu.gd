@@ -8,7 +8,7 @@ const W: float = 1280.0
 
 var open: bool = true            # se empieza en el menú
 var panel: String = "main"       # main | options | help
-var opts: Dictionary = {"volumen": 0.8, "velocidad": 1, "temblor": true, "tutorial_hecho": false, "intro": true, "musica": 0.6}
+var opts: Dictionary = {"volumen": 0.8, "velocidad": 1, "temblor": true, "tutorial_hecho": false, "intro": true, "musica": 0.6, "tips": []}
 var persist: bool = true
 var started: bool = false        # ya hay una partida empezada (Continuar)
 var sel_siege: int = 0

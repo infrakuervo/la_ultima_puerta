@@ -75,7 +75,15 @@ var logros = Logros.new()
 var music = Music.new()
 var toasts: Array = []            # avisos de logro: {title, desc, t}
 var challenge: Dictionary = {}
-var contract_note: String = ""    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
+var contract_note: String = ""
+var tip: Dictionary = {}          # consejo de una sola vez en pantalla: {id, text, t}
+const TIPS: Dictionary = {
+	"encargo": "Encargo: un objetivo opcional para esta partida. Si lo cumples al ganar, te da esencia extra.",
+	"augurio": "Augurio: antes de cada oleada puedes aceptar un riesgo a cambio de un premio. O nada (Calma).",
+	"don": "Los dones duran toda la partida. Dos de la misma familia despiertan una resonancia.",
+	"terreno": "Este campo tiene terreno especial (abajo a la izquierda). Cambia de una partida a otra.",
+	"grieta": "La Grieta no acaba: cada oleada es más dura. Aguanta todo lo que puedas para batir tu récord.",
+}    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
 var unlock_note: String = ""
 var flash_red: float = 0.0
 var flash_white: float = 0.0
@@ -233,6 +241,7 @@ func _process(delta: float) -> void:
 	if sim.phase == "combat" and holding and not show_bestiary:
 		_cast_at(mouse_pos)
 	_handle_events()
+	_update_tips(delta)
 	_update_fx(delta)
 	queue_redraw()
 
@@ -1038,6 +1047,7 @@ func _draw() -> void:
 		draw_rect(Rect2(0, 300, SCREEN_W, 90), Color(0, 0, 0, 0.55 * a))
 		_txt(banner_text, Vector2(slide, 360), 44, Color(1.0, 0.85, 0.5, a), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 	_draw_toasts()
+	_draw_tip()
 	menu.tut_draw(self)
 	menu.draw(self)
 	if fade > 0.0:
@@ -1384,6 +1394,47 @@ func _draw_creature(c: Dictionary) -> void:
 		_bar(pos + Vector2(-26, -100 if kind == "horno" or kind == "ojo" else -82), 52.0, float(c["hp"]) / float(c["max_hp"]), Color(0.4, 0.9, 0.4))
 	if c["loaned"]:
 		_txt("prestado", pos + Vector2(-34, 24), 14, Color(0.9, 0.85, 0.5), HORIZONTAL_ALIGNMENT_CENTER, 68.0)
+
+
+## Consejos de una sola vez (se guardan en Opciones → tips) cuando aparece algo nuevo.
+func _update_tips(delta: float) -> void:
+	if not tip.is_empty():
+		tip["t"] = float(tip["t"]) + delta
+		if float(tip["t"]) > 7.0:
+			tip = {}
+		return
+	if Engine.has_meta("sin_persistencia") or menu.tut_step >= 0 or sim.phase != "prep":
+		return
+	var seen: Array = menu.opts.get("tips", [])
+	var want: String = ""
+	if sim.is_endless() and sim.wave_index == 0:
+		want = "grieta"
+	elif sim.wave_index == 0 and not sim.contract_offer.is_empty():
+		want = "encargo"
+	elif not sim.augur_offer.is_empty():
+		want = "augurio"
+	elif _draft_active() and sim.draft.any(func(o): return String(o["type"]) == "boon"):
+		want = "don"
+	elif sim.terrain != "llano":
+		want = "terreno"
+	if want != "" and not seen.has(want):
+		seen.append(want)
+		menu.opts["tips"] = seen
+		menu.save_options()
+		tip = {"id": want, "text": TIPS[want], "t": 0.0}
+
+
+func _draw_tip() -> void:
+	if tip.is_empty():
+		return
+	var t: float = float(tip["t"])
+	var a: float = clampf(minf(t / 0.3, (7.0 - t) / 0.6), 0.0, 1.0)
+	var txt: String = String(tip["text"])
+	var w: float = minf(900.0, font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x + 40.0)
+	var r: Rect2 = Rect2(SCREEN_W * 0.5 - w * 0.5, 548, w, 44)
+	draw_rect(r, Color(0.05, 0.03, 0.08, 0.9 * a))
+	draw_rect(r, Color(0.85, 0.65, 1.0, a), false, 2.0)
+	_txt(txt, r.position + Vector2(0, 28), 16, Color(0.95, 0.9, 1.0, a), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 
 
 func _draw_toasts() -> void:
