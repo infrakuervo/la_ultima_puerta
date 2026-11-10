@@ -55,6 +55,8 @@ func setup(node: Node, bus: String) -> void:
 	player.stream = gen
 	player.bus = bus
 	player.volume_db = -7.0   # por debajo de los efectos: acompaña, no tapa
+	# en la web Godot reproduce por «samples» por defecto; un generador necesita modo stream
+	player.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	node.add_child(player)
 	player.play()
 	playback = player.get_stream_playback() as AudioStreamGeneratorPlayback
