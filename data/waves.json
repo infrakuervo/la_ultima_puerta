@@ -660,7 +660,7 @@
   {
    "id": "inquisicion",
    "name": "Tercer asedio: la Inquisición",
-   "desc": "Ocho oleadas con santuarios que curan a los humanos y queman a tus bestias. Flagelantes, Purificadores y el Gran Inquisidor.",
+   "desc": "Santuarios que curan a los humanos y queman a tus bestias. Flagelantes, Purificadores y el Gran Inquisidor.",
    "unlock": "alba",
    "sanctuary": {
     "_doc": "Cada oleada aparece en un punto al azar del campo (se ve al preparar): cura a los humanos dentro (heal, fracción de vida por s) y quema a las bestias dentro (burn). r crece en la última oleada (boss_r).",

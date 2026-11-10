@@ -295,10 +295,15 @@ func draw(m) -> void:
 			var selc: bool = i == sel_siege
 			m.draw_rect(r0, Color(0.28, 0.11, 0.08) if selc else Color(0.14, 0.07, 0.06))
 			m.draw_rect(r0, Color(1.0, 0.85, 0.4) if selc else Color(0.6, 0.35, 0.22), false, 3.0 if selc else 2.0)
-			m._txt(String(sg["name"]), Vector2(r0.position.x, r0.position.y + 46), 22, Color(1.0, 0.9, 0.7) if un else Color(0.5, 0.45, 0.42), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
+			var full: String = String(sg["name"])
+			var title: String = full.get_slice(":", 0)
+			var sub: String = full.get_slice(":", 1).strip_edges() if full.contains(":") else ""
+			m._txt(title, Vector2(r0.position.x, r0.position.y + (38 if sub != "" else 46)), 22, Color(1.0, 0.9, 0.7) if un else Color(0.5, 0.45, 0.42), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
+			if sub != "":
+				m._txt(sub.substr(0, 1).to_upper() + sub.substr(1), Vector2(r0.position.x, r0.position.y + 62), 17, Color(1.0, 0.7, 0.45) if un else Color(0.5, 0.42, 0.4), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
 			var count_txt: String = "Sin fin" if sg.has("endless") else "%d oleadas" % sg["waves"].size()
-			m._txt(count_txt, Vector2(r0.position.x, r0.position.y + 80), 17, Color(0.85, 0.7, 0.6), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
-			m.draw_multiline_string(m.font, r0.position + Vector2(24, 120), String(sg.get("desc", "")), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x - 48, 17, -1, Color(0.85, 0.8, 0.75) if un else Color(0.45, 0.4, 0.4))
+			m._txt(count_txt, Vector2(r0.position.x, r0.position.y + 88), 15, Color(0.85, 0.7, 0.6), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
+			m.draw_multiline_string(m.font, r0.position + Vector2(18, 118), String(sg.get("desc", "")), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x - 36, 15, 4, Color(0.85, 0.8, 0.75) if un else Color(0.45, 0.4, 0.4))
 			var sid: String = String(sg["id"])
 			var st_txt: String = ""
 			if not un:
@@ -316,7 +321,11 @@ func draw(m) -> void:
 		var ch: Dictionary = m.weekly_challenge()
 		var rx: float = W * 0.5 + 190.0
 		var ad: Dictionary = m.sim.augur_def(String(ch["augur"]))
-		m._txt("%s · Ira %d · siempre %s" % [String(m.sim.SIEGES[int(ch["siege"])]["name"]).get_slice(":", 0), int(ch["wrath"]), String(ad.get("name", ""))], Vector2(rx, 640), 15, Color(0.85, 0.65, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 300.0)
+		var chl: String = "%s · Ira %d · siempre %s" % [String(m.sim.SIEGES[int(ch["siege"])]["name"]).get_slice(":", 0), int(ch["wrath"]), String(ad.get("name", ""))]
+		var chs: int = 15
+		while chs > 11 and m.font.get_string_size(chl, HORIZONTAL_ALIGNMENT_LEFT, -1, chs).x > 300.0:
+			chs -= 1
+		m._txt(chl, Vector2(rx, 640), chs, Color(0.85, 0.65, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 300.0)
 		var best: int = int(m.records.get(String(ch["key"]), 0))
 		m._txt("Semilla común esta semana · récord %d/%d" % [best, m.sim.SIEGES[int(ch["siege"])]["waves"].size()], Vector2(rx, 662), 13, Color(0.75, 0.65, 0.8), HORIZONTAL_ALIGNMENT_CENTER, 300.0)
 		if m.max_wrath(sel_siege) == 0:
