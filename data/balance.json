@@ -468,28 +468,32 @@
     "type": "beast",
     "kind": "alacran",
     "weight": 1,
-    "desc": "Tanque de vanguardia: agarra a un enemigo y lo retiene."
+    "desc": "Tanque de vanguardia: agarra a un enemigo y lo retiene.",
+    "rarity": "comun"
    },
    {
     "id": "sapo",
     "type": "beast",
     "kind": "sapo",
     "weight": 1,
-    "desc": "Escupe brea desde atrás: daña y ralentiza."
+    "desc": "Escupe brea desde atrás: daña y ralentiza.",
+    "rarity": "comun"
    },
    {
     "id": "manta",
     "type": "beast",
     "kind": "manta",
     "weight": 1,
-    "desc": "Embosca por un carril: golpea a todos y aturde."
+    "desc": "Embosca por un carril: golpea a todos y aturde.",
+    "rarity": "comun"
    },
    {
     "id": "sabueso",
     "type": "beast",
     "kind": "sabueso",
     "weight": 1,
-    "desc": "Otro Sabueso de Escoria, gratis."
+    "desc": "Otro Sabueso de Escoria, gratis.",
+    "rarity": "comun"
    },
    {
     "id": "almas",
@@ -497,7 +501,8 @@
     "amount": 45,
     "weight": 2,
     "title": "Cosecha",
-    "desc": "+45 almas."
+    "desc": "+45 almas.",
+    "rarity": "comun"
    },
    {
     "id": "puerta",
@@ -505,7 +510,8 @@
     "amount": 0.4,
     "weight": 2,
     "title": "Remiendo",
-    "desc": "Repara el 40% de la Puerta."
+    "desc": "Repara el 40% de la Puerta.",
+    "rarity": "comun"
    },
    {
     "id": "esencia",
@@ -513,30 +519,213 @@
     "amount": 30,
     "weight": 2,
     "title": "Pozo de esencia",
-    "desc": "+30 de esencia permanente."
+    "desc": "+30 de esencia permanente.",
+    "rarity": "comun"
    },
    {
     "id": "gargola",
     "type": "beast",
     "kind": "gargola",
     "weight": 1,
-    "desc": "Tanque: herida, se vuelve piedra y devuelve el daño en una onda."
+    "desc": "Tanque: herida, se vuelve piedra y devuelve el daño en una onda.",
+    "rarity": "comun"
    },
    {
     "id": "enjambre",
     "type": "beast",
     "kind": "enjambre",
     "weight": 1,
-    "desc": "Desde atrás prende fuego a los más enteros. Combo con el Ojo."
+    "desc": "Desde atrás prende fuego a los más enteros. Combo con el Ojo.",
+    "rarity": "comun"
    },
    {
     "id": "garfio",
     "type": "beast",
     "kind": "garfio",
     "weight": 1,
-    "desc": "Engancha a un apoyo o tirador lejano y lo arrastra a la vanguardia."
+    "desc": "Engancha a un apoyo o tirador lejano y lo arrastra a la vanguardia.",
+    "rarity": "comun"
+   },
+   {
+    "id": "pacto_fuego",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "fuego",
+    "weight": 1,
+    "title": "Pacto de fuego",
+    "desc": "Esta partida: Brasa +35% de daño y +20% de radio.",
+    "fx": [
+     {
+      "k": "brasa.dmg",
+      "mul": 0.35
+     },
+     {
+      "k": "brasa.radius",
+      "mul": 0.2
+     }
+    ]
+   },
+   {
+    "id": "eco_brasa",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "fuego",
+    "weight": 0.5,
+    "min_wave": 2,
+    "title": "Eco de la Fosa",
+    "desc": "Esta partida: cada Brasa cae dos veces y se recarga un 20% antes.",
+    "fx": [
+     {
+      "k": "special.brasa_echo",
+      "add": 1
+     },
+     {
+      "k": "brasa.cd",
+      "mul": -0.2
+     }
+    ]
+   },
+   {
+    "id": "tormenta",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "rayo",
+    "weight": 1,
+    "title": "Tormenta",
+    "desc": "Esta partida: el Rayo encadena a un blanco más y se recarga un 15% antes.",
+    "fx": [
+     {
+      "k": "special.rayo_chain",
+      "add": 1
+     },
+     {
+      "k": "rayo.chain_count",
+      "add": 1
+     },
+     {
+      "k": "rayo.cd",
+      "mul": -0.15
+     }
+    ]
+   },
+   {
+    "id": "gracia",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "rayo",
+    "weight": 0.5,
+    "min_wave": 2,
+    "title": "Rayo de gracia",
+    "desc": "Esta partida: Rayo +25% de daño y +100% contra los que están por debajo del 35%.",
+    "fx": [
+     {
+      "k": "rayo.dmg",
+      "mul": 0.25
+     },
+     {
+      "k": "special.rayo_exec",
+      "add": 1.0
+     }
+    ]
+   },
+   {
+    "id": "manada",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 1,
+    "title": "Ley de la manada",
+    "desc": "Esta partida: bestias +25% de vida y +6% de daño por cada otra bestia viva.",
+    "fx": [
+     {
+      "k": "beast.hp",
+      "mul": 0.25
+     },
+     {
+      "k": "special.pack",
+      "add": 0.06
+     }
+    ]
+   },
+   {
+    "id": "sangre",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "bestia",
+    "weight": 0.5,
+    "min_wave": 2,
+    "title": "Sangre de la Fosa",
+    "desc": "Esta partida: bestias +20% de daño y regeneran un 2% de vida por segundo.",
+    "fx": [
+     {
+      "k": "beast.dmg",
+      "mul": 0.2
+     },
+     {
+      "k": "special.regen",
+      "add": 0.02
+     }
+    ]
+   },
+   {
+    "id": "colmillos",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 1,
+    "title": "Colmillos de hierro",
+    "desc": "Esta partida: la Presa hiere (2 veces el mordisco) y dura un 40% más.",
+    "fx": [
+     {
+      "k": "special.presa_dmg",
+      "add": 2.0
+     },
+     {
+      "k": "sabueso.presa_time",
+      "mul": 0.4
+     }
+    ]
+   },
+   {
+    "id": "usura",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "alma",
+    "weight": 1,
+    "title": "Usura",
+    "desc": "Esta partida: +40% de almas por baja y un 10% de interés por oleada (máx. 25).",
+    "fx": [
+     {
+      "k": "eco.reward",
+      "mul": 0.4
+     },
+     {
+      "k": "special.interest",
+      "add": 0.1
+     }
+    ]
+   },
+   {
+    "id": "muralla",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "puerta",
+    "weight": 1,
+    "title": "Muralla de huesos",
+    "desc": "Esta partida: Puerta +30% de vida y recupera un 10% tras cada oleada.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.3
+     },
+     {
+      "k": "door.regen",
+      "add": 0.1
+     }
+    ]
    }
-  ]
+  ],
+  "_doc": "rarity: comun | rara | epica (marco y peso). type boon: efecto para el resto de la partida, con fx como los del árbol (se suman a _fx_totals). min_wave: oleada mínima (1 = tras la primera)."
  },
  "meta": {
   "wave_base": 10,

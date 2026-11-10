@@ -37,6 +37,7 @@ func run() -> void:
 	test_anim()
 	test_inflation()
 	test_procedural()
+	test_boons()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1351,6 +1352,26 @@ func test_procedural() -> void:
 	check(float(s.enemies[-1]["max_hp"]) > float(s.B["enemies"]["campesino"]["hp"]), "Luna de sangre da más vida")
 	s.augur = ""
 	check(s.augur_fx("enemy_hp") == 0.0, "Calma no cambia nada")
+
+
+func test_boons() -> void:
+	print("Dones de partida (draft con rareza)")
+	var s = new_sim(3)
+	s.draft_enabled = true
+	var r0: float = s.brasa_radius()
+	s.wave_index = 2
+	s.draft = [{"id": "pacto_fuego", "type": "boon", "kind": "", "title": "", "desc": "", "amount": 0.0, "rarity": "rara", "icon": "fuego"}]
+	check(s.draft_pick(0), "se puede elegir un don")
+	check(s.brasa_radius() > r0, "Pacto de fuego ensancha la Brasa (%.0f -> %.0f)" % [r0, s.brasa_radius()])
+	check(not s._draft_ok(s.draft_def("pacto_fuego")), "un don no se ofrece dos veces")
+	var d0: float = s.door_max
+	s.draft = [{"id": "muralla", "type": "boon", "kind": "", "title": "", "desc": "", "amount": 0.0, "rarity": "rara", "icon": "puerta"}]
+	s.draft_pick(0)
+	check(s.door_max > d0, "Muralla de huesos sube la vida de la Puerta")
+	s.wave_index = 1
+	check(not s._draft_ok(s.draft_def("eco_brasa")), "los dones épicos no salen tras la primera oleada")
+	s.reset()
+	check(s.boons.is_empty() and is_equal_approx(s.brasa_radius(), r0) and is_equal_approx(s.door_max, d0), "los dones se pierden al empezar otra partida")
 
 
 func test_anim() -> void:

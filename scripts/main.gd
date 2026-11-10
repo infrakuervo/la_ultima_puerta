@@ -922,6 +922,7 @@ func _draw() -> void:
 	_draw_arena()
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	_draw_hud()
+	_draw_boons()
 	_draw_lane_preview()
 	_draw_tree()
 	_draw_draft()
@@ -1646,11 +1647,26 @@ func _draw_draft() -> void:
 		var o: Dictionary = sim.draft[i]
 		var r: Rect2 = _draft_rect(i)
 		var hov: bool = r.has_point(mouse_pos)
+		var rar: String = String(o.get("rarity", "comun"))
+		var rc: Color = RARITY_COL.get(rar, RARITY_COL["comun"])
+		if rar != "comun":
+			# halo de rareza
+			var gl: float = 0.5 + 0.5 * sin(clock * 2.5 + float(i))
+			draw_rect(r.grow(6.0 + 3.0 * gl), Color(rc.r, rc.g, rc.b, 0.12 + 0.1 * gl))
 		draw_rect(r, Color(0.2, 0.09, 0.07) if not hov else Color(0.33, 0.15, 0.1))
-		draw_rect(r, Color(1.0, 0.85, 0.4) if hov else Color(0.8, 0.45, 0.25), false, 3.0)
+		draw_rect(r, Color(1.0, 0.85, 0.4) if hov else rc, false, 3.0 if rar == "comun" else 4.0)
 		var beast: bool = String(o["type"]) == "beast"
-		_txt("BESTIA" if beast else "RECOMPENSA", Vector2(r.position.x, r.position.y + 30), 15, Color(0.75, 0.6, 0.5), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
-		if beast:
+		var head: String = "BESTIA" if beast else "RECOMPENSA"
+		if String(o["type"]) == "boon":
+			head = "DON ÉPICO" if rar == "epica" else "DON RARO"
+		_txt(head, Vector2(r.position.x, r.position.y + 30), 15, rc if rar != "comun" else Color(0.75, 0.6, 0.5), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		if String(o["type"]) == "boon":
+			var bc: Vector2 = Vector2(r.position.x + r.size.x * 0.5, r.position.y + 135)
+			var pulse2: float = 1.0 + 0.06 * sin(clock * 3.0 + float(i))
+			draw_circle(bc, 56.0 * pulse2, Color(rc.r, rc.g, rc.b, 0.16))
+			draw_arc(bc, 56.0 * pulse2, 0.0, TAU, 40, rc, 3.0)
+			draw_boon_icon(String(o.get("icon", "")), bc, 34.0)
+		elif beast:
 			Art.draw_creature(self, String(o["kind"]), Vector2(r.position.x + r.size.x * 0.5, r.position.y + 190), clock, {"scale": 1.5})
 		else:
 			var oc: Vector2 = Vector2(r.position.x + r.size.x * 0.5, r.position.y + 135)
@@ -1664,6 +1680,50 @@ func _draw_draft() -> void:
 			_txt(glyph, Vector2(oc.x - 60, oc.y + 12), 32, rcol, HORIZONTAL_ALIGNMENT_CENTER, 120.0)
 		_txt(String(o["title"]), Vector2(r.position.x, r.position.y + 238), 24, Color(1.0, 0.92, 0.75), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 		draw_multiline_string(font, Vector2(r.position.x + 20, r.position.y + 268), String(o["desc"]), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 40.0, 17, -1, Color(0.85, 0.8, 0.75))
+
+
+const RARITY_COL: Dictionary = {"comun": Color(0.8, 0.45, 0.25), "rara": Color(0.45, 0.7, 1.0), "epica": Color(0.85, 0.5, 1.0)}
+const BOON_COL: Dictionary = {"fuego": Color(1.0, 0.55, 0.2), "rayo": Color(0.7, 0.88, 1.0), "bestia": Color(1.0, 0.35, 0.3), "alma": Color(0.55, 0.9, 1.0), "puerta": Color(1.0, 0.8, 0.35)}
+
+
+## Icono sencillo de un don (fuego, rayo, bestia, alma, puerta), centrado en c con radio r.
+func draw_boon_icon(icon: String, c: Vector2, r: float) -> void:
+	var col: Color = BOON_COL.get(icon, Color(1, 0.8, 0.5))
+	match icon:
+		"fuego":
+			var fl: float = 0.08 * sin(clock * 9.0)
+			draw_colored_polygon(PackedVector2Array([c + Vector2(-0.55, 0.6) * r, c + Vector2(-0.6, -0.1) * r, c + Vector2(-0.2, -0.5) * r,
+				c + Vector2(0.05, -1.0 - fl) * r, c + Vector2(0.35, -0.4) * r, c + Vector2(0.6, -0.05) * r, c + Vector2(0.55, 0.6) * r]), col)
+			draw_colored_polygon(PackedVector2Array([c + Vector2(-0.25, 0.6) * r, c + Vector2(0.0, -0.3) * r, c + Vector2(0.25, 0.6) * r]), Color(1.0, 0.9, 0.5))
+		"rayo":
+			draw_polyline(PackedVector2Array([c + Vector2(0.2, -1.0) * r, c + Vector2(-0.35, 0.05) * r, c + Vector2(0.15, 0.05) * r, c + Vector2(-0.25, 1.0) * r]), col, maxf(3.0, r * 0.18))
+		"bestia":
+			for k in 3:
+				var x: float = (-0.45 + 0.45 * k) * r
+				draw_line(c + Vector2(x + 0.15 * r, -0.8 * r), c + Vector2(x - 0.15 * r, 0.8 * r), col, maxf(3.0, r * 0.16))
+		"alma":
+			draw_circle(c, r * 0.55, Color(col.r, col.g, col.b, 0.35))
+			draw_circle(c, r * 0.32, col)
+		"puerta":
+			draw_rect(Rect2(c + Vector2(-0.55, -0.3) * r, Vector2(1.1, 1.1) * r), col, false, maxf(2.5, r * 0.12))
+			draw_arc(c + Vector2(0, -0.3) * r, 0.55 * r, PI, TAU, 16, col, maxf(2.5, r * 0.12))
+		_:
+			draw_circle(c, r * 0.4, col)
+
+
+## Dones de la partida: iconos pequeños arriba a la izquierda de la arena (nombre al pasar el ratón).
+func _draw_boons() -> void:
+	for i in sim.boons.size():
+		var d: Dictionary = sim.draft_def(String(sim.boons[i]))
+		var c: Vector2 = Vector2(30 + 34 * i, 104)
+		var rc: Color = RARITY_COL.get(String(d.get("rarity", "rara")), RARITY_COL["rara"])
+		draw_circle(c, 15.0, Color(0, 0, 0, 0.65))
+		draw_arc(c, 15.0, 0.0, TAU, 20, rc, 2.0)
+		draw_boon_icon(String(d.get("icon", "")), c, 9.0)
+		if c.distance_to(mouse_pos) < 16.0:
+			var tip: String = "%s: %s" % [String(d.get("title", "")), String(d.get("desc", "")).trim_prefix("Esta partida: ")]
+			draw_rect(Rect2(c + Vector2(-14, 20), Vector2(420, 26)), Color(0, 0, 0, 0.8))
+			_txt(tip, c + Vector2(-8, 38), 14, Color(0.95, 0.9, 0.85))
 
 
 func _draw_buttons() -> void:

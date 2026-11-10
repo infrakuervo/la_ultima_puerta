@@ -52,6 +52,7 @@ var augurs_enabled: bool = false # augurios a elegir antes de cada oleada
 var augur: String = ""           # augurio elegido para la oleada actual o siguiente ("" = Calma)
 var augur_offer: Array = []      # ids ofrecidos en esta preparación
 var _front_lane: int = -1
+var boons: Array = []            # dones de la partida elegidos en el draft (ids del pool)
 
 
 func _init(seed_value: int = 1) -> void:
@@ -105,6 +106,7 @@ func wrath_dmg() -> float:
 
 func reset() -> void:
 	phase = "prep"
+	boons.clear()
 	wave_index = 0
 	defeat_wave = 0
 	if not meta_mode:
@@ -1857,13 +1859,28 @@ func _fx_totals() -> Dictionary:
 		if r <= 0 or not SK.has(id):
 			continue
 		for f in SK[id]["fx"]:
-			var k: String = f["k"]
-			if not _fx_cache.has(k):
-				_fx_cache[k] = {"mul": 0.0, "add": 0.0}
-			_fx_cache[k]["mul"] += float(f.get("mul", 0.0)) * r
-			_fx_cache[k]["add"] += float(f.get("add", 0.0)) * r
+			_fx_add(f, r)
+	# dones de la partida: mismos efectos que el árbol
+	for bid in boons:
+		for f2 in draft_def(String(bid)).get("fx", []):
+			_fx_add(f2, 1)
 	_fx_valid = true
 	return _fx_cache
+
+
+func _fx_add(f: Dictionary, r: int) -> void:
+	var k: String = f["k"]
+	if not _fx_cache.has(k):
+		_fx_cache[k] = {"mul": 0.0, "add": 0.0}
+	_fx_cache[k]["mul"] += float(f.get("mul", 0.0)) * r
+	_fx_cache[k]["add"] += float(f.get("add", 0.0)) * r
+
+
+func draft_def(id: String) -> Dictionary:
+	for o in B["draft"]["pool"]:
+		if String(o["id"]) == id:
+			return o
+	return {}
 
 
 func fmul(k: String) -> float:
@@ -1926,7 +1943,8 @@ func make_draft() -> void:
 		var o: Dictionary = cands[idx]
 		cands.remove_at(idx)
 		var title: String = label(String(o["kind"])) if o["type"] == "beast" else String(o.get("title", o["id"]))
-		draft.append({"id": o["id"], "type": o["type"], "kind": o.get("kind", ""), "title": title, "desc": String(o.get("desc", "")), "amount": float(o.get("amount", 0))})
+		draft.append({"id": o["id"], "type": o["type"], "kind": o.get("kind", ""), "title": title, "desc": String(o.get("desc", "")),
+			"amount": float(o.get("amount", 0)), "rarity": String(o.get("rarity", "comun")), "icon": String(o.get("icon", ""))})
 	if not draft.is_empty():
 		events.append({"t": "draft"})
 
@@ -1940,6 +1958,8 @@ func _draft_ok(o: Dictionary) -> bool:
 			return door_hp < door_max
 		"essence":
 			return meta_mode
+		"boon":
+			return not boons.has(String(o["id"])) and wave_index >= int(o.get("min_wave", 1))
 	return true
 
 
@@ -1962,6 +1982,13 @@ func draft_pick(i: int) -> bool:
 			door_hp = minf(door_max, door_hp + door_max * float(o["amount"]))
 		"essence":
 			_gain_essence(int(o["amount"]))
+		"boon":
+			boons.append(String(o["id"]))
+			_invalidate()
+			var nm: float = float(B["door"]["hp"]) * (1.0 + fmul("door.hp"))
+			door_hp += nm - door_max
+			door_max = nm
+			refresh_creatures()
 	events.append({"t": "draft_pick", "id": o["id"]})
 	draft.clear()
 	return true
