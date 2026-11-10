@@ -41,6 +41,7 @@ func run() -> void:
 	test_endless()
 	test_logros()
 	test_music()
+	test_contracts()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1489,6 +1490,40 @@ func test_music() -> void:
 	check(ok and peak <= 1.2, "la síntesis no se sale ni da NaN (pico %.2f)" % peak)
 	check(energy_c > 50.0, "en calma suena algo (drone y campanas)")
 	check(energy_l / 2.0 > energy_c, "en combate hay más energía (bajo y tambores)")
+
+
+func test_contracts() -> void:
+	print("Encargos")
+	var s = new_sim(6)
+	s.contracts_enabled = true
+	s.reset()
+	check(s.contract_offer.size() == 2, "al empezar se ofrecen dos encargos")
+	check(not s.choose_contract("no_existe"), "no se puede elegir un encargo no ofrecido")
+	s.contract_offer = ["solo_fuego", "austero"]
+	check(s.choose_contract("solo_fuego") and s.contract_status() == "ok", "elegir Solo fuego")
+	to_combat(s)
+	add_enemy(s, "campesino", 1, 700.0)
+	s.cast_rayo(s.epos(s.enemies[0]))
+	check(s.contract_status() == "fail", "lanzar un Rayo falla Solo fuego")
+	var s2 = new_sim(6)
+	s2.contracts_enabled = true
+	s2.meta_mode = true
+	s2.reset()
+	s2.contract_offer = ["tizon_invicto"]
+	s2.choose_contract("tizon_invicto")
+	s2.wave_index = s2.WAVES.size() - 1
+	to_combat(s2)
+	s2.enemies.clear()
+	s2.spawn_queue.clear()
+	var e0: int = s2.essence
+	var evs: Array = run_ticks(s2, 2)
+	var done: bool = evs.has("contract_done")
+	check(s2.phase == "victory" and done and s2.essence > e0 + int(s2.B["meta"]["victory"]), "ganar cumpliendo el encargo da su esencia")
+	var s3 = new_sim(6)
+	s3.contracts_enabled = true
+	s3.reset()
+	s3.wave_index = 1
+	check(not s3.choose_contract(String(s3.contract_offer[0])), "el encargo solo se elige antes de la primera oleada")
 
 
 func test_anim() -> void:

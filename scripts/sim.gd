@@ -53,6 +53,10 @@ var augur: String = ""           # augurio elegido para la oleada actual o sigui
 var augur_offer: Array = []      # ids ofrecidos en esta preparación
 var _front_lane: int = -1
 var week_augur: String = ""      # reto semanal: augurio que dura toda la partida
+var contracts_enabled: bool = false  # encargo opcional al empezar la partida
+var contract: String = ""
+var contract_offer: Array = []
+var run_track: Dictionary = {}   # contadores de la partida para los encargos
 var unlocked: Array = []         # dones con "unlock" abiertos por logros (la vista los carga de meta.json)
 var boons: Array = []            # dones de la partida elegidos en el draft (ids del pool)
 
@@ -134,6 +138,9 @@ func reset() -> void:
 	wave_time = 0.0
 	augur = ""
 	augur_offer.clear()
+	contract = ""
+	contract_offer.clear()
+	run_track = {"brasa": 0, "rayo": 0, "levels": 0, "named_fell": false, "augur_missed": false}
 	WAVES = SIEGES[siege_index]["waves"]
 	if is_endless():
 		var base: Dictionary = SIEGES[_siege_by_id(String(SIEGES[siege_index]["endless"]["base_siege"]))].duplicate()
@@ -147,6 +154,7 @@ func reset() -> void:
 	creatures.append(tizon)
 	_note_seen("sabueso")
 	message = "Coloca a tus monstruos y pulsa «Iniciar oleada»."
+	_offer_contracts()
 
 
 # ----------------------------------------------------------------------------
@@ -370,6 +378,7 @@ func level_up(cid: int) -> bool:
 	var c: Dictionary = creature_by_id(cid)
 	souls -= level_cost(c)
 	c["level"] += 1
+	run_track["levels"] = int(run_track.get("levels", 0)) + 1
 	c["max_hp"] = calc_max_hp(c)
 	c["hp"] = c["max_hp"]
 	events.append({"t": "leveled", "id": cid, "level": c["level"]})
@@ -452,6 +461,9 @@ func give_relic() -> bool:
 func start_wave() -> bool:
 	if phase != "prep" or not draft.is_empty():
 		return false
+	if augurs_enabled and wave_index >= 1 and augur == "":
+		run_track["augur_missed"] = true
+	contract_offer.clear()   # el encargo se elige antes de la primera oleada
 	_front_lane = rng.randi_range(0, 2) if augur_fx("one_front") > 0.0 else -1
 	spawn_queue = _build_spawns(WAVES[wave_index])
 	enemies.clear()
@@ -497,7 +509,7 @@ func _build_spawns(w: Dictionary) -> Array:
 		var d: float = float(g.get("delay", 0.0))
 		var lane: int = int(g["lane"]) if _front_lane < 0 else _front_lane
 		for i in n:
-			q.append({"t": d + gap * i, "lane": lane, "kind": kind})
+			q.append({"t": d + gap * i, "lane": lane, "kind": kind, "hp": float(g.get("hp", 1.0))})
 	var extra: int = int(augur_fx("extra_elite"))
 	var pool: Array = SIEGES[siege_index].get("remix", {}).get("elites", [])
 	for j in extra:
@@ -616,15 +628,74 @@ func _gen_wave(i: int) -> Dictionary:
 	var note: String = String(th["note"])
 	var wave_no: int = i + 1
 	if wave_no % int(en["boss_every"]) == 0:
-		spawns.append({"kind": String(en["boss"]), "count": 1, "lane": 1, "delay": 8.0})
+		# el jefe no escala tanto como la tropa: es una prueba, no un muro
+		spawns.append({"kind": String(en["boss"]), "count": 1, "lane": 1, "delay": 8.0, "hp": float(en.get("boss_hp", 1.0)) / pow(float(en["hp_growth"]), float(k))})
 		title = "El Gran Maestre vuelve"
 		note = "El jefe de la Orden juzga un carril: apártate o resiste."
 	elif wave_no % int(en["hero_every"]) == 0:
-		spawns.append({"kind": "@hero", "count": 1, "lane": -1, "delay": 6.0})
+		spawns.append({"kind": "@hero", "count": 1, "lane": -1, "delay": 6.0, "hp": float(en.get("hero_hp", 1.0))})
 		title = "El heraldo vuelve"
 		note = "Tu heraldo regresa, más duro."
 	return {"title": title, "note": note, "spawns": spawns, "generated": true,
 		"hp_mult": pow(float(en["hp_growth"]), float(k)), "dmg_mult": pow(float(en["dmg_growth"]), float(k))}
+
+
+func contract_def(id: String) -> Dictionary:
+	for c in B.get("contracts", {}).get("list", []):
+		if String(c["id"]) == id:
+			return c
+	return {}
+
+
+func _offer_contracts() -> void:
+	contract_offer.clear()
+	if not contracts_enabled or is_endless():
+		return
+	var pool: Array = []
+	for c in B.get("contracts", {}).get("list", []):
+		if String(c["id"]) == "agorero" and not augurs_enabled:
+			continue
+		pool.append(String(c["id"]))
+	var n: int = int(B["contracts"].get("offer", 2))
+	while contract_offer.size() < n and not pool.is_empty():
+		var i: int = rng.randi() % pool.size()
+		contract_offer.append(pool[i])
+		pool.remove_at(i)
+
+
+## Elige encargo (o "" para ninguno) antes de la primera oleada.
+func choose_contract(id: String) -> bool:
+	if phase != "prep" or wave_index != 0 or (id != "" and not (id in contract_offer)):
+		return false
+	contract = id
+	return true
+
+
+## "ok" (se cumpliría si ganas ahora), "fail" (ya no se puede) o "" sin encargo.
+func contract_status() -> String:
+	if contract == "":
+		return ""
+	var alive: int = 0
+	for c in creatures:
+		if not c["dead"] and not c["fallen"]:
+			alive += 1
+	var ok: bool = true
+	match contract:
+		"puerta_intacta":
+			ok = door_hp >= door_max * 0.75
+		"solo_fuego":
+			ok = int(run_track["rayo"]) == 0
+		"solo_rayo":
+			ok = int(run_track["brasa"]) == 0
+		"tizon_invicto":
+			ok = not bool(run_track["named_fell"])
+		"austero":
+			ok = int(run_track["levels"]) == 0
+		"manada_viva":
+			ok = alive >= 5
+		"agorero":
+			ok = not bool(run_track["augur_missed"])
+	return "ok" if ok else "fail"
 
 
 func augur_def(id: String) -> Dictionary:
@@ -702,7 +773,7 @@ func step(dt: float) -> void:
 	wave_time += dt
 	while spawn_queue.size() > 0 and spawn_queue[0]["t"] <= wave_time:
 		var sp: Dictionary = spawn_queue.pop_front()
-		_spawn_enemy(sp["kind"], sp["lane"])
+		_spawn_enemy(sp["kind"], sp["lane"], float(sp.get("hp", 1.0)))
 		if sp.has("x"):
 			enemies[enemies.size() - 1]["x"] = float(sp["x"])
 	_update_zones(dt)
@@ -715,13 +786,13 @@ func step(dt: float) -> void:
 	_check_end()
 
 
-func _spawn_enemy(kind: String, lane: int) -> void:
+func _spawn_enemy(kind: String, lane: int, hp_factor: float = 1.0) -> void:
 	if lane < 0:
 		lane = rng.randi_range(0, 2)
 	var st: Dictionary = B["enemies"][kind]
 	var e: Dictionary = {
 		"id": next_id, "kind": kind, "lane": lane, "x": float(B["arena"]["spawn_x"]),
-		"hp": float(st["hp"]) * _hp_scale(), "max_hp": float(st["hp"]) * _hp_scale(),
+		"hp": float(st["hp"]) * _hp_scale() * hp_factor, "max_hp": float(st["hp"]) * _hp_scale() * hp_factor,
 		"cd": rng.randf() * 0.6, "held": 0.0, "stun": 0.0, "shield": 0.0, "summons": 0,
 		"judge_t": float(st.get("judge_cd", 0.0)) * 0.6, "judge_wind": 0.0, "judge_lane": -1,
 		"shield_t": float(st.get("shield_cd", 0.0)) * 0.5,
@@ -820,6 +891,8 @@ func damage_creature(c: Dictionary, amount: float) -> void:
 		else:
 			c["dead"] = true
 		events.append({"t": "creature_down", "id": c["id"], "named": c["named"]})
+		if c["named"]:
+			run_track["named_fell"] = true
 
 
 func _update_zones(dt: float) -> void:
@@ -859,6 +932,7 @@ func cast_brasa(p: Vector2) -> bool:
 	brasa_cd = float(c["cd"]) * (1.0 + augur_fx("spell_cd"))
 	var r: float = brasa_radius()
 	pending_brasas.append({"t": float(c["delay"]), "d": float(c["delay"]), "p": p, "r": r, "k": 1.0})
+	run_track["brasa"] = int(run_track.get("brasa", 0)) + 1
 	events.append({"t": "brasa_cast", "p": p, "r": r, "delay": float(c["delay"])})
 	if fadd("special.brasa_echo") > 0.0:
 		var ed: float = float(c["delay"]) + 0.6
@@ -902,6 +976,7 @@ func cast_rayo(p: Vector2) -> bool:
 		return false
 	var c: Dictionary = _stats("rayo")
 	rayo_cd = float(c["cd"]) * (1.0 + augur_fx("spell_cd"))
+	run_track["rayo"] = int(run_track.get("rayo", 0)) + 1
 	var tp: Vector2 = epos(tgt)
 	_rayo_hit(tgt, float(c["dmg"]), c)
 	events.append({"t": "rayo", "from": demon_pos(), "to": tp, "target": tgt["id"]})
@@ -1894,6 +1969,13 @@ func _wave_cleared() -> void:
 		phase = "victory"
 		if meta_mode:
 			_gain_essence(int(B["meta"]["victory"]))
+		if contract != "" and contract_status() != "fail":
+			var rw: int = int(contract_def(contract).get("reward", 0))
+			if meta_mode:
+				_gain_essence(rw)
+			else:
+				souls += rw
+			events.append({"t": "contract_done", "id": contract, "reward": rw})
 		events.append({"t": "victory"})
 		return
 	if draft_enabled:

@@ -73,7 +73,8 @@ var new_record: bool = false
 var logros = Logros.new()
 var music = Music.new()
 var toasts: Array = []            # avisos de logro: {title, desc, t}
-var challenge: Dictionary = {}    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
+var challenge: Dictionary = {}
+var contract_note: String = ""    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
 var unlock_note: String = ""
 var flash_red: float = 0.0
 var flash_white: float = 0.0
@@ -88,6 +89,7 @@ func _ready() -> void:
 		sim.draft_enabled = true
 		sim.remix_enabled = true
 		sim.augurs_enabled = true
+		sim.contracts_enabled = true
 		_load_meta()
 		sim.reset()
 	sound = SoundBank.new()
@@ -579,6 +581,8 @@ func _on_event(ev: Dictionary) -> void:
 			banner_dur = 2.2
 			flash_white = 0.3
 			_play("mutate")
+		"contract_done":
+			contract_note = "Encargo cumplido: %s  (+%d %s)" % [String(sim.contract_def(String(ev["id"]))["name"]), int(ev["reward"]), "esencia" if sim.meta_mode else "almas"]
 		"augur_done":
 			_float(Vector2(640, 240), "Augurio cumplido: %s" % String(sim.augur_def(String(ev["id"])).get("name", "")), Color(0.85, 0.65, 1.0), 1.8)
 		"draft_pick":
@@ -809,6 +813,7 @@ func _restart() -> void:
 	mut_anim.clear()
 	demon_anim = Anim.new("demonio")
 	poses.reset()
+	contract_note = ""
 	selected_id = -1
 	dragging = false
 	accum = 0.0
@@ -946,7 +951,10 @@ func _on_press(p: Vector2) -> void:
 	for ar in _augur_rects():
 		if ar["rect"].has_point(p):
 			var pick: String = String(ar["id"])
-			sim.choose_augur("" if pick == sim.augur else pick)
+			if String(ar["kind"]) == "contract":
+				sim.choose_contract("" if pick == sim.contract else pick)
+			else:
+				sim.choose_augur("" if pick == sim.augur else pick)
 			_play("click")
 			return
 	var cid: int = _creature_at(p)
@@ -1523,6 +1531,9 @@ func _draw_hud() -> void:
 		_txt("Quedan %d enemigos." % left, Vector2(340, 646), 17, Color(0.95, 0.85, 0.7))
 		if sim.augur != "":
 			_txt("Augurio: %s" % String(sim.augur_def(sim.augur).get("name", "")), Vector2(560, 646), 15, Color(0.85, 0.65, 1.0))
+		if sim.contract != "":
+			var cst: String = sim.contract_status()
+			_txt("Encargo: %s%s" % [String(sim.contract_def(sim.contract)["name"]), "  (fallido)" if cst == "fail" else ""], Vector2(560, 672), 14, Color(1.0, 0.5, 0.4) if cst == "fail" else Color(1.0, 0.75, 0.4))
 		_txt("Clic: lanza (mantén para repetir). Clic dcho. o rueda: cambia.", Vector2(340, 672), 14, Color(0.8, 0.7, 0.65), HORIZONTAL_ALIGNMENT_LEFT, 470.0)
 
 
@@ -1586,12 +1597,19 @@ func _preview_tot() -> Dictionary:
 ## Tarjetas de augurio (riesgo/recompensa opcional) bajo la previsión de la oleada.
 func _augur_rects() -> Array:
 	var out: Array = []
-	if sim.phase != "prep" or show_tree or _draft_active() or sim.augur_offer.is_empty():
+	if sim.phase != "prep" or show_tree or _draft_active():
+		return out
+	var offer: Array = sim.augur_offer
+	var kind: String = "augur"
+	if sim.wave_index == 0 and not sim.contract_offer.is_empty():
+		offer = sim.contract_offer
+		kind = "contract"
+	if offer.is_empty():
 		return out
 	var rows: int = sim.preview_totals(sim.wave_index).size() + 1   # fila de reserva: Campeón añade una línea sin mover las tarjetas
 	var y: float = 98.0 + 44.0 + 20.0 * float(rows) + 52.0
-	for id in sim.augur_offer:
-		out.append({"id": String(id), "rect": Rect2(1040, y, 232, 78)})
+	for id in offer:
+		out.append({"id": String(id), "rect": Rect2(1040, y, 232, 78), "kind": kind})
 		y += 84.0
 	return out
 
@@ -1601,18 +1619,26 @@ func _draw_augurs() -> void:
 	if rects.is_empty():
 		return
 	var top: Vector2 = rects[0]["rect"].position
-	_txt("AUGURIO (opcional)", top + Vector2(10, -8), 15, Color(0.85, 0.6, 1.0))
+	var is_c: bool = String(rects[0]["kind"]) == "contract"
+	_txt("ENCARGO (opcional)" if is_c else "AUGURIO (opcional)", top + Vector2(10, -8), 15, Color(1.0, 0.75, 0.4) if is_c else Color(0.85, 0.6, 1.0))
 	for ar in rects:
 		var r: Rect2 = ar["rect"]
-		var a: Dictionary = sim.augur_def(String(ar["id"]))
-		var on: bool = sim.augur == String(ar["id"])
+		var a: Dictionary = sim.contract_def(String(ar["id"])) if is_c else sim.augur_def(String(ar["id"]))
+		if is_c:
+			a = a.duplicate()
+			a["desc"] = "%s  Premio: +%d %s." % [String(a["desc"]), int(a["reward"]), "esencia" if sim.meta_mode else "almas"]
+		var on: bool = (sim.contract if is_c else sim.augur) == String(ar["id"])
 		var hov: bool = r.has_point(mouse_pos)
-		draw_rect(r, Color(0.22, 0.08, 0.28, 0.9) if on else Color(0.06, 0.02, 0.08, 0.82 if hov else 0.7))
-		draw_rect(r, Color(1.0, 0.8, 0.4) if on else Color(0.55, 0.3, 0.65), false, 3.0 if on else 2.0)
+		var fill_on: Color = Color(0.3, 0.14, 0.04, 0.9) if is_c else Color(0.22, 0.08, 0.28, 0.9)
+		var edge: Color = Color(0.7, 0.42, 0.2) if is_c else Color(0.55, 0.3, 0.65)
+		draw_rect(r, fill_on if on else Color(0.06, 0.02, 0.04, 0.82 if hov else 0.7))
+		draw_rect(r, Color(1.0, 0.8, 0.4) if on else edge, false, 3.0 if on else 2.0)
 		_txt(String(a.get("name", "")), r.position + Vector2(10, 20), 16, Color(1.0, 0.85, 0.5) if on else Color(0.92, 0.8, 1.0))
 		draw_multiline_string(font, r.position + Vector2(10, 38), String(a.get("desc", "")), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 16, 13, 3, Color(0.85, 0.8, 0.85))
 	var last: Rect2 = rects[-1]["rect"]
-	_txt("Elegido: %s" % String(sim.augur_def(sim.augur).get("name", "")) if sim.augur != "" else "Sin elegir: Calma", Vector2(last.position.x + 10, last.end.y + 16), 13, Color(0.75, 0.65, 0.8))
+	var chosen: String = sim.contract if is_c else sim.augur
+	var cname: String = String((sim.contract_def(chosen) if is_c else sim.augur_def(chosen)).get("name", ""))
+	_txt("Elegido: %s" % cname if chosen != "" else ("Sin encargo" if is_c else "Sin elegir: Calma"), Vector2(last.position.x + 10, last.end.y + 16), 13, Color(0.75, 0.65, 0.8))
 
 
 # --- Árbol de habilidades -------------------------------------------------------
@@ -1933,6 +1959,8 @@ func _draw_overlays() -> void:
 			_txt(ep, Vector2(0, 296), 24, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		if ph == "victory" and unlock_note != "" and sim.meta_mode:
 			_txt(unlock_note, Vector2(0, 336), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		if contract_note != "" and ph == "victory":
+			_txt(contract_note, Vector2(0, 404), 18, Color(1.0, 0.75, 0.4), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		if not logros.fresh.is_empty():
 			var names: Array = []
 			for lid in logros.fresh:

@@ -1001,5 +1001,53 @@
     }
    }
   ]
+ },
+ "contracts": {
+  "_doc": "Encargos: en la preparación de la primera oleada se ofrecen dos; si eliges uno y lo cumples al ganar, da esencia extra (y almas si no hay modo permanente). La comprobación de cada id está en Sim.contract_status().",
+  "offer": 2,
+  "list": [
+   {
+    "id": "puerta_intacta",
+    "name": "Puerta intacta",
+    "desc": "Gana con la Puerta por encima del 75%.",
+    "reward": 70
+   },
+   {
+    "id": "solo_fuego",
+    "name": "Solo fuego",
+    "desc": "Gana sin lanzar ni un Rayo.",
+    "reward": 90
+   },
+   {
+    "id": "solo_rayo",
+    "name": "Solo rayo",
+    "desc": "Gana sin lanzar ni una Brasa.",
+    "reward": 90
+   },
+   {
+    "id": "tizon_invicto",
+    "name": "Tizón invicto",
+    "desc": "Gana sin que Tizón caiga.",
+    "reward": 70
+   },
+   {
+    "id": "austero",
+    "name": "Austero",
+    "desc": "Gana sin subir de nivel a ninguna bestia.",
+    "reward": 80
+   },
+   {
+    "id": "manada_viva",
+    "name": "Manada viva",
+    "desc": "Gana con 5 bestias o más en pie.",
+    "reward": 60
+   },
+   {
+    "id": "agorero",
+    "name": "Agorero",
+    "desc": "Gana eligiendo un augurio en cada oleada.",
+    "reward": 60
+   }
+  ]
  }
 }

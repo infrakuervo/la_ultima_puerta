@@ -33,6 +33,7 @@ func new_game(seed_v: int, essence: int, skills: Dictionary):
 	# variedad por partida (remezcla y augurios) salvo con BAL_PROC=0
 	s.remix_enabled = OS.get_environment("BAL_PROC") != "0"
 	s.augurs_enabled = OS.get_environment("BAL_PROC") != "0"
+	s.contracts_enabled = OS.get_environment("BAL_PROC") != "0"
 	s.essence = essence
 	s.skills = skills.duplicate()
 	s.set_siege(int(OS.get_environment("BAL_SIEGE")) if OS.has_environment("BAL_SIEGE") else 0, int(OS.get_environment("BAL_WRATH")) if OS.has_environment("BAL_WRATH") else 0)

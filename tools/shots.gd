@@ -236,6 +236,15 @@ func run() -> void:
 			main.demon_anim.t = A.impact_delay("demonio", c) if c in ["rayo", "brasa"] else 0.6
 			await shot("demonio_" + c)
 		main.demon_anim = A.new("demonio")
+	if want("encargo"):
+		s().contracts_enabled = true
+		s().meta_mode = true
+		s().reset()
+		s().choose_contract(String(s().contract_offer[1]))
+		await shot("encargo")
+		s().contracts_enabled = false
+		s().meta_mode = false
+		s().reset()
 	if want("augurio"):
 		s().remix_enabled = true
 		s().augurs_enabled = true

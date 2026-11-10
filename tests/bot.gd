@@ -160,6 +160,9 @@ func prep(s) -> void:
 	for c in s.creatures:
 		if not c["named"] and rng.randf() < 0.25 and s.can_level(int(c["id"])):
 			s.level_up(int(c["id"]))
+	# encargo: uno al azar la mitad de las veces
+	if not s.contract_offer.is_empty() and s.wave_index == 0 and rng.randf() < 0.5:
+		s.choose_contract(String(s.contract_offer[rng.randi() % s.contract_offer.size()]))
 	# augurio: lo coge al azar un 60% de las veces (BAL_AUGUR=0 nunca, =1 siempre)
 	if not s.augur_offer.is_empty():
 		var rate: float = float(OS.get_environment("BAL_AUGUR")) if OS.has_environment("BAL_AUGUR") else 0.6
