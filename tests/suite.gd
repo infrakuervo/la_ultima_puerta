@@ -1430,13 +1430,16 @@ func test_endless() -> void:
 	for g2 in s._gen_wave(14)["spawns"]:
 		has_boss = has_boss or String(g2["kind"]) == "gran_maestre"
 	check(has_boss, "la oleada 15 trae al Gran Maestre")
-	var b0: int = 0
-	var b1: int = 0
-	for g3 in s._gen_wave(7)["spawns"]:
-		b0 += int(s.B["enemies"].get(String(g3["kind"]), {"reward": 30})["reward"]) * int(g3["count"])
-	for g4 in s._gen_wave(20)["spawns"]:
-		b1 += int(s.B["enemies"].get(String(g4["kind"]), {"reward": 30})["reward"]) * int(g4["count"])
-	check(b1 > b0, "el presupuesto crece con las oleadas (%d -> %d)" % [b0, b1])
+	# fuerza efectiva: recompensa × cantidad × vida (el tope de cantidad convierte el exceso en vida)
+	var b0: float = 0.0
+	var b1: float = 0.0
+	var w8: Dictionary = s._gen_wave(7)
+	var w21: Dictionary = s._gen_wave(20)
+	for g3 in w8["spawns"]:
+		b0 += float(s.B["enemies"].get(String(g3["kind"]), {"reward": 30})["reward"]) * int(g3["count"]) * float(g3.get("hp", 1.0)) * float(w8["hp_mult"])
+	for g4 in w21["spawns"]:
+		b1 += float(s.B["enemies"].get(String(g4["kind"]), {"reward": 30})["reward"]) * int(g4["count"]) * float(g4.get("hp", 1.0)) * float(w21["hp_mult"])
+	check(b1 > b0 * 2.0, "la fuerza crece con las oleadas (%d -> %d)" % [int(b0), int(b1)])
 	s.set_siege(0, 0)
 	# reto semanal: augurio permanente
 	var r = new_sim(4)
