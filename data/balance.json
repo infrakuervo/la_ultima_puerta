@@ -541,7 +541,8 @@
  "meta": {
   "wave_base": 10,
   "wave_step": 5,
-  "victory": 60
+  "victory": 60,
+  "inflation": 0.02
  },
  "gargola": {
   "hp": 200,

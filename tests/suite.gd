@@ -35,6 +35,7 @@ func run() -> void:
 	test_full_runs()
 	test_clumsy_bot()
 	test_anim()
+	test_inflation()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1276,6 +1277,27 @@ func test_draft() -> void:
 		if s2.phase != "combat":
 			break
 	check(s2.draft.is_empty(), "sin el modo, no hay elección")
+
+
+func test_inflation() -> void:
+	print("Inflación del árbol")
+	var s = new_sim()
+	s.meta_mode = true
+	s.essence = 5000
+	var c0: int = s.skill_cost("brasa_radio")
+	check(c0 == int(s.SK["brasa_radio"]["cost_base"]), "sin rangos comprados el coste es el de base")
+	for i in 10:
+		var bought: bool = false
+		for id in s.SK_ORDER:
+			if s.can_skill(id) and id != "brasa_radio":
+				s.buy_skill(id)
+				bought = true
+				break
+		if not bought:
+			break
+	check(s.skill_cost("brasa_radio") > c0, "cada rango comprado encarece los demás (%d -> %d)" % [c0, s.skill_cost("brasa_radio")])
+	s.meta_mode = false
+	check(s.skill_cost("brasa_radio") == c0, "sin modo permanente no hay inflación")
 
 
 func test_anim() -> void:

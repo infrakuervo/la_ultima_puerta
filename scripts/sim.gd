@@ -1867,7 +1867,11 @@ func skill_cost(id: String) -> int:
 	var r: int = skill_rank(id)
 	if r >= int(nd["max"]):
 		return -1
-	return int(nd["cost_base"]) + int(nd["cost_step"]) * r
+	var base: int = int(nd["cost_base"]) + int(nd["cost_step"]) * r
+	if not meta_mode:
+		return base
+	# inflación: cada rango ya comprado encarece el siguiente (el árbol no se agota en 3 partidas)
+	return int(round(float(base) * (1.0 + float(B["meta"].get("inflation", 0.0)) * float(skill_points_spent()))))
 
 
 # "max" | "route" | "locked" | "poor" | "ok"

@@ -21,6 +21,17 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 El usuario quiere «un procedural divertido que dé horas de juego sin cansar aunque sea repetitivo».
 Plan: tras los puntos 1-7, jugar partidas de verdad (bot torpe, capturas, `tools/debug_run.tscn`), apuntar aquí qué se repite y qué aburre, y luego valorar: oleadas generadas con presupuesto, modificadores por oleada, sinergias y builds, draft con rareza, retos semanales con semilla, desbloqueos meta de contenido, ritmo (x3, menos tiempos muertos). Medir con el bot antes y después.
 
+### Diagnóstico (partidas del bot, `tools/balance.tscn`, `tools/debug_run.tscn`)
+- **Todas las partidas son la misma partida.** Las 6 oleadas del primer asedio (y las 8 del segundo) tienen siempre la misma composición; solo se sortean los frentes. Lo único que cambia de una partida a otra es el draft y la ruta (2 opciones fijas, con su héroe fijo).
+- **La curva se rompe enseguida.** Antes: con 180 de esencia (una partida) el bot torpe gana el 100% del primer asedio a Ira 0 y no vuelve a perder. Subiendo la Ira tras cada victoria (`BAL_CLIMB=1`), gana el 88-100% y agota todo el contenido (asedio 2, Ira 5) en ~12 partidas: la esencia crece más rápido que el reto.
+- **Pocas decisiones por oleada.** Entre oleadas: colocar (casi siempre igual), subir nivel y el draft (1 de 3, con recompensas planas). En combate, Brasa y Rayo. No hay riesgo/recompensa que elegir.
+- **Tiempos muertos.** La fase de preparación no tiene prisa ni nada nuevo que mirar; velocidad máxima x2.
+- **No hay final abierto.** Ganado el segundo asedio en Ira 5 no queda nada que perseguir.
+
+### Hecho
+- [x] **Curva del árbol** — inflación (`balance.json` → `meta.inflation` = 0,02): cada rango comprado encarece un 2% los demás. Carrera subiendo Ira (`BAL_CLIMB=1`, 8×14 partidas): asedio 1 con 62-100% de victorias en cada Ira (antes 88-100%), Ira 3 del asedio 2 queda como techo para el bot torpe. A Ira 0 sigue siendo fácil tras la primera victoria (es el «modo tranquilo»).
+
+
 ## Entorno (paso 0)
 - [x] Godot 4.7.2 estándar en `/opt/godot/godot` (enlace `/usr/local/bin/godot`), desde
   `https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip`.
