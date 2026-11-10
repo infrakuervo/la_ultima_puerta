@@ -71,6 +71,7 @@ var last_phase: String = ""
 var siege_wins: Dictionary = {}   # id de asedio -> mayor nivel de Ira ganado
 var records: Dictionary = {}      # "grieta" -> oleadas superadas (récord); "reto:<semana>" -> récord del reto
 var new_record: bool = false
+var history: Array = []           # últimas partidas (resumen), se guarda en meta.json
 var logros = Logros.new()
 var music = Music.new()
 var toasts: Array = []            # avisos de logro: {title, desc, t}
@@ -224,6 +225,7 @@ func _process(delta: float) -> void:
 			save_run()
 		elif sim.phase == "victory" or sim.phase == "defeat":
 			clear_run()
+			_add_history()
 	menu.tut_update(delta)
 	_sim_dt = 0.0
 	if sim.phase == "combat" and juice.hitstop <= 0.0:
@@ -2233,6 +2235,7 @@ func _load_meta() -> void:
 	sim.essence = int(data.get("esencia", 0))
 	logros.from_save(data.get("logros_data", {}))
 	sim.unlocked = logros.unlocked_boons()
+	history = data.get("historial", [])
 	var recs: Dictionary = data.get("records", {})
 	for rk in recs:
 		records[String(rk)] = int(recs[rk])
@@ -2250,7 +2253,7 @@ func _save_meta() -> void:
 		return
 	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.WRITE)
 	if f != null:
-		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins, "records": records, "logros_data": logros.to_save()}, "  "))
+		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins, "records": records, "logros_data": logros.to_save(), "historial": history}, "  "))
 
 
 ## Guarda la partida a medias (solo en preparación). Se recupera con «Continuar» al volver.
@@ -2265,6 +2268,25 @@ func save_run() -> void:
 	var f: FileAccess = FileAccess.open(RUN_PATH, FileAccess.WRITE)
 	if f != null:
 		f.store_string(var_to_str(d))
+
+
+func _add_history() -> void:
+	var mode: String = sim.siege_name().get_slice(":", 0)
+	if not challenge.is_empty():
+		mode = "Reto semanal"
+	if sim.wrath > 0:
+		mode += " · Ira %d" % sim.wrath
+	var names: Array = []
+	for b in sim.boons:
+		names.append(String(sim.draft_def(String(b)).get("title", "")))
+	var res: String = "Victoria" if sim.phase == "victory" else ("%d oleadas" % (sim.defeat_wave - 1) if sim.is_endless() else "Cae en la %d" % sim.defeat_wave)
+	var entry: Dictionary = {"fecha": Time.get_date_string_from_system(), "modo": mode, "resultado": res,
+		"terreno": String(sim.terrain_def().get("name", "")), "dones": names, "ruta": sim.route, "bajas": sim.kills,
+		"encargo": "" if sim.contract == "" else "%s %s" % [String(sim.contract_def(sim.contract).get("name", "")), "✓" if sim.phase == "victory" and sim.contract_status() == "ok" else "✗"]}
+	history.push_front(entry)
+	while history.size() > 12:
+		history.pop_back()
+	_save_meta()
 
 
 func clear_run() -> void:

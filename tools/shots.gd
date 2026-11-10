@@ -124,6 +124,12 @@ func run() -> void:
 		main.menu.panel = "logros"
 		await shot("logros")
 		main.logros.got = {}
+		main.history = [{"fecha": "2026-11-10", "modo": "La Grieta", "resultado": "17 oleadas", "terreno": "Osario", "dones": ["Pacto de fuego", "Eco de la Fosa"], "encargo": ""},
+			{"fecha": "2026-11-10", "modo": "Primer asedio · Ira 2", "resultado": "Victoria", "terreno": "Llanura de ceniza", "dones": ["Tormenta"], "encargo": "Solo rayo ✓"},
+			{"fecha": "2026-11-09", "modo": "Reto semanal · Ira 1", "resultado": "Cae en la 5", "terreno": "Fisura de lava", "dones": [], "encargo": "Austero ✗"}]
+		main.menu.panel = "historial"
+		await shot("historial")
+		main.history = []
 		main.menu.open = false
 		main.menu.panel = "main"
 	if want("asedios"):

@@ -86,8 +86,10 @@ func buttons(m) -> Array:
 			y2 += 58.0
 			out.append({"id": "intro", "rect": Rect2(x + 150, y2, 190, 50), "text": "Sí" if bool(opts["intro"]) else "No"})
 			out.append({"id": "back", "rect": Rect2(x, 590, 320, 58), "text": "Volver"})
-		"help", "logros":
+		"help", "logros", "historial":
 			out.append({"id": "back", "rect": Rect2(x, 640, 320, 58), "text": "Volver"})
+			if panel == "logros":
+				out.append({"id": "historial", "rect": Rect2(x + 350, 640, 220, 58), "text": "Historial"})
 		"siege":
 			for i in m.sim.SIEGES.size():
 				out.append({"id": "sg:%d" % i, "rect": siege_rect(i, m.sim.SIEGES.size()), "text": "", "card": true})
@@ -155,6 +157,8 @@ func _do(m, id: String) -> void:
 			panel = "help"
 		"logros":
 			panel = "logros"
+		"historial":
+			panel = "historial"
 		"options":
 			panel = "options"
 		"back":
@@ -261,6 +265,26 @@ func draw(m) -> void:
 				var ud: Dictionary = m.sim.draft_def(String(l["unlock"]))
 				d += "  Abre: %s." % (String(ud.get("title", "")) if not ud.is_empty() else "augurio " + String(m.sim.augur_def(String(l["unlock"])).get("name", "")))
 			m._txt(d, p0 + Vector2(54, 45), 14, Color(0.85, 0.8, 0.75) if have else Color(0.55, 0.5, 0.48), HORIZONTAL_ALIGNMENT_LEFT, 480.0)
+	elif panel == "historial":
+		m._txt("Últimas partidas", Vector2(0, 110), 40, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
+		if m.history.is_empty():
+			m._txt("Todavía no hay partidas terminadas.", Vector2(0, 300), 20, Color(0.8, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, W)
+		for i in m.history.size():
+			var h: Dictionary = m.history[i]
+			var yy: float = 150.0 + 40.0 * i
+			var win: bool = String(h.get("resultado", "")) == "Victoria"
+			m.draw_rect(Rect2(60, yy, W - 120, 36), Color(0.15, 0.08, 0.05, 0.75) if win else Color(0.08, 0.04, 0.05, 0.7))
+			m._txt(String(h.get("fecha", "")), Vector2(72, yy + 24), 14, Color(0.6, 0.55, 0.5))
+			m._txt(String(h.get("modo", "")), Vector2(170, yy + 24), 16, Color(0.95, 0.85, 0.7))
+			m._txt(String(h.get("resultado", "")), Vector2(430, yy + 24), 16, Color(1.0, 0.85, 0.45) if win else Color(1.0, 0.5, 0.4))
+			var extra: Array = []
+			if String(h.get("terreno", "")) != "":
+				extra.append(String(h["terreno"]))
+			if not h.get("dones", []).is_empty():
+				extra.append(", ".join(h["dones"]))
+			if String(h.get("encargo", "")) != "":
+				extra.append(String(h["encargo"]))
+			m._txt("  ·  ".join(extra), Vector2(580, yy + 24), 14, Color(0.8, 0.78, 0.85), HORIZONTAL_ALIGNMENT_LEFT, W - 660)
 	elif panel == "siege":
 		m._txt("Elige asedio", Vector2(0, 160), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		for i in m.sim.SIEGES.size():
