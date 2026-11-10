@@ -164,8 +164,24 @@ func run() -> void:
 		s().route = "verdugo"
 		s().phase = "forge"
 		await shot("forja")
+	if want("demonio"):
+		# demonio fijo frente a los clips (en el fotograma de impacto, o a media animación)
+		s().reset()
+		var A = main.Anim
+		A.enabled = false
+		main.demon_anim = A.new("demonio")
+		await shot("demonio_fijo")
+		A.enabled = true
+		for c in ["reposo", "rayo", "brasa", "golpe"]:
+			main.demon_anim = A.new("demonio")
+			main.demon_anim.play(c)
+			main.demon_anim.t = A.impact_delay("demonio", c) if c in ["rayo", "brasa"] else 0.6
+			await shot("demonio_" + c)
+		main.demon_anim = A.new("demonio")
 	if want("victoria"):
 		s().reset()
+		main.demon_anim.play("victoria")
+		main.demon_anim.t = 3.5
 		s().kills = 87
 		main.unlock_note = "Se abre: Segundo asedio: la Orden del Alba. Se abre Ira 1 en este asedio."
 		s().meta_mode = true
@@ -175,4 +191,6 @@ func run() -> void:
 		s().reset()
 		s().defeat_wave = 3
 		s().phase = "defeat"
+		main.demon_anim.play("derrota")
+		main.demon_anim.t = 99.0
 		await shot("derrota")

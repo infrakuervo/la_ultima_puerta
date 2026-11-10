@@ -8,7 +8,7 @@ Tarea programada «La Última Puerta: seguir 2» (trig_01RebsH5yBQGN7zjmY9vLLuV,
 Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 
 1. [x] Sistema de animación por fotogramas — `scripts/anim.gd` + `data/anim.json` (personaje → clip: fps, bucle/hold, start, impacto, mano, alto y pies). Carga perezosa con caché; sin carpeta o sin fotograma → sprite fijo. Pruebas en `test_anim`.
-2. [ ] Demonio: reposo, rayo, brasa, golpe, victoria, derrota; bola y rayo desde la mano.
+2. [x] Demonio — reposo en bucle; `rayo` (24 fps desde el fotograma 5) y `brasa` (22 fps desde el 8) al lanzar; `golpe` si golpean la Puerta y no está lanzando; `victoria` y `derrota` (se queda en el último) en las pantallas finales, donde ahora sale el demonio grande a la izquierda. El rayo y la bola salen de la mano (`hand` en el JSON) en el fotograma de impacto: los efectos visuales del rayo esperan ~0,08 s; la bola vuela el resto del retraso de la Brasa. Escala y pies medidos con PIL frente al sprite fijo (`tools/shots.tscn` → `demonio`).
 3. [ ] Tizón / Sabuesos: carrera y mordisco (sin reposo: sprite fijo con respiración).
 4. [ ] Horno: reposo, carrera y mordisco (encuadre más abierto).
 5. [ ] Animación por código para el resto (respiración, trote, embestida, retroceso, sombra fija) + componer `juice.offset()` en `draw_set_transform` (charcos de brea).

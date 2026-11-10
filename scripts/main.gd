@@ -7,6 +7,7 @@ const Art = preload("res://scripts/art.gd")
 const SoundBank = preload("res://scripts/sound_bank.gd")
 const Juice = preload("res://scripts/juice.gd")
 const Menu = preload("res://scripts/menu.gd")
+const Anim = preload("res://scripts/anim.gd")
 
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
@@ -48,6 +49,7 @@ var holding: bool = false
 var fx: Array = []
 var warns: Array = []
 var mut_anim: Dictionary = {}
+var demon_anim = Anim.new("demonio")
 var banner_text: String = ""
 var banner_t: float = 0.0
 var banner_dur: float = 1.0
@@ -122,6 +124,7 @@ func _process(delta: float) -> void:
 
 
 func _update_fx(delta: float) -> void:
+	demon_anim.update(delta)
 	var keep: Array = []
 	for f in fx:
 		f["t"] += delta
@@ -241,6 +244,7 @@ func _on_event(ev: Dictionary) -> void:
 				banner_dur = 1.6
 		"brasa_cast":
 			_play("brasa_cast")
+			demon_anim.play("brasa")
 		"brasa_land":
 			_play("horno_spit")
 			juice.burst(ev["p"], 26, Color(1.0, 0.5, 0.15), 260.0, 0.7, 3.0, 380.0, 120.0)
@@ -251,12 +255,20 @@ func _on_event(ev: Dictionary) -> void:
 			_add_fx({"type": "disc", "p": ev["p"], "r": float(ev["r"]), "col": Color(1.0, 0.5, 0.15, 0.35), "ttl": 0.5})
 		"rayo":
 			_play("rayo")
+			# el rayo sale de la mano en el fotograma de impacto del clip (si hay animación)
+			var rdelay: float = Anim.impact_delay("demonio", "rayo") if demon_anim.play("rayo") else 0.0
+			var rfrom: Vector2 = Anim.hand_at("demonio", "rayo", demon_feet())
+			if rfrom == Vector2.INF:
+				rfrom = ev["from"]
 			juice.burst(ev["to"] + Vector2(0, -30), 8, Color(0.7, 0.9, 1.0), 240.0, 0.25, 2.0, 200.0)
-			_add_fx({"type": "bolt", "a": ev["from"], "b": ev["to"], "col": Color(0.75, 0.9, 1.0), "ttl": 0.18})
-			_add_fx({"type": "ring", "p": ev["to"], "r0": 4.0, "r1": 26.0, "col": Color(0.75, 0.9, 1.0, 0.9), "ttl": 0.2})
+			_add_fx({"type": "bolt", "a": rfrom, "b": ev["to"], "col": Color(0.75, 0.9, 1.0), "ttl": 0.18, "t": -rdelay})
+			_add_fx({"type": "ring", "p": ev["to"], "r0": 4.0, "r1": 26.0, "col": Color(0.75, 0.9, 1.0, 0.9), "ttl": 0.2, "t": -rdelay})
+			if rdelay > 0.0:
+				_add_fx({"type": "ring", "p": rfrom, "r0": 6.0, "r1": 30.0, "col": Color(0.8, 0.92, 1.0, 0.9), "ttl": 0.16, "t": -rdelay})
 		"rayo_chain":
 			_play("rayo")
-			_add_fx({"type": "bolt", "a": ev["from"], "b": ev["to"], "col": Color(0.9, 0.95, 1.0), "ttl": 0.22})
+			var cdelay: float = Anim.impact_delay("demonio", "rayo") if demon_anim.clip == "rayo" else 0.0
+			_add_fx({"type": "bolt", "a": ev["from"], "b": ev["to"], "col": Color(0.9, 0.95, 1.0), "ttl": 0.22, "t": -cdelay})
 		"leveled":
 			_play("level")
 			_float(_creature_pos_by_id(int(ev["id"])) + Vector2(0, -110), "Nivel %d" % int(ev["level"]), Color(1.0, 0.9, 0.4), 1.4)
@@ -446,6 +458,8 @@ func _on_event(ev: Dictionary) -> void:
 			_add_fx({"type": "ring", "p": Vector2(ev["x"], _lane_y(int(ev["lane"])) - 10), "r0": 10.0, "r1": float(ev["r"]), "col": Color(0.6, 1.0, 0.7, 0.8), "ttl": 0.5})
 		"door_hit":
 			_play("door_hit", 0.1)
+			if not demon_anim.busy():
+				demon_anim.play("golpe")
 			juice.burst(Vector2(140, _lane_y(int(ev["lane"])) - 40), 6, Color(0.5, 0.3, 0.2), 200.0, 0.5, 3.0, 600.0)
 			juice.add_trauma(0.35)
 			flash_red = 0.5
@@ -479,6 +493,7 @@ func _on_event(ev: Dictionary) -> void:
 			_save_meta()
 		"victory":
 			_play("win")
+			demon_anim.play("victoria")
 			var sid: String = sim.siege_id()
 			unlock_note = ""
 			var first: bool = not siege_wins.has(sid)
@@ -494,6 +509,7 @@ func _on_event(ev: Dictionary) -> void:
 			_save_meta()
 		"defeat":
 			_play("lose")
+			demon_anim.play("derrota")
 			_save_bestiary()
 
 
@@ -641,6 +657,7 @@ func _restart() -> void:
 	fx.clear()
 	warns.clear()
 	mut_anim.clear()
+	demon_anim = Anim.new("demonio")
 	selected_id = -1
 	dragging = false
 	accum = 0.0
@@ -958,9 +975,26 @@ func _draw_zones() -> void:
 		draw_circle(gp, 30.0, Color(col.r, col.g, col.b, 0.15))
 
 
+## Pies del demonio en la arena (donde cae el sprite fijo y el ancla de los fotogramas).
+func demon_feet() -> Vector2:
+	return sim.demon_pos() + Vector2(34, 32)
+
+
+## Dibuja el demonio animado (o el sprite fijo si no hay fotogramas). false si no hay ni sprite.
+func draw_demon_at(feet: Vector2, sc: float = 1.0) -> bool:
+	var fr: Dictionary = demon_anim.draw_opts()
+	if fr.is_empty():
+		return Art.draw_sprite(self, "demonio", feet, clock, {"bob": sin(clock * 2.0) * 2.0, "scale": sc})
+	return Art.draw_sprite(self, "demonio", feet, clock, {"frame": fr, "scale": sc})
+
+
 func _draw_demon() -> void:
 	var dp: Vector2 = sim.demon_pos() + Vector2(34, 10)
-	if Art.draw_sprite(self, "demonio", dp + Vector2(0, 22), clock, {"bob": sin(clock * 2.0) * 2.0}):
+	var animated: bool = not demon_anim.draw_opts().is_empty()
+	if draw_demon_at(demon_feet()):
+		if animated:
+			return
+
 		var pulse0: float = 0.5 + 0.5 * sin(clock * 3.0)
 		draw_circle(dp + Vector2(52, -106), 8.0 + 6.0 * pulse0, Color(1.0, 0.55, 0.2, 0.18 + 0.2 * pulse0))
 		return
@@ -978,13 +1012,23 @@ func _draw_demon() -> void:
 
 
 func _draw_brasas() -> void:
-	var origin: Vector2 = sim.demon_pos() + Vector2(56, -34)
+	var origin: Vector2 = Anim.hand_at("demonio", "brasa", demon_feet())
+	var imp: float = Anim.impact_delay("demonio", "brasa")
+	if origin == Vector2.INF:
+		origin = sim.demon_pos() + Vector2(56, -34)
+		imp = 0.0
 	for b in sim.pending_brasas:
 		var delay: float = maxf(0.01, float(b["d"]))
 		var k: float = clampf(1.0 - float(b["t"]) / delay, 0.0, 1.0)
 		var target: Vector2 = b["p"]
 		draw_arc(target, float(b["r"]), 0.0, TAU, 36, Color(1.0, 0.45, 0.1, 0.9), 3.0)
 		draw_arc(target, float(b["r"]) * (1.0 - k), 0.0, TAU, 36, Color(1.0, 0.8, 0.3, 0.7), 2.0)
+		# la bola sale de la mano en el fotograma de impacto del clip y vuela el resto del retraso
+		var since: float = delay - float(b["t"])
+		if imp > 0.0 and delay > imp * 1.5:
+			if since < imp:
+				continue
+			k = clampf((since - imp) / (delay - imp), 0.0, 1.0)
 		var pp: Vector2 = origin.lerp(target, k) + Vector2(0, -sin(k * PI) * 170.0)
 		draw_circle(pp, 11.0, Color(1.0, 0.55, 0.15))
 		draw_circle(pp, 6.0, Color(1.0, 0.9, 0.5))
@@ -1189,6 +1233,8 @@ func _draw_fx_and_warns() -> void:
 					draw_arc(he + Vector2(0, -34), 30.0, 0.0, TAU, 20, Color(0.7, 0.9, 1.0, 0.6 + 0.4 * blink), 3.0)
 					_txt("GARFIO", hc2 + Vector2(-34, -110), 17, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 68.0)
 	for f in fx:
+		if float(f["t"]) < 0.0:
+			continue   # efecto con retraso (p. ej. el rayo espera al fotograma de impacto)
 		var fk: float = clampf(float(f["t"]) / float(f["ttl"]), 0.0, 1.0)
 		match String(f["type"]):
 			"disc":
@@ -1549,6 +1595,9 @@ func _draw_overlays() -> void:
 			_txt(ep, Vector2(0, 296), 24, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		if ph == "victory" and unlock_note != "" and sim.meta_mode:
 			_txt(unlock_note, Vector2(0, 336), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		# el demonio a la izquierda: victoria con los brazos en llamas o derrota de rodillas
+		draw_circle(Vector2(250, 470), 120.0, Color(1.0, 0.45, 0.15, 0.14) if ph == "victory" else Color(0.6, 0.1, 0.1, 0.12))
+		draw_demon_at(Vector2(250, 590), 1.25)
 		var t: Dictionary = sim.named_creature()
 		if not t.is_empty():
 			Art.draw_creature(self, String(t["kind"]), Vector2(640, 452), clock, {"scars": int(t["scars"])})
