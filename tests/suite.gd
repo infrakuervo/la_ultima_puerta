@@ -39,6 +39,7 @@ func run() -> void:
 	test_procedural()
 	test_boons()
 	test_endless()
+	test_logros()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -1425,6 +1426,30 @@ func test_endless() -> void:
 	check(float(r.enemies[-1]["max_hp"]) > float(r.B["enemies"]["campesino"]["hp"]), "el augurio del reto dura toda la partida")
 	r.augur = "luna"
 	check(is_equal_approx(r.augur_fx("enemy_hp"), 0.25), "el mismo augurio elegido no se suma dos veces")
+
+
+func test_logros() -> void:
+	print("Logros y dones que abren")
+	var L = load("res://scripts/logros.gd").new()
+	check(L.list.size() >= 10, "data/logros.json tiene la lista")
+	var s = new_sim(2)
+	var got: Array = L.on_event(s, {"t": "wave_clear", "wave": 1}, false)
+	check(got.has("primera_sangre"), "superar una oleada da Primera sangre")
+	check(L.on_event(s, {"t": "wave_clear", "wave": 2}, false).is_empty(), "un logro no se repite")
+	L.on_event(s, {"t": "brasa_land", "hits": 9}, false)
+	check(L.got.has("brasa_perfecta") and L.unlocked_boons().has("eco_brasa"), "Brasa perfecta abre el don Eco de la Fosa")
+	check(not s._draft_ok(s.draft_def("eco_brasa")) or s.wave_index < 2, "sin el logro el don bloqueado no sale")
+	s.wave_index = 3
+	check(not s._draft_ok(s.draft_def("eco_brasa")), "un don bloqueado no sale aunque toque por oleada")
+	s.unlocked = L.unlocked_boons()
+	check(s._draft_ok(s.draft_def("eco_brasa")), "con el logro el don ya puede salir")
+	L.on_event(s, {"t": "wave_start", "wave": 1}, false)
+	L.on_event(s, {"t": "door_hit", "lane": 0, "amount": 3}, false)
+	var v: Array = L.on_event(s, {"t": "victory"}, false)
+	check(v.has("puerta_resiste") and not v.has("intocable"), "ganar el primer asedio con la Puerta tocada no da Intocable")
+	var L2 = load("res://scripts/logros.gd").new()
+	L2.from_save(L.to_save())
+	check(L2.got.size() == L.got.size() and int(L2.stats["victorias"]) == 1, "logros y estadísticas se guardan y se cargan")
 
 
 func test_anim() -> void:

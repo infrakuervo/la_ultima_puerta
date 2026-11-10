@@ -64,6 +64,8 @@ func buttons(m) -> Array:
 			out.append({"id": "help", "rect": Rect2(x, y, 320, 58), "text": "Cómo se juega"})
 			y += 70.0
 			out.append({"id": "options", "rect": Rect2(x, y, 320, 58), "text": "Opciones"})
+			y += 70.0
+			out.append({"id": "logros", "rect": Rect2(x, y, 320, 58), "text": "Logros"})
 		"options":
 			var y2: float = 236.0
 			out.append({"id": "vol-", "rect": Rect2(x + 150, y2, 50, 50), "text": "−"})
@@ -77,8 +79,8 @@ func buttons(m) -> Array:
 			y2 += 68.0
 			out.append({"id": "intro", "rect": Rect2(x + 150, y2, 190, 50), "text": "Sí" if bool(opts["intro"]) else "No"})
 			out.append({"id": "back", "rect": Rect2(x, 590, 320, 58), "text": "Volver"})
-		"help":
-			out.append({"id": "back", "rect": Rect2(x, 600, 320, 58), "text": "Volver"})
+		"help", "logros":
+			out.append({"id": "back", "rect": Rect2(x, 640, 320, 58), "text": "Volver"})
 		"siege":
 			for i in m.sim.SIEGES.size():
 				out.append({"id": "sg:%d" % i, "rect": siege_rect(i, m.sim.SIEGES.size()), "text": "", "card": true})
@@ -144,6 +146,8 @@ func _do(m, id: String) -> void:
 				tut_t = 0.0
 		"help":
 			panel = "help"
+		"logros":
+			panel = "logros"
 		"options":
 			panel = "options"
 		"back":
@@ -156,7 +160,7 @@ func _do(m, id: String) -> void:
 			opts["volumen"] = minf(1.0, snappedf(float(opts["volumen"]) + 0.1, 0.1))
 			apply(m)
 		"spd":
-			opts["velocidad"] = 3 - int(opts["velocidad"])
+			opts["velocidad"] = int(opts["velocidad"]) % 3 + 1
 			m.speed = int(opts["velocidad"])
 		"shake":
 			opts["temblor"] = not bool(opts["temblor"])
@@ -219,6 +223,27 @@ func draw(m) -> void:
 		]
 		for i in lines.size():
 			m._txt(lines[i], Vector2(0, 230 + 40 * i), 20, Color(0.92, 0.86, 0.8), HORIZONTAL_ALIGNMENT_CENTER, W)
+	elif panel == "logros":
+		m._txt("Logros", Vector2(0, 110), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
+		var L = m.logros
+		var st: Dictionary = L.stats
+		m._txt("Partidas %d   Victorias %d   Oleadas %d   Bajas %d   Mejor Brasa %d   Récord en la Grieta %d" % [int(st["partidas"]), int(st["victorias"]), int(st["oleadas"]), int(st["bajas"]), int(st["mejor_brasa"]), int(m.records.get("grieta", 0))], Vector2(0, 148), 17, Color(0.75, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, W)
+		for i in L.list.size():
+			var l: Dictionary = L.list[i]
+			var col_i: int = i % 2
+			var row: int = i / 2
+			var p0: Vector2 = Vector2(90 + 560 * col_i, 172 + 64 * row)
+			var have: bool = L.got.has(String(l["id"]))
+			m.draw_rect(Rect2(p0, Vector2(540, 56)), Color(0.22, 0.12, 0.05, 0.85) if have else Color(0.08, 0.05, 0.05, 0.7))
+			m.draw_rect(Rect2(p0, Vector2(540, 56)), Color(1.0, 0.8, 0.35) if have else Color(0.4, 0.3, 0.25), false, 2.0)
+			m.draw_circle(p0 + Vector2(28, 28), 14.0, Color(1.0, 0.75, 0.3) if have else Color(0.25, 0.2, 0.18))
+			if have:
+				m.draw_polyline(PackedVector2Array([p0 + Vector2(20, 28), p0 + Vector2(26, 35), p0 + Vector2(37, 21)]), Color(0.2, 0.1, 0.05), 3.0)
+			m._txt(String(l["name"]), p0 + Vector2(54, 24), 18, Color(1.0, 0.9, 0.7) if have else Color(0.65, 0.58, 0.55))
+			var d: String = String(l["desc"])
+			if l.has("unlock"):
+				d += "  Abre: %s." % String(m.sim.draft_def(String(l["unlock"])).get("title", ""))
+			m._txt(d, p0 + Vector2(54, 45), 14, Color(0.85, 0.8, 0.75) if have else Color(0.55, 0.5, 0.48), HORIZONTAL_ALIGNMENT_LEFT, 480.0)
 	elif panel == "siege":
 		m._txt("Elige asedio", Vector2(0, 160), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		for i in m.sim.SIEGES.size():

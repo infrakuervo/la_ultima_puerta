@@ -19,7 +19,7 @@ godot --path C:\ruta\a\la_ultima_puerta
 Controles:
 - Entre oleadas: arrastra una bestia a la retaguardia (muro de atrás, zona izquierda) o a la vanguardia (cerca de los enemigos). Clic en una bestia para seleccionarla y **Subir nivel**.
 - En combate: clic en la arena lanza el hechizo activo en el cursor; mantener el botón lo repite en cuanto se recarga. Cambia de hechizo con clic derecho, rueda, teclas 1/2 o los botones de abajo. Pulsar la interfaz no lanza nada.
-- Botones: **Árbol** (T), **Iniciar oleada** (Espacio), **Velocidad** x1/x2 (F), **Bestiario** (B). **Esc** abre el menú (pausa).
+- Botones: **Árbol** (T), **Iniciar oleada** (Espacio), **Velocidad** x1/x2/x3 (F), **Bestiario** (B). **Esc** abre el menú (pausa).
 - Menú principal con Jugar/Continuar, «Cómo se juega» y Opciones (volumen, velocidad inicial, temblor de pantalla, repetir tutorial; se guardan en `user://opciones.json`). La primera partida trae un tutorial breve.
 Pantalla 1280x720 con GL Compatibility.
 

@@ -9,6 +9,7 @@ const Juice = preload("res://scripts/juice.gd")
 const Menu = preload("res://scripts/menu.gd")
 const Anim = preload("res://scripts/anim.gd")
 const Poses = preload("res://scripts/poses.gd")
+const Logros = preload("res://scripts/logros.gd")
 
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
@@ -68,6 +69,8 @@ var last_phase: String = ""
 var siege_wins: Dictionary = {}   # id de asedio -> mayor nivel de Ira ganado
 var records: Dictionary = {}      # "grieta" -> oleadas superadas (récord); "reto:<semana>" -> récord del reto
 var new_record: bool = false
+var logros = Logros.new()
+var toasts: Array = []            # avisos de logro: {title, desc, t}
 var challenge: Dictionary = {}    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
 var unlock_note: String = ""
 var flash_red: float = 0.0
@@ -210,6 +213,10 @@ func _update_fx(delta: float) -> void:
 		if mut_anim[k] > 1.9:
 			mut_anim.erase(k)
 	banner_t = maxf(0.0, banner_t - delta)
+	for ts in toasts:
+		ts["t"] += delta
+	if not toasts.is_empty() and float(toasts[0]["t"]) > 3.8:
+		toasts.pop_front()
 	juice.update(delta)
 	flash_red = maxf(0.0, flash_red - delta * 2.5)
 	flash_white = maxf(0.0, flash_white - delta * 1.6)
@@ -285,6 +292,15 @@ func _on_event(ev: Dictionary) -> void:
 	var t: String = ev["t"]
 	menu.tut_event(self, ev)
 	poses.on_event(ev, sim)
+	for lid in logros.on_event(sim, ev, not challenge.is_empty()):
+		var ld: Dictionary = logros.def(String(lid))
+		var extra: String = ""
+		if ld.has("unlock"):
+			sim.unlocked = logros.unlocked_boons()
+			extra = "Nuevo don en el draft: %s" % String(sim.draft_def(String(ld["unlock"])).get("title", ""))
+		toasts.append({"title": String(ld["name"]), "desc": String(ld["desc"]), "extra": extra, "t": 0.0})
+		_play("level")
+		_save_meta()
 	match t:
 		"placed":
 			_play("click")
@@ -666,7 +682,7 @@ func _input(event: InputEvent) -> void:
 				elif sim.phase == "victory" or sim.phase == "defeat":
 					_restart()
 			elif k.keycode == KEY_F:
-				speed = 3 - speed
+				speed = speed % 3 + 1
 			elif k.keycode == KEY_B:
 				show_bestiary = not show_bestiary
 			elif k.keycode == KEY_T:
@@ -835,7 +851,7 @@ func _do_button(id: String) -> void:
 		"spell_rayo":
 			spell = "rayo"
 		"speed":
-			speed = 3 - speed
+			speed = speed % 3 + 1
 			_play("click")
 		"bestiary":
 			show_bestiary = not show_bestiary
@@ -956,6 +972,7 @@ func _draw() -> void:
 		var slide: float = (1.0 - clampf((banner_dur - banner_t) / 0.25, 0.0, 1.0)) * 60.0
 		draw_rect(Rect2(0, 300, SCREEN_W, 90), Color(0, 0, 0, 0.55 * a))
 		_txt(banner_text, Vector2(slide, 360), 44, Color(1.0, 0.85, 0.5, a), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+	_draw_toasts()
 	menu.tut_draw(self)
 	menu.draw(self)
 	if fade > 0.0:
@@ -1214,6 +1231,22 @@ func _draw_creature(c: Dictionary) -> void:
 		_bar(pos + Vector2(-26, -100 if kind == "horno" or kind == "ojo" else -82), 52.0, float(c["hp"]) / float(c["max_hp"]), Color(0.4, 0.9, 0.4))
 	if c["loaned"]:
 		_txt("prestado", pos + Vector2(-34, 24), 14, Color(0.9, 0.85, 0.5), HORIZONTAL_ALIGNMENT_CENTER, 68.0)
+
+
+func _draw_toasts() -> void:
+	if toasts.is_empty():
+		return
+	var ts: Dictionary = toasts[0]
+	var t: float = float(ts["t"])
+	var a: float = clampf(minf(t / 0.3, (3.8 - t) / 0.5), 0.0, 1.0)
+	var extra: String = String(ts.get("extra", ""))
+	var r: Rect2 = Rect2(SCREEN_W * 0.5 - 260, 86 - 30.0 * (1.0 - a), 520, 58 if extra == "" else 78)
+	draw_rect(r, Color(0.08, 0.04, 0.02, 0.88 * a))
+	draw_rect(r, Color(1.0, 0.8, 0.35, a), false, 2.0)
+	_txt("LOGRO: %s" % String(ts["title"]), r.position + Vector2(0, 24), 19, Color(1.0, 0.85, 0.45, a), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	_txt(String(ts["desc"]), r.position + Vector2(0, 46), 14, Color(0.9, 0.85, 0.75, a), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+	if extra != "":
+		_txt(extra, r.position + Vector2(0, 67), 14, Color(0.85, 0.65, 1.0, a), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 
 
 ## Dibuja una unidad con su pose de código: sombra plana en el suelo y cuerpo girado/escalado desde
@@ -1823,6 +1856,11 @@ func _draw_overlays() -> void:
 			_txt(ep, Vector2(0, 296), 24, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		if ph == "victory" and unlock_note != "" and sim.meta_mode:
 			_txt(unlock_note, Vector2(0, 336), 22, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		if not logros.fresh.is_empty():
+			var names: Array = []
+			for lid in logros.fresh:
+				names.append(String(logros.def(String(lid)).get("name", "")))
+			_txt("Logros: " + ", ".join(names), Vector2(0, 372), 18, Color(1.0, 0.8, 0.4), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		# el demonio a la izquierda: victoria con los brazos en llamas o derrota de rodillas
 		draw_circle(Vector2(250, 470), 120.0, Color(1.0, 0.45, 0.15, 0.14) if ph == "victory" else Color(0.6, 0.1, 0.1, 0.12))
 		draw_demon_at(Vector2(250, 590), 1.25)
@@ -1909,6 +1947,8 @@ func _load_meta() -> void:
 	if typeof(data) != TYPE_DICTIONARY:
 		return
 	sim.essence = int(data.get("esencia", 0))
+	logros.from_save(data.get("logros_data", {}))
+	sim.unlocked = logros.unlocked_boons()
 	var recs: Dictionary = data.get("records", {})
 	for rk in recs:
 		records[String(rk)] = int(recs[rk])
@@ -1926,7 +1966,7 @@ func _save_meta() -> void:
 		return
 	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.WRITE)
 	if f != null:
-		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins, "records": records}, "  "))
+		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins, "records": records, "logros_data": logros.to_save()}, "  "))
 
 
 ## Clave del récord de la partida actual ("" si no hay récord que guardar).

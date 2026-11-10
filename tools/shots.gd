@@ -79,6 +79,10 @@ func run() -> void:
 		await shot("opciones")
 		main.menu.panel = "help"
 		await shot("ayuda")
+		main.logros.got = {"primera_sangre": true, "puerta_resiste": true, "brasa_perfecta": true}
+		main.menu.panel = "logros"
+		await shot("logros")
+		main.logros.got = {}
 		main.menu.open = false
 		main.menu.panel = "main"
 	if want("asedios"):
@@ -111,7 +115,9 @@ func run() -> void:
 		await shot("tutorial")
 		main.menu.tut_step = -1
 	if want("prep"):
+		main.toasts.append({"title": "Brasa perfecta", "desc": "Alcanza a 8 enemigos con una sola Brasa.", "extra": "Nuevo don en el draft: Eco de la Fosa", "t": 1.0})
 		await shot("prep")
+		main.toasts.clear()
 	if want("bestias"):
 		for k in ["alacran", "sapo", "manta", "sabueso", "ojo"]:
 			add_beast(k)

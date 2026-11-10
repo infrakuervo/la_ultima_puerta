@@ -53,6 +53,7 @@ var augur: String = ""           # augurio elegido para la oleada actual o sigui
 var augur_offer: Array = []      # ids ofrecidos en esta preparación
 var _front_lane: int = -1
 var week_augur: String = ""      # reto semanal: augurio que dura toda la partida
+var unlocked: Array = []         # dones con "unlock" abiertos por logros (la vista los carga de meta.json)
 var boons: Array = []            # dones de la partida elegidos en el draft (ids del pool)
 
 
@@ -1872,7 +1873,7 @@ func _wave_cleared() -> void:
 	door_hp = minf(door_max, door_hp + door_max * fadd("door.regen"))
 	events.append({"t": "wave_clear", "wave": cleared})
 	if meta_mode:
-		_gain_essence(int(round(float(int(B["meta"]["wave_base"]) + int(B["meta"]["wave_step"]) * cleared) * (1.0 + augur_fx("essence")))))
+		_gain_essence(int(round(float(int(B["meta"]["wave_base"]) + int(B["meta"]["wave_step"]) * cleared) * (1.0 + augur_fx("essence") + fmul("meta.wave")))))
 	if augur != "":
 		events.append({"t": "augur_done", "id": augur})
 	augur = ""
@@ -2028,6 +2029,8 @@ func _draft_ok(o: Dictionary) -> bool:
 		"essence":
 			return meta_mode
 		"boon":
+			if bool(o.get("unlock", false)) and not unlocked.has(String(o["id"])):
+				return false
 			return not boons.has(String(o["id"])) and wave_index >= int(o.get("min_wave", 1))
 	return true
 

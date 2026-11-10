@@ -583,7 +583,8 @@
       "k": "brasa.cd",
       "mul": -0.2
      }
-    ]
+    ],
+    "unlock": true
    },
    {
     "id": "tormenta",
@@ -626,7 +627,8 @@
       "k": "special.rayo_exec",
       "add": 1.0
      }
-    ]
+    ],
+    "unlock": true
    },
    {
     "id": "manada",
@@ -665,7 +667,8 @@
       "k": "special.regen",
       "add": 0.02
      }
-    ]
+    ],
+    "unlock": true
    },
    {
     "id": "colmillos",
@@ -723,9 +726,54 @@
       "add": 0.1
      }
     ]
+   },
+   {
+    "id": "furia",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "fuego",
+    "weight": 0.5,
+    "min_wave": 2,
+    "unlock": true,
+    "title": "Furia del Abismo",
+    "desc": "Esta partida: Brasa y Rayo +25% de daño; la Brasa aturde un instante.",
+    "fx": [
+     {
+      "k": "brasa.dmg",
+      "mul": 0.25
+     },
+     {
+      "k": "rayo.dmg",
+      "mul": 0.25
+     },
+     {
+      "k": "brasa.stun",
+      "add": 0.4
+     }
+    ]
+   },
+   {
+    "id": "presagio",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "alma",
+    "weight": 1,
+    "unlock": true,
+    "title": "Presagio",
+    "desc": "Esta partida: +30 almas por oleada y +25% de esencia por oleada.",
+    "fx": [
+     {
+      "k": "eco.wave_bonus",
+      "add": 30
+     },
+     {
+      "k": "meta.wave",
+      "mul": 0.25
+     }
+    ]
    }
   ],
-  "_doc": "rarity: comun | rara | epica (marco y peso). type boon: efecto para el resto de la partida, con fx como los del árbol (se suman a _fx_totals). min_wave: oleada mínima (1 = tras la primera)."
+  "_doc": "rarity: comun | rara | epica (marco y peso). type boon: efecto para el resto de la partida, con fx como los del árbol (se suman a _fx_totals). min_wave: oleada mínima (1 = tras la primera). unlock: true = solo sale si el jugador consiguió el logro que lo abre (data/logros.json)."
  },
  "meta": {
   "wave_base": 10,

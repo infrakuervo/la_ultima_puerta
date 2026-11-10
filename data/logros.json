@@ -1,0 +1,19 @@
+{
+ "_doc": "Logros. La condición de cada id está en scripts/logros.gd. unlock: id de un don del draft que solo aparece tras conseguir el logro (progresión que abre contenido, no solo números).",
+ "list": [
+  {"id": "primera_sangre", "name": "Primera sangre", "desc": "Supera una oleada."},
+  {"id": "puerta_resiste", "name": "La Puerta resiste", "desc": "Gana el primer asedio.", "unlock": "gracia"},
+  {"id": "alba_rota", "name": "Alba rota", "desc": "Gana el segundo asedio.", "unlock": "furia"},
+  {"id": "ira_encendida", "name": "Ira encendida", "desc": "Gana un asedio con Ira 3 o más."},
+  {"id": "brasa_perfecta", "name": "Brasa perfecta", "desc": "Alcanza a 8 enemigos con una sola Brasa.", "unlock": "eco_brasa"},
+  {"id": "manada", "name": "Manada", "desc": "Ten 6 bestias a la vez.", "unlock": "sangre"},
+  {"id": "intocable", "name": "Intocable", "desc": "Gana un asedio sin que la Puerta reciba daño."},
+  {"id": "cicatrices", "name": "Viejas heridas", "desc": "Tizón llega a 3 cicatrices en una partida."},
+  {"id": "coleccionista", "name": "Bestiario completo", "desc": "Ve las 10 formas de bestia."},
+  {"id": "supersticioso", "name": "Supersticioso", "desc": "Gana un asedio con un augurio en todas las oleadas.", "unlock": "presagio"},
+  {"id": "abismo", "name": "Abismo", "desc": "Supera 10 oleadas en La Grieta."},
+  {"id": "mas_alla", "name": "Más allá", "desc": "Supera 20 oleadas en La Grieta."},
+  {"id": "semanal", "name": "Fiel a la semana", "desc": "Gana un reto semanal."},
+  {"id": "arquitecto", "name": "Arquitecto del Abismo", "desc": "Compra 50 rangos del árbol."}
+ ]
+}
