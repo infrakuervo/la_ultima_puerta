@@ -82,7 +82,7 @@ func report_first(n: int, level: float) -> void:
 
 
 ## Carrera. Con BAL_CLIMB=1 el bot sube la Ira tras cada victoria (como un jugador que busca reto)
-## y pasa al segundo asedio al ganar Ira 3 en el primero.
+## y pasa al asedio siguiente al ganar Ira 3 (primero → Alba → Inquisición).
 func report_career(n_car: int, n_games: int) -> void:
 	var wins_at: Array = []
 	var ess_at: Array = []
@@ -116,8 +116,9 @@ func report_career(n_car: int, n_games: int) -> void:
 				wins_at[g] += 1
 				if climb:
 					ira += 1
-					if sg == 0 and ira > 3:
-						sg = 1
+					# primer asedio hasta Ira 3, luego el Alba hasta Ira 3, luego la Inquisición
+					if sg < 2 and ira > 3:
+						sg += 1
 						ira = 0
 					ira = mini(ira, 5)
 			essence = s.essence
