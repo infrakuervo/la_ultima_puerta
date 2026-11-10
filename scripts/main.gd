@@ -66,6 +66,9 @@ var menu = Menu.new()
 var fade: float = 0.0
 var last_phase: String = ""
 var siege_wins: Dictionary = {}   # id de asedio -> mayor nivel de Ira ganado
+var records: Dictionary = {}      # "grieta" -> oleadas superadas (récord); "reto:<semana>" -> récord del reto
+var new_record: bool = false
+var challenge: Dictionary = {}    # reto semanal en curso ({} si no): {key, week, siege, wrath, augur}
 var unlock_note: String = ""
 var flash_red: float = 0.0
 var flash_white: float = 0.0
@@ -561,6 +564,9 @@ func _on_event(ev: Dictionary) -> void:
 			_save_meta()
 		"victory":
 			_play("win")
+			if not challenge.is_empty():
+				new_record = sim.wave_count() > int(records.get(record_key(), 0))
+				records[record_key()] = maxi(int(records.get(record_key(), 0)), sim.wave_count())
 			demon_anim.play("victoria")
 			var sid: String = sim.siege_id()
 			unlock_note = ""
@@ -577,6 +583,14 @@ func _on_event(ev: Dictionary) -> void:
 			_save_meta()
 		"defeat":
 			_play("lose")
+			new_record = false
+			var rkey: String = record_key()
+			if rkey != "":
+				var cleared: int = sim.defeat_wave - 1
+				if cleared > int(records.get(rkey, 0)):
+					records[rkey] = cleared
+					new_record = cleared > 0
+				_save_meta()
 			demon_anim.play("derrota")
 			_save_bestiary()
 
@@ -726,6 +740,8 @@ func _nearest_lane(y: float) -> int:
 
 func _restart() -> void:
 	holding = false
+	if not challenge.is_empty():
+		sim.rng.seed = int(challenge["seed"])   # el reto siempre empieza igual
 	sim.reset()
 	fx.clear()
 	warns.clear()
@@ -1390,6 +1406,8 @@ func _draw_hud() -> void:
 	var sg_txt: String = sim.siege_name().get_slice(":", 0)
 	if sim.wrath > 0:
 		sg_txt += "  ·  Ira %d" % sim.wrath
+	if not challenge.is_empty():
+		sg_txt = "Reto semanal  ·  " + sg_txt
 	_txt(sg_txt, Vector2(24, 68), 14, Color(0.85, 0.6, 0.5))
 	var shown_wave: int = mini(sim.wave_index + 1, sim.wave_count())
 	if sim.phase == "victory":
@@ -1398,6 +1416,8 @@ func _draw_hud() -> void:
 	if sim.phase == "victory":
 		w = sim.WAVES[sim.wave_count() - 1]
 	var title: String = "Oleada %d / %d  -  %s" % [shown_wave, sim.wave_count(), String(w["title"])]
+	if sim.is_endless():
+		title = "Oleada %d  -  %s" % [shown_wave, String(w["title"])]
 	if sim.phase == "route" or sim.phase == "forge":
 		title = "Entre oleadas"
 	_txt(title, Vector2(240, 36), 24, Color(1.0, 0.85, 0.55))
@@ -1791,6 +1811,11 @@ func _draw_overlays() -> void:
 		var tcol: Color = Color(1.0, 0.85, 0.5) if ph == "victory" else Color(1.0, 0.35, 0.3)
 		_txt(title, Vector2(0, 168), 56, tcol, HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var sub: String = "Has defendido las %d oleadas." % sim.wave_count() if ph == "victory" else "Cayó en la oleada %d de %d." % [sim.defeat_wave, sim.wave_count()]
+		if sim.is_endless() and ph == "defeat":
+			title = "LA GRIETA TE TRAGA"
+			sub = "Aguantaste %d oleadas.  %s" % [sim.defeat_wave - 1, "¡Nuevo récord!" if new_record else "Récord: %d" % int(records.get(record_key(), 0))]
+		elif not challenge.is_empty():
+			sub += "  Reto semanal: %s" % ("¡nuevo récord!" if new_record else "récord %d/%d" % [int(records.get(record_key(), 0)), sim.wave_count()])
 		_txt(sub, Vector2(0, 214), 24, Color(0.9, 0.85, 0.8), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		_txt("Enemigos abatidos: %d    Puerta: %d / %d" % [sim.kills, int(ceil(sim.door_hp)), int(sim.door_max)], Vector2(0, 254), 22, Color(0.8, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var ep: String = sim.epitaph()
@@ -1884,6 +1909,9 @@ func _load_meta() -> void:
 	if typeof(data) != TYPE_DICTIONARY:
 		return
 	sim.essence = int(data.get("esencia", 0))
+	var recs: Dictionary = data.get("records", {})
+	for rk in recs:
+		records[String(rk)] = int(recs[rk])
 	var wins: Dictionary = data.get("asedios", {})
 	for k in wins:
 		siege_wins[String(k)] = int(wins[k])
@@ -1898,7 +1926,38 @@ func _save_meta() -> void:
 		return
 	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.WRITE)
 	if f != null:
-		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins}, "  "))
+		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "asedios": siege_wins, "records": records}, "  "))
+
+
+## Clave del récord de la partida actual ("" si no hay récord que guardar).
+func record_key() -> String:
+	if not challenge.is_empty():
+		return String(challenge["key"])
+	if sim.is_endless():
+		return "grieta"
+	return ""
+
+
+## Reto de la semana: misma semilla para todos durante 7 días, asedio, Ira 1 y un augurio fijo.
+func weekly_challenge() -> Dictionary:
+	var week: int = int(Time.get_unix_time_from_system() / 604800.0)
+	var augs: Array = sim.B["augurs"]["list"]
+	var sg: int = 1 if week % 2 == 1 and siege_unlocked(1) else 0
+	return {"key": "reto:%d" % week, "week": week, "siege": sg, "wrath": 1, "augur": String(augs[week % augs.size()]["id"]), "seed": week * 7919 + 17}
+
+
+func start_challenge() -> void:
+	challenge = weekly_challenge()
+	sim.set_siege(int(challenge["siege"]), int(challenge["wrath"]))
+	sim.week_augur = String(challenge["augur"])
+	_restart()
+
+
+func start_normal(si: int, wr: int) -> void:
+	challenge = {}
+	sim.week_augur = ""
+	sim.set_siege(si, wr)
+	_restart()
 
 
 ## Asedio desbloqueado: el primero siempre; los demás al ganar el que piden en `unlock`.
@@ -1910,6 +1969,8 @@ func siege_unlocked(i: int) -> bool:
 ## Ira máxima elegible en un asedio: una más que la mayor ganada.
 func max_wrath(i: int) -> int:
 	var id: String = String(sim.SIEGES[i]["id"])
+	if sim.SIEGES[i].has("endless"):
+		return mini(int(sim.B["wrath"]["max"]), int(records.get("grieta", 0)) / 8)
 	if not siege_wins.has(id):
 		return 0
 	return mini(int(sim.B["wrath"]["max"]), int(siege_wins[id]) + 1)

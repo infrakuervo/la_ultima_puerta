@@ -128,11 +128,15 @@ func report_career(n_car: int, n_games: int) -> void:
 ## Victorias del bot torpe con un árbol comprado con `ess` de esencia.
 func report_with_essence(n: int, ess: int) -> void:
 	var wins: int = 0
+	var reached: Array = []
 	for i in n:
 		var s = new_game(3000 + i, ess, {})
 		var bot = Bot.new(3000 + i, 0.0)
 		bot.buy_meta(s)
 		s.essence = 0
-		if bot.play(s)["phase"] == "victory":
+		var res: Dictionary = bot.play(s)
+		if res["phase"] == "victory":
 			wins += 1
-	print("  árbol de %4d esencia: victorias %d/%d (%.0f%%)" % [ess, wins, n, 100.0 * wins / maxi(1, n)])
+		reached.append(int(res["wave"]) - 1)
+	reached.sort()
+	print("  árbol de %4d esencia: victorias %d/%d (%.0f%%)  oleadas superadas %s" % [ess, wins, n, 100.0 * wins / maxi(1, n), str(reached)])

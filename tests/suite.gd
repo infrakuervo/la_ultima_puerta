@@ -38,6 +38,7 @@ func run() -> void:
 	test_inflation()
 	test_procedural()
 	test_boons()
+	test_endless()
 	await test_ui_smoke()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
@@ -891,6 +892,16 @@ func test_ui_smoke() -> void:
 		if b2["id"] == "continue":
 			m._input(_click(b2["rect"].get_center()))
 	check(not m.menu.open, "Continuar vuelve a la partida")
+	m.sim.remix_enabled = true
+	m.start_challenge()
+	var wa: String = str(m.sim.WAVES)
+	check(m.sim.week_augur != "" and m.record_key().begins_with("reto:"), "el reto semanal fija augurio y récord propio")
+	m._restart()
+	check(str(m.sim.WAVES) == wa, "reiniciar el reto da las mismas oleadas")
+	m.start_normal(0, 0)
+	check(m.challenge.is_empty() and m.sim.week_augur == "", "una partida normal quita el reto")
+	m.sim.remix_enabled = false
+	m.sim.reset()
 	m.show_tree = true
 	m.queue_redraw()
 	await get_tree().process_frame
@@ -1372,6 +1383,48 @@ func test_boons() -> void:
 	check(not s._draft_ok(s.draft_def("eco_brasa")), "los dones épicos no salen tras la primera oleada")
 	s.reset()
 	check(s.boons.is_empty() and is_equal_approx(s.brasa_radius(), r0) and is_equal_approx(s.door_max, d0), "los dones se pierden al empezar otra partida")
+
+
+func test_endless() -> void:
+	print("La Grieta (sin fin) y reto semanal")
+	var s = new_sim(9)
+	var gi: int = s._siege_by_id("grieta")
+	check(gi > 0 and s.SIEGES[gi].has("endless"), "La Grieta está en los datos")
+	s.set_siege(gi, 0)
+	s.reset()
+	check(s.is_endless() and s.wave_count() == 6, "empieza con las oleadas del primer asedio")
+	s.route = "verdugo"
+	s.wave_index = 5
+	to_combat(s)
+	s.enemies.clear()
+	s.spawn_queue.clear()
+	run_ticks(s, 2)
+	check(s.phase == "prep" and s.wave_index == 6 and s.wave_count() == 7, "al superar la sexta se genera la séptima (no hay victoria)")
+	var w7: Dictionary = s.WAVES[6]
+	check(float(w7["hp_mult"]) > 1.0 and w7["spawns"].size() >= 2, "la oleada generada tiene vida extra y varios grupos")
+	var has_hero: bool = false
+	for g in s._gen_wave(9)["spawns"]:
+		has_hero = has_hero or String(g["kind"]) == "@hero"
+	check(has_hero, "la oleada 10 trae al heraldo")
+	var has_boss: bool = false
+	for g2 in s._gen_wave(14)["spawns"]:
+		has_boss = has_boss or String(g2["kind"]) == "gran_maestre"
+	check(has_boss, "la oleada 15 trae al Gran Maestre")
+	var b0: int = 0
+	var b1: int = 0
+	for g3 in s._gen_wave(7)["spawns"]:
+		b0 += int(s.B["enemies"].get(String(g3["kind"]), {"reward": 30})["reward"]) * int(g3["count"])
+	for g4 in s._gen_wave(20)["spawns"]:
+		b1 += int(s.B["enemies"].get(String(g4["kind"]), {"reward": 30})["reward"]) * int(g4["count"])
+	check(b1 > b0, "el presupuesto crece con las oleadas (%d -> %d)" % [b0, b1])
+	s.set_siege(0, 0)
+	# reto semanal: augurio permanente
+	var r = new_sim(4)
+	r.week_augur = "luna"
+	r._spawn_enemy("campesino", 0)
+	check(float(r.enemies[-1]["max_hp"]) > float(r.B["enemies"]["campesino"]["hp"]), "el augurio del reto dura toda la partida")
+	r.augur = "luna"
+	check(is_equal_approx(r.augur_fx("enemy_hp"), 0.25), "el mismo augurio elegido no se suma dos veces")
 
 
 func test_anim() -> void:

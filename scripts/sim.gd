@@ -52,6 +52,7 @@ var augurs_enabled: bool = false # augurios a elegir antes de cada oleada
 var augur: String = ""           # augurio elegido para la oleada actual o siguiente ("" = Calma)
 var augur_offer: Array = []      # ids ofrecidos en esta preparación
 var _front_lane: int = -1
+var week_augur: String = ""      # reto semanal: augurio que dura toda la partida
 var boons: Array = []            # dones de la partida elegidos en el draft (ids del pool)
 
 
@@ -133,7 +134,11 @@ func reset() -> void:
 	augur = ""
 	augur_offer.clear()
 	WAVES = SIEGES[siege_index]["waves"]
-	if remix_enabled:
+	if is_endless():
+		var base: Dictionary = SIEGES[_siege_by_id(String(SIEGES[siege_index]["endless"]["base_siege"]))].duplicate()
+		base["remix"] = SIEGES[siege_index].get("remix", {})
+		WAVES = _remix_waves(base) if remix_enabled else base["waves"].duplicate(true)
+	elif remix_enabled:
 		WAVES = _remix_waves(SIEGES[siege_index])
 	var tizon: Dictionary = _new_creature("sabueso", {"x": 520.0, "lane": 1})
 	tizon["name"] = "Tizón"
@@ -153,6 +158,10 @@ func label(kind: String) -> String:
 
 func wave_count() -> int:
 	return WAVES.size()
+
+
+func is_endless() -> bool:
+	return SIEGES[siege_index].has("endless")
 
 
 func current_wave() -> Dictionary:
@@ -561,6 +570,61 @@ func _remix_waves(sg: Dictionary) -> Array:
 	return out
 
 
+func _hp_scale() -> float:
+	return wrath_hp() * (1.0 + augur_fx("enemy_hp")) * float(current_wave().get("hp_mult", 1.0))
+
+
+func _siege_by_id(id: String) -> int:
+	for i in SIEGES.size():
+		if String(SIEGES[i]["id"]) == id:
+			return i
+	return 0
+
+
+## Oleada generada de La Grieta (índice 0-based `i`, tras las del asedio base).
+## Presupuesto en recompensa que crece, un tema (grupo principal) y relleno al azar,
+## élites que aumentan, héroe y jefe cada cierto número de oleadas, y vida extra por oleada.
+func _gen_wave(i: int) -> Dictionary:
+	var en: Dictionary = SIEGES[siege_index]["endless"]
+	var rx: Dictionary = SIEGES[siege_index].get("remix", {})
+	var base_n: int = SIEGES[_siege_by_id(String(en["base_siege"]))]["waves"].size()
+	var k: int = i - base_n + 1   # 1 = primera oleada generada
+	var budget: float = float(en["budget"]) * pow(float(en["growth"]), float(k))
+	var themes: Array = en["themes"]
+	var th: Dictionary = themes[rng.randi() % themes.size()]
+	var spawns: Array = []
+	var main_kind: String = String(th["main"])
+	var main_n: int = maxi(3, int(round(budget * 0.5 / float(B["enemies"][main_kind]["reward"]))))
+	spawns.append({"kind": main_kind, "count": main_n, "lane": -1, "gap": 0.7})
+	var left: float = budget * 0.5
+	var commons: Array = rx.get("commons", ["campesino"])
+	var gi: int = 1
+	while left > 4.0 and gi < 5:
+		var ck: String = String(commons[rng.randi() % commons.size()])
+		var rw: float = float(B["enemies"][ck]["reward"])
+		var n: int = maxi(1, int(round(minf(left, budget * 0.25) / rw)))
+		spawns.append({"kind": ck, "count": n, "lane": -1, "gap": 0.9, "delay": 3.0 * gi})
+		left -= rw * n
+		gi += 1
+	var elites: Array = rx.get("elites", [])
+	var ne: int = mini(int(en["elites_max"]), int(en["elites_base"]) + k / int(en["elites_every"]))
+	for j in ne:
+		if not elites.is_empty():
+			spawns.append({"kind": String(elites[rng.randi() % elites.size()]), "count": 1, "lane": -1, "delay": 4.0 + 5.0 * j})
+	var title: String = String(th["title"])
+	var note: String = String(th["note"])
+	var wave_no: int = i + 1
+	if wave_no % int(en["boss_every"]) == 0:
+		spawns.append({"kind": String(en["boss"]), "count": 1, "lane": 1, "delay": 8.0})
+		title = "El Gran Maestre vuelve"
+		note = "El jefe de la Orden juzga un carril: apártate o resiste."
+	elif wave_no % int(en["hero_every"]) == 0:
+		spawns.append({"kind": "@hero", "count": 1, "lane": -1, "delay": 6.0})
+		title = "El heraldo vuelve"
+		note = "Tu heraldo regresa, más duro."
+	return {"title": title, "note": note, "spawns": spawns, "hp_mult": 1.0 + float(en["hp_step"]) * float(k), "generated": true}
+
+
 func augur_def(id: String) -> Dictionary:
 	for a in B.get("augurs", {}).get("list", []):
 		if String(a["id"]) == id:
@@ -569,9 +633,12 @@ func augur_def(id: String) -> Dictionary:
 
 
 func augur_fx(k: String) -> float:
-	if augur == "":
-		return 0.0
-	return float(augur_def(augur).get("fx", {}).get(k, 0.0))
+	var v: float = 0.0
+	if augur != "":
+		v += float(augur_def(augur).get("fx", {}).get(k, 0.0))
+	if week_augur != "" and week_augur != augur:
+		v += float(augur_def(week_augur).get("fx", {}).get(k, 0.0))
+	return v
 
 
 func _offer_augurs() -> void:
@@ -652,7 +719,7 @@ func _spawn_enemy(kind: String, lane: int) -> void:
 	var st: Dictionary = B["enemies"][kind]
 	var e: Dictionary = {
 		"id": next_id, "kind": kind, "lane": lane, "x": float(B["arena"]["spawn_x"]),
-		"hp": float(st["hp"]) * wrath_hp() * (1.0 + augur_fx("enemy_hp")), "max_hp": float(st["hp"]) * wrath_hp() * (1.0 + augur_fx("enemy_hp")),
+		"hp": float(st["hp"]) * _hp_scale(), "max_hp": float(st["hp"]) * _hp_scale(),
 		"cd": rng.randf() * 0.6, "held": 0.0, "stun": 0.0, "shield": 0.0, "summons": 0,
 		"judge_t": float(st.get("judge_cd", 0.0)) * 0.6, "judge_wind": 0.0, "judge_lane": -1,
 		"shield_t": float(st.get("shield_cd", 0.0)) * 0.5,
@@ -1819,6 +1886,8 @@ func _wave_cleared() -> void:
 	zones.clear()
 	pending_brasas.clear()
 	wave_index += 1
+	if is_endless() and wave_index >= WAVES.size():
+		WAVES.append(_gen_wave(WAVES.size()))
 	if wave_index >= WAVES.size():
 		phase = "victory"
 		if meta_mode:

@@ -81,12 +81,20 @@ func buttons(m) -> Array:
 			out.append({"id": "back", "rect": Rect2(x, 600, 320, 58), "text": "Volver"})
 		"siege":
 			for i in m.sim.SIEGES.size():
-				out.append({"id": "sg:%d" % i, "rect": Rect2(150 + 500 * i, 200, 480, 230), "text": "", "card": true})
+				out.append({"id": "sg:%d" % i, "rect": siege_rect(i, m.sim.SIEGES.size()), "text": "", "card": true})
 			out.append({"id": "wr-", "rect": Rect2(x + 40, 470, 50, 50), "text": "−"})
 			out.append({"id": "wr+", "rect": Rect2(x + 230, 470, 50, 50), "text": "+"})
 			out.append({"id": "start", "rect": Rect2(x, 560, 320, 58), "text": "Empezar"})
+			if m.sim.meta_mode or not persist:
+				out.append({"id": "reto", "rect": Rect2(x + 350, 560, 300, 58), "text": "Reto semanal"})
 			out.append({"id": "back", "rect": Rect2(x, 630, 320, 50), "text": "Volver"})
 	return out
+
+
+func siege_rect(i: int, n: int) -> Rect2:
+	var w: float = minf(480.0, (W - 80.0 - 20.0 * float(n - 1)) / float(n))
+	var x0: float = (W - (w * n + 20.0 * (n - 1))) * 0.5
+	return Rect2(x0 + (w + 20.0) * i, 200, w, 230)
 
 
 func press(m, p: Vector2) -> bool:
@@ -121,9 +129,11 @@ func _do(m, id: String) -> void:
 			sel_wrath = maxi(0, sel_wrath - 1)
 		"wr+":
 			sel_wrath = mini(m.max_wrath(sel_siege), sel_wrath + 1)
-		"start":
-			m.sim.set_siege(sel_siege, sel_wrath)
-			m._restart()
+		"start", "reto":
+			if id == "reto":
+				m.start_challenge()
+			else:
+				m.start_normal(sel_siege, sel_wrath)
 			panel = "main"
 			open = false
 			started = true
@@ -213,18 +223,21 @@ func draw(m) -> void:
 		m._txt("Elige asedio", Vector2(0, 160), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		for i in m.sim.SIEGES.size():
 			var sg: Dictionary = m.sim.SIEGES[i]
-			var r0: Rect2 = Rect2(150 + 500 * i, 200, 480, 230)
+			var r0: Rect2 = siege_rect(i, m.sim.SIEGES.size())
 			var un: bool = m.siege_unlocked(i)
 			var selc: bool = i == sel_siege
 			m.draw_rect(r0, Color(0.28, 0.11, 0.08) if selc else Color(0.14, 0.07, 0.06))
 			m.draw_rect(r0, Color(1.0, 0.85, 0.4) if selc else Color(0.6, 0.35, 0.22), false, 3.0 if selc else 2.0)
-			m._txt(String(sg["name"]), Vector2(r0.position.x, r0.position.y + 46), 24, Color(1.0, 0.9, 0.7) if un else Color(0.5, 0.45, 0.42), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
-			m._txt("%d oleadas" % sg["waves"].size(), Vector2(r0.position.x, r0.position.y + 80), 17, Color(0.85, 0.7, 0.6), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
+			m._txt(String(sg["name"]), Vector2(r0.position.x, r0.position.y + 46), 22, Color(1.0, 0.9, 0.7) if un else Color(0.5, 0.45, 0.42), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
+			var count_txt: String = "Sin fin" if sg.has("endless") else "%d oleadas" % sg["waves"].size()
+			m._txt(count_txt, Vector2(r0.position.x, r0.position.y + 80), 17, Color(0.85, 0.7, 0.6), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x)
 			m.draw_multiline_string(m.font, r0.position + Vector2(24, 120), String(sg.get("desc", "")), HORIZONTAL_ALIGNMENT_CENTER, r0.size.x - 48, 17, -1, Color(0.85, 0.8, 0.75) if un else Color(0.45, 0.4, 0.4))
 			var sid: String = String(sg["id"])
 			var st_txt: String = ""
 			if not un:
 				st_txt = "Bloqueado: gana el %s" % String(m.sim.SIEGES[0]["name"]).to_lower()
+			elif sg.has("endless"):
+				st_txt = "Récord: %d oleadas" % int(m.records.get("grieta", 0))
 			elif m.siege_wins.has(sid):
 				st_txt = "Ganado (Ira %d)" % int(m.siege_wins[sid])
 			if st_txt != "":
@@ -233,8 +246,14 @@ func draw(m) -> void:
 		m._txt("Ira %d" % sel_wrath, Vector2(xw + 90, 505), 26, Color(1.0, 0.55, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 140.0)
 		var wtxt: String = "Sin Ira: el asedio tal cual." if sel_wrath == 0 else "Enemigos +%d%% de vida y +%d%% de daño; +%d%% de esencia." % [int(round(float(m.sim.B["wrath"]["hp"]) * 100.0 * sel_wrath)), int(round(float(m.sim.B["wrath"]["dmg"]) * 100.0 * sel_wrath)), int(round(float(m.sim.B["wrath"]["essence"]) * 100.0 * sel_wrath))]
 		m._txt(wtxt, Vector2(0, 545), 16, Color(0.85, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, W)
+		var ch: Dictionary = m.weekly_challenge()
+		var rx: float = W * 0.5 + 190.0
+		var ad: Dictionary = m.sim.augur_def(String(ch["augur"]))
+		m._txt("%s · Ira %d · siempre %s" % [String(m.sim.SIEGES[int(ch["siege"])]["name"]).get_slice(":", 0), int(ch["wrath"]), String(ad.get("name", ""))], Vector2(rx, 640), 15, Color(0.85, 0.65, 1.0), HORIZONTAL_ALIGNMENT_CENTER, 300.0)
+		var best: int = int(m.records.get(String(ch["key"]), 0))
+		m._txt("Semilla común esta semana · récord %d/%d" % [best, m.sim.SIEGES[int(ch["siege"])]["waves"].size()], Vector2(rx, 662), 13, Color(0.75, 0.65, 0.8), HORIZONTAL_ALIGNMENT_CENTER, 300.0)
 		if m.max_wrath(sel_siege) == 0:
-			m._txt("Gana este asedio para abrir la Ira.", Vector2(0, 462), 15, Color(0.7, 0.6, 0.55), HORIZONTAL_ALIGNMENT_CENTER, W)
+			m._txt("Aguanta 8 oleadas para abrir la Ira." if m.sim.SIEGES[sel_siege].has("endless") else "Gana este asedio para abrir la Ira.", Vector2(0, 462), 15, Color(0.7, 0.6, 0.55), HORIZONTAL_ALIGNMENT_CENTER, W)
 	for b in buttons(m):
 		if b.get("card", false):
 			continue

@@ -656,6 +656,76 @@
     "jitter": 0.2,
     "keep_first": true
    }
+  },
+  {
+   "id": "grieta",
+   "name": "La Grieta",
+   "desc": "Oleadas sin fin, cada vez más duras. ¿Hasta dónde aguanta la Puerta?",
+   "unlock": "primer",
+   "endless": {
+    "_doc": "Las primeras oleadas son las de base_siege (remezcladas). Después se generan: presupuesto en recompensa que crece por oleada, vida extra por oleada, élites cada vez más, héroe cada hero_every y jefe cada boss_every.",
+    "base_siege": "primer",
+    "budget": 190,
+    "growth": 1.08,
+    "hp_step": 0.07,
+    "elites_base": 1,
+    "elites_every": 2,
+    "elites_max": 6,
+    "hero_every": 5,
+    "boss": "gran_maestre",
+    "boss_every": 15,
+    "themes": [
+     {
+      "title": "La turba crece",
+      "main": "campesino",
+      "note": "Muchos y rápidos: Brasa sobre el chorro."
+     },
+     {
+      "title": "Muralla de escudos",
+      "main": "escudero",
+      "note": "Escudos delante, apoyos detrás."
+     },
+     {
+      "title": "Lluvia de virotes",
+      "main": "ballestero",
+      "note": "Ballesteros a distancia: el Rayo los alcanza."
+     },
+     {
+      "title": "Zapadores",
+      "main": "zapador",
+      "note": "Corren a la Puerta sin pararse."
+     },
+     {
+      "title": "Procesión",
+      "main": "clerigo",
+      "note": "Clérigos que curan a todos: céntrate en ellos."
+     }
+    ]
+   },
+   "remix": {
+    "commons": [
+     "campesino",
+     "escudero",
+     "ballestero",
+     "clerigo",
+     "zapador"
+    ],
+    "elites": [
+     "capataz",
+     "muro",
+     "tirador",
+     "lumbrero",
+     "tajo",
+     "campana",
+     "paladin",
+     "sacerdotisa"
+    ],
+    "swap": 0.45,
+    "elite_swap": 0.6,
+    "jitter": 0.2,
+    "keep_first": true
+   },
+   "waves": []
   }
  ]
 }
