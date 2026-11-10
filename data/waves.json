@@ -703,7 +703,7 @@
     "budget_max": 560,
     "hp_growth": 1.075,
     "dmg_growth": 1.04,
-    "boss_hp": 0.6,
+    "boss_hp": 0.45,
     "hero_hp": 1.0
    },
    "remix": {
