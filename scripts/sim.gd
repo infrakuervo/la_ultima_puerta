@@ -627,6 +627,16 @@ func _gen_wave(i: int) -> Dictionary:
 		spawns.append({"kind": ck, "count": n, "lane": -1, "gap": 0.9, "delay": 3.0 * gi})
 		left -= rw * n
 		gi += 1
+	# tope de cantidad (rendimiento, sobre todo en la web): el exceso se convierte en vida
+	var total: int = 0
+	for g0 in spawns:
+		total += int(g0["count"])
+	var cap: int = int(en.get("max_count", 9999))
+	if total > cap:
+		var fct: float = float(total) / float(cap)
+		for g1 in spawns:
+			g1["count"] = maxi(1, int(round(float(g1["count"]) / fct)))
+			g1["hp"] = fct
 	var elites: Array = rx.get("elites", [])
 	var ne: int = mini(int(en["elites_max"]), int(en["elites_base"]) + k / int(en["elites_every"]))
 	for j in ne:

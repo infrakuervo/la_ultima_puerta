@@ -663,7 +663,7 @@
    "desc": "Oleadas sin fin, cada vez más duras. ¿Hasta dónde aguanta la Puerta?",
    "unlock": "primer",
    "endless": {
-    "_doc": "Las primeras oleadas son las de base_siege (remezcladas). Después se generan: presupuesto en recompensa ×growth por oleada (tope budget_max, por rendimiento), vida ×hp_growth y daño ×dmg_growth compuestos por oleada, élites cada vez más, héroe cada hero_every y jefe cada boss_every. boss_hp: vida del jefe respecto a la base (no usa hp_growth); hero_hp: factor extra del heraldo.",
+    "_doc": "Las primeras oleadas son las de base_siege (remezcladas). Después se generan: presupuesto en recompensa ×growth por oleada (tope budget_max, por rendimiento), vida ×hp_growth y daño ×dmg_growth compuestos por oleada, élites cada vez más, héroe cada hero_every y jefe cada boss_every. boss_hp: vida del jefe respecto a la base (no usa hp_growth); hero_hp: factor extra del heraldo. max_count: tope de enemigos comunes por oleada; el exceso se convierte en vida.",
     "base_siege": "primer",
     "budget": 190,
     "growth": 1.06,
@@ -704,7 +704,8 @@
     "hp_growth": 1.075,
     "dmg_growth": 1.04,
     "boss_hp": 0.45,
-    "hero_hp": 1.0
+    "hero_hp": 1.0,
+    "max_count": 70
    },
    "remix": {
     "commons": [
