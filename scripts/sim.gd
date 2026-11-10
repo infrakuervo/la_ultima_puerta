@@ -615,9 +615,15 @@ func _gen_wave(i: int) -> Dictionary:
 	var th: Dictionary = themes[rng.randi() % themes.size()]
 	var spawns: Array = []
 	var main_kind: String = String(th["main"])
-	var main_n: int = maxi(3, int(round(budget * 0.5 / float(B["enemies"][main_kind]["reward"]))))
+	var share: float = float(th.get("main_share", 0.5))
+	var main_n: int = maxi(3, int(round(budget * share / float(B["enemies"][main_kind]["reward"]))))
 	spawns.append({"kind": main_kind, "count": main_n, "lane": -1, "gap": 0.7})
-	var left: float = budget * 0.5
+	var left: float = budget * (1.0 - share)
+	for ex in th.get("extra", []):
+		var xk: String = String(ex["kind"])
+		var xn: int = maxi(1, int(round(budget * float(ex["share"]) / float(B["enemies"][xk]["reward"]))))
+		spawns.append({"kind": xk, "count": xn, "lane": -1, "gap": 1.0, "delay": 2.0})
+		left -= float(B["enemies"][xk]["reward"]) * xn
 	var commons: Array = rx.get("commons", ["campesino"])
 	var gi: int = 1
 	while left > 4.0 and gi < 5:

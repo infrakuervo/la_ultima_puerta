@@ -663,7 +663,7 @@
    "desc": "Oleadas sin fin, cada vez más duras. ¿Hasta dónde aguanta la Puerta?",
    "unlock": "primer",
    "endless": {
-    "_doc": "Las primeras oleadas son las de base_siege (remezcladas). Después se generan: presupuesto en recompensa ×growth por oleada (tope budget_max, por rendimiento), vida ×hp_growth y daño ×dmg_growth compuestos por oleada, élites cada vez más, héroe cada hero_every y jefe cada boss_every. boss_hp: vida del jefe respecto a la base (no usa hp_growth); hero_hp: factor extra del heraldo. max_count: tope de enemigos comunes por oleada; el exceso se convierte en vida.",
+    "_doc": "Las primeras oleadas son las de base_siege (remezcladas). Después se generan: presupuesto en recompensa ×growth por oleada (tope budget_max, por rendimiento), vida ×hp_growth y daño ×dmg_growth compuestos por oleada, élites cada vez más, héroe cada hero_every y jefe cada boss_every. boss_hp: vida del jefe respecto a la base (no usa hp_growth); hero_hp: factor extra del heraldo. max_count: tope de enemigos comunes por oleada; el exceso se convierte en vida. Tema: main (grupo principal) con main_share del presupuesto (0,5 por defecto) y extra: grupos fijos con su parte.",
     "base_siege": "primer",
     "budget": 190,
     "growth": 1.06,
@@ -692,12 +692,26 @@
      {
       "title": "Zapadores",
       "main": "zapador",
-      "note": "Corren a la Puerta sin pararse."
+      "note": "Corren a la Puerta sin pararse.",
+      "main_share": 0.35,
+      "extra": [
+       {
+        "kind": "escudero",
+        "share": 0.15
+       }
+      ]
      },
      {
       "title": "Procesión",
-      "main": "clerigo",
-      "note": "Clérigos que curan a todos: céntrate en ellos."
+      "main": "escudero",
+      "note": "Escudos que avanzan con clérigos detrás: céntrate en los clérigos.",
+      "main_share": 0.4,
+      "extra": [
+       {
+        "kind": "clerigo",
+        "share": 0.12
+       }
+      ]
      }
     ],
     "budget_max": 560,

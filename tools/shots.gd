@@ -72,10 +72,17 @@ func run() -> void:
 		s().remix_enabled = true
 		s().augurs_enabled = true
 		s().draft_enabled = true
+		s().contracts_enabled = true
+		s().set_siege(int(OS.get_environment("SHOT_SIEGE")) if OS.has_environment("SHOT_SIEGE") else 0, 0)
 		s().reset()
+		if OS.has_environment("SHOT_ESS"):
+			s().meta_mode = true
+			s().essence = int(OS.get_environment("SHOT_ESS"))
+			bot.buy_meta(s())
 		var guard: int = 0
 		var shot_wave: int = -1
-		while s().phase != "victory" and s().phase != "defeat" and guard < 40000:
+		var max_wave: int = int(OS.get_environment("SHOT_MAXW")) if OS.has_environment("SHOT_MAXW") else 99
+		while s().phase != "victory" and s().phase != "defeat" and guard < 400000 and s().wave_index < max_wave:
 			guard += 1
 			match s().phase:
 				"prep":
