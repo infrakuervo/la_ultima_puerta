@@ -121,7 +121,8 @@ Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
 - [x] Efectos: explosión de la Brasa, impacto del Rayo, Juicio, bola de la Brasa en vuelo, llamas del suelo y sigilo del santuario (ver `art/anim/LEEME.md`). Recorte por energía y corte de niveles; llamas y santuario con transparencia y en el suelo, debajo de las unidades.
 - [x] Sprites: Zapador, Ánima del Garfio, Gárgola de Ceniza y Gran Inquisidor. Sin tinte prestado en Zapador y Gran Inquisidor.
 - [x] Fondo del segundo asedio: `fondo-alba.jpg` (la Fosa con estandartes y luz de amanecer).
-- [ ] Llegaron solo para ver, no como archivo (hay que volver a enviarlos como adjunto): Ariete, Sacerdotisa (fondo blanco), Paladín, Purificador, Gran Maestre y Flagelante.
+- [x] Segunda tanda: Gran Maestre, Ariete Bendito (antes dibujado con código), Sacerdotisa (recortada sobre blanco) y Purificador, ya sin tinte prestado.
+- [ ] Faltan como archivo: Paladín del Alba y Flagelante (siguen con sprite prestado y tinte).
 - [ ] La «embestida del Horno» salió con otra criatura: repetir.
 
 ## Animaciones que faltan (para pedir a Google Flow)

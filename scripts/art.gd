@@ -27,6 +27,7 @@ const SPRITE_H: Dictionary = {
 	"verdugo": 140.0, "inquisidor": 150.0,
 	"alacran": 86.0, "sapo": 76.0, "manta": 62.0,
 	"gargola": 100.0, "garfio": 112.0, "zapador": 88.0, "gran_inquisidor": 225.0,
+	"gran_maestre": 225.0, "ariete": 130.0, "sacerdotisa": 120.0, "purificador": 96.0,
 }
 
 

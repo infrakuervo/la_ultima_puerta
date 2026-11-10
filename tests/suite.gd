@@ -1745,7 +1745,7 @@ func test_anim() -> void:
 	for fxc in ["brasa", "rayo", "juicio", "bola", "llamas", "santuario"]:
 		check(Anim.has_clip("efectos", fxc), "el efecto de Flow «%s» tiene fotogramas" % fxc)
 	var ArtS = load("res://scripts/art.gd")
-	for spk in ["zapador", "garfio", "gargola", "gran_inquisidor"]:
+	for spk in ["zapador", "garfio", "gargola", "gran_inquisidor", "gran_maestre", "ariete", "sacerdotisa", "purificador"]:
 		check(ArtS.tex(spk) != null and ArtS.SPRITE_H.has(spk), "el sprite nuevo «%s» carga y tiene tamaño" % spk)
 	check(ArtS.size_key("gran_inquisidor") == "gran_inquisidor" and ArtS.size_key("campesino_v02") == "campesino", "la clave de tamaño respeta los nombres con «_»")
 	var sa = new_sim(1)

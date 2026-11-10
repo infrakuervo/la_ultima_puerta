@@ -335,13 +335,8 @@
    "shield_radius": 210,
    "reward": 12,
    "elite": true,
-   "sprite": "clerigo_v01",
-   "tint": [
-    0.8,
-    0.95,
-    1.3
-   ],
-   "scale": 1.08
+   "sprite": "sacerdotisa",
+   "scale": 1.0
   },
   "ariete": {
    "hp": 900,
@@ -366,13 +361,8 @@
    "boss": true,
    "unstoppable": true,
    "reward": 120,
-   "sprite": "inquisidor_elite",
-   "tint": [
-    1.3,
-    1.2,
-    0.85
-   ],
-   "scale": 1.45,
+   "sprite": "gran_maestre",
+   "scale": 1.0,
    "judge_cd": 9.0,
    "judge_wind": 1.5,
    "judge_dmg": 40,
@@ -414,13 +404,8 @@
    "door_dmg": 3,
    "burn_immune": true,
    "reward": 9,
-   "sprite": "ballestero_v01",
-   "tint": [
-    1.35,
-    0.85,
-    0.55
-   ],
-   "scale": 1.05
+   "sprite": "purificador",
+   "scale": 1.0
   },
   "gran_inquisidor": {
    "hp": 2300,

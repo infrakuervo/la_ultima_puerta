@@ -45,7 +45,7 @@ Recortados de vídeos sobre fondo negro con `ffmpeg`: tramo útil, fps, recorte 
 `llamas` y `santuario` se guardaron con transparencia (alfa = brillo) y se dibujan en la arena con mezcla normal (`main.gd` → `_draw_ground_fx`) para que las unidades queden por delante. Los demás van en la capa aditiva, por encima. Sin fotogramas, cada uno vuelve a su dibujo por código.
 
 ## Sprites fijos nuevos (`art/sprites/`)
-Zapador, Ánima del Garfio, Gárgola de Ceniza y Gran Inquisidor, recortados de imágenes de Flow sobre verde (quitar verde, limpiar el borde verde, recortar y escalar a ~1,6 veces su alto en pantalla). Tamaños en `Art.SPRITE_H`. La Gárgola en piedra se dibuja con tinte gris. Fondo del Alba: `art/fondo-alba.jpg` (`waves.json` → `background` del asedio).
+Zapador, Ánima del Garfio, Gárgola de Ceniza, Gran Inquisidor, Gran Maestre, Ariete Bendito, Sacerdotisa de la Luz (sobre fondo blanco) y Purificador, recortados de imágenes de Flow sobre verde (quitar verde, limpiar el borde verde, recortar y escalar a ~1,6 veces su alto en pantalla). Tamaños en `Art.SPRITE_H`. La Gárgola en piedra se dibuja con tinte gris. Fondo del Alba: `art/fondo-alba.jpg` (`waves.json` → `background` del asedio).
 
 ## Pendiente
 - Peso: 41 MB en PNG, pero la versión web los importa como WebP con pérdida (`tools/anim_lossy.sh`) y el `.pck` queda en ~14 MB. No hace falta bajar fps.
