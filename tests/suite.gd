@@ -2018,13 +2018,16 @@ func test_arbol2_piedras() -> void:
 	var tz: Dictionary = t.named_creature()
 	var hp_tz: float = float(tz["max_hp"])
 	grant(t, "beast_tizon")
-	check(absf(float(sab["max_hp"]) - hp_other * 0.6) < 0.01 and float(tz["max_hp"]) == hp_tz, "Tizón inmortal: las demás bestias pierden un 40% de vida y él no")
+	check(absf(float(sab["max_hp"]) - hp_other * 0.85) < 0.01 and float(tz["max_hp"]) == hp_tz, "Tizón inmortal: las demás bestias pierden un 15% de vida y él no")
 	to_combat(t)
 	t.damage_creature(tz, 99999.0)
 	check(tz["fallen"], "Tizón inmortal: cae un momento")
-	for i in int(4.3 / Sim.TICK):
+	for i in int(1.5 / Sim.TICK):
 		t.step(Sim.TICK)
-	check(not tz["fallen"] and absf(float(tz["hp"]) - float(tz["max_hp"]) * 0.5) < 1.0 and int(tz["scars"]) == 0, "y se levanta a los 4 s con media vida y sin cicatriz")
+	check(tz["fallen"], "sigue en el suelo un momento")
+	for i in int(1.8 / Sim.TICK):
+		t.step(Sim.TICK)
+	check(not tz["fallen"] and absf(float(tz["hp"]) - float(tz["max_hp"]) * 0.5) < 1.0 and int(tz["scars"]) == 0, "y se levanta a los 3 s con media vida y sin cicatriz")
 	# Camada
 	var c = meta_sim()
 	grant(c, "sab_camada")
@@ -2033,7 +2036,7 @@ func test_arbol2_piedras() -> void:
 	var s_before: int = c.souls
 	c.buy("sabueso")
 	check(c.creatures.size() == n0 + 2 and c.souls == s_before - c.cost_of("sabueso"), "Camada: un Sabueso comprado trae un gemelo gratis")
-	check(absf(float(c.creatures[n0]["max_hp"]) - float(c._stats("sabueso")["hp"]) * 0.65) < 0.01 and float(c.named_creature()["max_hp"]) == float(c._stats("sabueso")["hp"]), "Camada: los Sabuesos tienen un 35% menos de vida, Tizón no")
+	check(absf(float(c.creatures[n0]["max_hp"]) - float(c._stats("sabueso")["hp"]) * 0.75) < 0.01 and float(c.named_creature()["max_hp"]) == float(c._stats("sabueso")["hp"]), "Camada: los Sabuesos tienen un 25% menos de vida, Tizón no")
 	# Estallido de ceniza
 	for with_horno in [true, false]:
 		var h = meta_sim()
@@ -2081,7 +2084,7 @@ func test_arbol2_piedras() -> void:
 		var od: float = float(o._stats("ojo")["dmg"])
 		if focus:
 			grant(o, "ojo_fijo")
-			check(absf(float(o._stats("ojo")["dmg"]) - od * 2.2) < 0.01, "Mirada fija: +120% de daño")
+			check(absf(float(o._stats("ojo")["dmg"]) - od * 1.8) < 0.01, "Mirada fija: +80% de daño")
 		to_combat(o)
 		spawn_beast(o, "ojo", 1, 300.0)
 		spawn_beast(o, "horno", 2, 450.0)

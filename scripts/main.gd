@@ -2037,7 +2037,7 @@ func _draw_tree() -> void:
 	_txt("%d esencia" % sim.currency() if sim.meta_mode else "%d almas" % sim.currency(), Vector2(1000, 666), 26, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_RIGHT, 256.0)
 	if sim.meta_mode:
 		var infl: float = float(sim.B["meta"].get("inflation", 0.0)) * float(sim.skill_points_spent())
-		_txt("%d rangos · cada rango encarece los demás un %d%% (ahora +%d%%)" % [sim.skill_points_spent(), int(round(float(sim.B["meta"].get("inflation", 0.0)) * 100.0)), int(round(infl * 100.0))], Vector2(24, 694), 13, Color(0.7, 0.65, 0.75))
+		_txt("%d rangos · cada rango encarece los demás un %s%% (ahora +%d%%)" % [sim.skill_points_spent(), String.num(float(sim.B["meta"].get("inflation", 0.0)) * 100.0, 1).replace(".", ","), int(round(infl * 100.0))], Vector2(24, 694), 13, Color(0.7, 0.65, 0.75))
 	_draw_tree_tabs()
 	var br: Dictionary = sim.branch_def(tree_tab)
 	var bc: Color = _branch_color(tree_tab)

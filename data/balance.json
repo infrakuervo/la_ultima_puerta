@@ -1022,14 +1022,15 @@
   "wave_base": 10,
   "wave_step": 5,
   "victory": 60,
-  "inflation": 0.02,
+  "inflation": 0.022,
   "respec_refund": 0.75,
-  "tizon_revive": 4.0,
+  "tizon_revive": 3.0,
   "burst_r": 85,
   "ground_burn": 1.6,
   "arc_max": 24,
+  "arc_frac": 0.85,
   "profane": {"x": 470, "r": 120, "heal": 0.03, "dps": 6},
-  "_doc_arbol": "respec_refund: parte de la esencia pagada que devuelve reasignar. tizon_revive: segundos que tarda Tizón inmortal en levantarse. burst_r: radio del Estallido de ceniza. ground_burn: quemadura del suelo de Tierra quemada (× la de la Brasa). arc_max: tope de saltos del Arco voltaico. profane: Hoguera profana (cura por segundo a las bestias, quemadura a los humanos)."
+  "_doc_arbol": "respec_refund: parte de la esencia pagada que devuelve reasignar. tizon_revive: segundos que tarda Tizón inmortal en levantarse. burst_r: radio del Estallido de ceniza. ground_burn: quemadura del suelo de Tierra quemada (× la de la Brasa). arc_max: tope de saltos del Arco voltaico; arc_frac: lo máximo que conserva cada salto del arco (aunque «Cadena potente» dé más). profane: Hoguera profana (cura por segundo a las bestias, quemadura a los humanos)."
  },
  "gargola": {
   "hp": 200,

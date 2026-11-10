@@ -12,10 +12,11 @@ func _ready() -> void:
 	var n_car: int = int(a[1]) if a.size() > 1 else 8
 	var n_games: int = int(a[2]) if a.size() > 2 else 12
 	var t0: int = Time.get_ticks_msec()
-	print("== Primera partida (sin árbol), bot torpe ==")
-	report_first(n_first, 0.0)
-	print("== Primera partida, bot hábil (referencia) ==")
-	report_first(maxi(10, n_first / 3), 1.0)
+	if not OS.has_environment("BAL_SOLO_ESS"):
+		print("== Primera partida (sin árbol), bot torpe ==")
+		report_first(n_first, 0.0)
+		print("== Primera partida, bot hábil (referencia) ==")
+		report_first(maxi(10, n_first / 3), 1.0)
 	if OS.has_environment("BAL_ESS"):
 		for es in OS.get_environment("BAL_ESS").split(","):
 			report_with_essence(n_first, int(es))
@@ -213,12 +214,21 @@ func report_with_essence(n: int, ess: int) -> void:
 	var reached: Array = []
 	for i in n:
 		var s = new_game(3000 + i, ess, {})
+		s.won = ["primer", "alba", "inquisicion"]
 		var bot = Bot.new(3000 + i, 0.0)
+		if OS.has_environment("BAL_STYLE"):
+			bot.style = OS.get_environment("BAL_STYLE").get_slice(",", 0)
 		bot.buy_meta(s)
 		s.essence = 0
+		# BAL_GRANT=id,id: rangos regalados encima del árbol comprado (para medir una piedra angular suelta)
+		if OS.has_environment("BAL_GRANT"):
+			for gid in OS.get_environment("BAL_GRANT").split(","):
+				if s.SK.has(gid):
+					s.skills[gid] = int(s.SK[gid]["max"])
+		s.reset()
 		var res: Dictionary = bot.play(s)
 		if res["phase"] == "victory":
 			wins += 1
 		reached.append(int(res["wave"]) - 1)
 	reached.sort()
-	print("  árbol de %4d esencia: victorias %d/%d (%.0f%%)  oleadas superadas %s" % [ess, wins, n, 100.0 * wins / maxi(1, n), str(reached)])
+	print("  árbol de %4d esencia%s: victorias %d/%d (%.0f%%)  oleadas superadas %s" % [ess, (" + " + OS.get_environment("BAL_GRANT")) if OS.has_environment("BAL_GRANT") else "", wins, n, 100.0 * wins / maxi(1, n), str(reached)])

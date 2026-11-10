@@ -29,7 +29,7 @@ Encargo: `docs/prompts/arbol_fable_5_2.md`. El árbol subía números pero no ca
 | Rama | Piedra | Regla | A cambio |
 |---|---|---|---|
 | Brasa | Tierra quemada | deja el suelo ardiendo 5 s | tarda el doble en recargarse |
-| Rayo | Arco voltaico | salta sin límite y sin bajar del 50% | solo salta a enemigos que arden |
+| Rayo | Arco voltaico | salta sin límite (cada salto pierde ≥15%) | solo salta a enemigos que arden |
 | Demonio | Puerta de espinas | quien golpea la Puerta recibe 14 de daño | Puerta −25% de vida |
 | Bestias | Tizón inmortal | Tizón se levanta a los 4 s, sin cicatriz | las demás bestias −40% de vida |
 | Jauría | Camada | cada Sabueso trae un gemelo gratis | Sabuesos −35% de vida |

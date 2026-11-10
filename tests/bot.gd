@@ -147,6 +147,10 @@ func prep(s) -> void:
 				sc -= 100.0
 			if String(o["type"]) == "door" and s.door_hp < s.door_max * 0.5:
 				sc += 3.0
+			# si su árbol empuja una familia de dones, la prefiere
+			var fam: String = String(o.get("icon", ""))
+			if String(o["type"]) == "boon" and fam != "" and (s.fadd("set.need." + fam) < 0.0 or s.fmul("set.power." + fam) > 0.0 or s.fmul("draft.family." + fam) > 0.0):
+				sc += 1.5
 			if sc > bs:
 				bs = sc
 				bi = i
@@ -184,13 +188,16 @@ const META_PRIORITY: Array = [
 ## - keys / paths: piedras angulares y caminos excluyentes que acepta. El resto no lo compra nunca
 ##   (una piedra angular tiene contrapartida: no se coge por ser barata).
 ## - route: heraldo que prefiere (su rama de ruta), el 80% de las veces.
+## - boons: compra los nodos que hablan con los dones (y entonces los prefiere en el draft).
+## «mixto» es el jugador sin plan: reparte por las seis ramas de siempre y no toca lo nuevo.
 const STYLES: Dictionary = {
 	"mixto": {
 		"order": META_PRIORITY,
-		"branches": [],
+		"branches": ["brasa", "rayo", "bestias", "demonio", "jauria", "ojo"],
 		"keys": [],
 		"paths": ["brasa_ascuas", "rayo_chispa", "door_baluarte", "beast_horda", "sab_cepo", "horno_boca", "trueno_meteoro", "ojo_vigia", "abi_guardia", "inq_cadenas"],
 		"route": "",
+		"boons": false,
 	},
 	"fuego": {
 		"order": ["brasa_radio", "rayo_cadena", "brasa_cd", "brasa_dmg", "rayo_dmg", "brasa_radio", "brasa_dmg", "brasa_cd", "beast_hp", "door_hp",
@@ -201,17 +208,20 @@ const STYLES: Dictionary = {
 		"keys": ["brasa_tierra", "rayo_arco", "horno_ceniza"],
 		"paths": ["brasa_cometa", "rayo_verdugo", "door_baluarte", "beast_alfa", "sab_cepo", "horno_fragua", "trueno_meteoro", "ojo_vigia", "abi_plaga", "inq_fuego"],
 		"route": "verdugo",
+		"boons": true,
 	},
 	"manada": {
 		"order": ["beast_hp", "brasa_radio", "beast_dmg", "sab_hp", "rayo_cadena", "beast_hp", "door_hp", "beast_dmg", "sab_hp", "sab_camada",
 			"sab_presa_cd", "sab_dmg", "beast_hp", "beast_dmg", "beast_cd", "beast_cd", "beast_speed", "beast_leash", "beast_jauria",
 			"beast_pack", "beast_dmg", "beast_scar", "beast_horda", "beast_horda", "door_hp", "door_regen", "door_espinas",
+			"brasa_cd", "brasa_dmg", "rayo_dmg", "brasa_radio", "brasa_cd",
 			"sab_presa_time", "sab_presa_time", "sab_dmg", "sab_desgarro", "sab_range", "sab_leash", "sab_carnicero",
 			"abi_llamada", "abi_gargola_hp", "abi_enjambre_burn", "abi_garfio_cd", "abi_garfio_stun", "abi_guardia"],
 		"branches": ["bestias", "jauria", "demonio", "trueno", "abismo"],
 		"keys": ["sab_camada", "door_espinas", "trueno_errante"],
 		"paths": ["brasa_ascuas", "rayo_chispa", "eco_mercader", "beast_horda", "sab_carnicero", "horno_boca", "trueno_relampago", "ojo_parpadeo", "abi_guardia", "inq_cadenas"],
 		"route": "inquisidor",
+		"boons": true,
 	},
 }
 
@@ -224,6 +234,8 @@ func _allowed(s, id: String, st: Dictionary) -> bool:
 		return st["keys"].has(id)
 	if nd.has("excl"):
 		return st["paths"].has(id)
+	if bool(nd.get("boon", false)):
+		return bool(st.get("boons", false)) or st["order"].has(id)
 	return true
 
 

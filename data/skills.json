@@ -1518,7 +1518,7 @@
    "id": "rayo_arco",
    "branch": "rayo",
    "name": "Arco voltaico",
-   "desc": "El Rayo salta sin límite y sin bajar del 50% de su daño, pero solo salta a enemigos que arden.",
+   "desc": "El Rayo salta sin límite de un enemigo que arde a otro (cada salto pierde al menos un 15% de fuerza), pero ya no salta a los que no arden.",
    "max": 1,
    "row": 3,
    "fx": [
@@ -1628,13 +1628,13 @@
    "id": "door_espinas",
    "branch": "demonio",
    "name": "Puerta de espinas",
-   "desc": "Quien golpea la Puerta recibe 14 de daño. A cambio la Puerta tiene un 25% menos de vida.",
+   "desc": "Quien golpea la Puerta recibe 18 de daño (más con la Ira). A cambio la Puerta tiene un 25% menos de vida.",
    "max": 1,
    "row": 3,
    "fx": [
     {
      "k": "special.door_thorns",
-     "add": 14
+     "add": 18
     },
     {
      "k": "door.hp",
@@ -1770,7 +1770,7 @@
    "id": "beast_tizon",
    "branch": "bestias",
    "name": "Tizón inmortal",
-   "desc": "Tizón no cae: si lo derriban, se levanta a los 4 s con media vida y sin cicatriz. Las demás bestias tienen un 40% menos de vida.",
+   "desc": "Tizón no cae: si lo derriban, se levanta a los 3 s con media vida y sin cicatriz. Las demás bestias tienen un 15% menos de vida.",
    "max": 1,
    "row": 3,
    "fx": [
@@ -1780,7 +1780,7 @@
     },
     {
      "k": "special.others_hp",
-     "mul": -0.4
+     "mul": -0.15
     }
    ],
    "req": [
@@ -1822,16 +1822,20 @@
    "id": "beast_horda",
    "branch": "bestias",
    "name": "Horda",
-   "desc": "Muchas y juntas: +3% de daño por cada otra bestia viva y +6% de velocidad, por rango.",
+   "desc": "Muchas y juntas: +4% de daño por cada otra bestia viva, +6% de vida y +6% de velocidad, por rango.",
    "max": 2,
    "row": 5,
    "fx": [
     {
      "k": "special.pack",
-     "add": 0.03
+     "add": 0.04
     },
     {
      "k": "beast.speed",
+     "mul": 0.06
+    },
+    {
+     "k": "beast.hp",
      "mul": 0.06
     }
    ],
@@ -1884,7 +1888,7 @@
    "id": "sab_camada",
    "branch": "jauria",
    "name": "Camada",
-   "desc": "Cada Sabueso que reclutas llega con un gemelo gratis. A cambio los Sabuesos (menos Tizón) tienen un 35% menos de vida.",
+   "desc": "Cada Sabueso que reclutas llega con un gemelo gratis. A cambio los Sabuesos (menos Tizón) tienen un 25% menos de vida.",
    "max": 1,
    "row": 3,
    "fx": [
@@ -1894,7 +1898,7 @@
     },
     {
      "k": "special.sab_hp",
-     "mul": -0.35
+     "mul": -0.25
     }
    ],
    "req": [
@@ -1943,17 +1947,17 @@
    "id": "sab_carnicero",
    "branch": "jauria",
    "name": "Carnicero",
-   "desc": "Sabuesos: +20% de daño y muerden un 8% más rápido, por rango.",
+   "desc": "Sabuesos: +25% de daño y muerden un 10% más rápido, por rango.",
    "max": 2,
    "row": 5,
    "fx": [
     {
      "k": "sabueso.dmg",
-     "mul": 0.2
+     "mul": 0.25
     },
     {
      "k": "sabueso.cd",
-     "mul": -0.08
+     "mul": -0.1
     }
    ],
    "req": [
@@ -2150,7 +2154,7 @@
    "id": "ojo_fijo",
    "branch": "ojo",
    "name": "Mirada fija",
-   "desc": "El Ojo ya no encadena: concentra todo en un blanco, con +120% de daño.",
+   "desc": "El Ojo ya no encadena: concentra todo en un blanco, con +80% de daño.",
    "max": 1,
    "row": 3,
    "fx": [
@@ -2160,7 +2164,7 @@
     },
     {
      "k": "ojo.dmg",
-     "mul": 1.2
+     "mul": 0.8
     }
    ],
    "req": [

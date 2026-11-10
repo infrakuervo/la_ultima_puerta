@@ -1254,9 +1254,7 @@ func cast_rayo(p: Vector2) -> bool:
 					nxt = e
 			if nxt.is_empty():
 				break
-			k *= float(c["chain_frac"])
-			if arc:
-				k = maxf(k, 0.5)
+			k *= minf(float(c["chain_frac"]), float(B["meta"].get("arc_frac", 0.85))) if arc else float(c["chain_frac"])
 			_rayo_hit(nxt, float(c["dmg"]) * k, c)
 			events.append({"t": "rayo_chain", "from": cur, "to": epos(nxt), "target": nxt["id"]})
 			hit.append(nxt["id"])
@@ -1857,7 +1855,7 @@ func _hit_door(amount: float, e: Dictionary) -> void:
 	events.append({"t": "door_hit", "lane": e["lane"], "x": e["x"], "amount": amount})
 	var th: float = fadd("special.door_thorns")
 	if th > 0.0 and not e["dead"]:
-		damage_enemy(e, th, -1)
+		damage_enemy(e, th * wrath_hp(), -1)   # crece con la Ira, como la vida de quien golpea
 
 
 func _update_enemy(e: Dictionary, dt: float) -> void:
