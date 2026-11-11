@@ -5,6 +5,7 @@ extends Node
 const Sim = preload("res://scripts/sim.gd")
 const Bot = preload("res://tests/bot.gd")
 const Anim = preload("res://scripts/anim.gd")
+const Perfiles = preload("res://scripts/perfiles.gd")
 
 var failures: int = 0
 var checks: int = 0
@@ -53,6 +54,8 @@ func run() -> void:
 	test_arbol2_piedras()
 	test_arbol2_dones()
 	await test_ui_smoke()
+	test_personajes_archivos()
+	await test_personajes_vista()
 	print("")
 	print("Comprobaciones: %d, fallos: %d" % [checks, failures])
 	print("FIN_SUITE fallos=%d" % failures)
@@ -2251,3 +2254,171 @@ func test_arbol2_dones() -> void:
 	var a1: float = float(pe["hp"])
 	q.damage_enemy(pe, 10.0)
 	check(absf((a1 - float(pe["hp"])) - plain * 1.16) < 0.01, "Fuego sagrado: los que arden reciben más daño")
+
+
+# --- Personajes: cada uno guarda lo suyo; los archivos de antes pasan al primero ---
+# Las pruebas no tocan user://: trabajan en una carpeta temporal de la caché del sistema.
+
+func tmp_root() -> String:
+	var d: String = OS.get_cache_dir().path_join("lup_pruebas_%d_%d" % [OS.get_process_id(), randi() % 100000]) + "/"
+	DirAccess.make_dir_recursive_absolute(d)
+	return d
+
+
+func rm_tree(d: String) -> void:
+	var da: DirAccess = DirAccess.open(d)
+	if da == null:
+		return
+	for sub in da.get_directories():
+		rm_tree(d.path_join(sub))
+	for fn in da.get_files():
+		DirAccess.remove_absolute(d.path_join(fn))
+	DirAccess.remove_absolute(d)
+
+
+func put_file(path: String, text: String) -> void:
+	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+	f.store_string(text)
+	f.close()
+
+
+func read_file(path: String) -> String:
+	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+	return "" if f == null else f.get_as_text()
+
+
+func test_personajes_archivos() -> void:
+	print("Personajes: archivos")
+	var root: String = tmp_root()
+	var p = Perfiles.new(root)
+	p.load_all()
+	check(p.list.is_empty() and p.current == "" and not p.migrated, "sin archivos no hay personajes")
+	check(p.path("meta.json") == "", "sin personaje no hay ruta donde guardar")
+	var a: String = p.create("  Belial  ")
+	check(a != "" and p.current == a and p.current_name() == "Belial", "se crea un personaje con su nombre, sin espacios de sobra")
+	check(DirAccess.dir_exists_absolute(p.dir_of(a)) and p.path("meta.json") == p.dir_of(a) + "/meta.json", "tiene su carpeta")
+	var b: String = p.create("")
+	check(p.current_name() == Perfiles.DEFAULT_NAME and b != a, "con el nombre vacío recibe uno por defecto")
+	var c: String = p.create("Un nombre larguísimo que no cabe en la ranura")
+	check(p.current_name().length() <= Perfiles.NAME_MAX, "el nombre se recorta a %d letras" % Perfiles.NAME_MAX)
+	check(p.create("Otro") == "" and p.list.size() == Perfiles.MAX, "no caben más de %d" % Perfiles.MAX)
+	check(p.select(a) and p.current == a and not p.select("no_existe"), "se elige uno que exista")
+	put_file(p.path("meta.json"), JSON.stringify({"esencia": 77, "habilidades": {"brasa_radio": 2, "door_hp": 1}, "asedios": {"primer": 3}, "records": {"grieta": 14}, "historial": [{"fecha": "2026-11-10", "resultado": "Victoria"}]}))
+	put_file(p.path("partida.txt"), "x")
+	var sm: Dictionary = p.summary(a)
+	check(int(sm["esencia"]) == 77 and int(sm["rangos"]) == 3 and int(sm["asedios"]) == 1 and int(sm["ira"]) == 3 and int(sm["grieta"]) == 14 and bool(sm["partida"]), "el resumen de la ranura sale de su archivo")
+	check(String(sm["ultima"]).contains("Victoria"), "con su última partida")
+	check(int(p.summary(b)["esencia"]) == 0 and not bool(p.summary(b)["partida"]), "otro personaje no ve nada de eso")
+	var q = Perfiles.new(root)
+	q.load_all()
+	check(q.list.size() == 3 and q.current == a and q.current_name() == "Belial", "la lista y el último usado se recuperan al abrir")
+	check(q.remove(a) and not q.has(a) and not DirAccess.dir_exists_absolute(q.dir_of(a)), "borrar un personaje borra su carpeta")
+	check(q.current == b, "si era el que estaba en uso, pasa al siguiente")
+	var d: String = q.create("Nuevo")
+	check(d != a and d != b and d != c, "un personaje nuevo no reutiliza el id de uno borrado")
+	rm_tree(root)
+	# migración de los archivos de antes de los personajes
+	var old: String = tmp_root()
+	put_file(old + "meta.json", "{\"esencia\": 412}")
+	put_file(old + "partida.txt", "partida vieja")
+	put_file(old + "bestiario.json", "{\"formas\": [\"sabueso\"]}")
+	put_file(old + "opciones.json", "{\"volumen\": 0.3}")
+	var m = Perfiles.new(old)
+	m.load_all()
+	check(m.migrated and m.list.size() == 1 and m.current != "" and m.current_name() == Perfiles.DEFAULT_NAME, "los archivos de antes se convierten en el primer personaje")
+	check(read_file(m.path("meta.json")) == "{\"esencia\": 412}" and read_file(m.path("partida.txt")) == "partida vieja" and read_file(m.path("bestiario.json")).contains("sabueso"), "sin perder nada: árbol, partida a medias y bestiario")
+	check(not FileAccess.file_exists(old + "meta.json") and not FileAccess.file_exists(old + "partida.txt") and not FileAccess.file_exists(old + "bestiario.json"), "los archivos viejos ya no quedan sueltos")
+	check(FileAccess.file_exists(old + "opciones.json"), "las opciones son generales y no se mueven")
+	var m2 = Perfiles.new(old)
+	m2.load_all()
+	check(not m2.migrated and m2.list.size() == 1, "la migración solo pasa una vez")
+	rm_tree(old)
+
+
+func test_personajes_vista() -> void:
+	print("Personajes: en el juego")
+	var root: String = tmp_root()
+	put_file(root + "meta.json", JSON.stringify({"esencia": 321, "habilidades": {"brasa_radio": 2}, "asedios": {"primer": 1}, "records": {"grieta": 9}}))
+	put_file(root + "bestiario.json", JSON.stringify({"formas": ["sabueso", "horno"]}))
+	var packed: PackedScene = load("res://scenes/main.tscn")
+	Engine.remove_meta("sin_persistencia")
+	Engine.set_meta("perfiles_root", root)
+	var m = packed.instantiate()
+	get_tree().root.add_child(m)
+	await get_tree().process_frame
+	var p1: String = String(m.perfiles.current)
+	check(m.perfiles.list.size() == 1 and p1 != "" and m.menu.panel == "main", "con datos de antes se abre directamente con el primer personaje")
+	check(m.sim.essence == 321 and m.sim.skill_rank("brasa_radio") == 2 and m.siege_wins.has("primer") and int(m.records.get("grieta", 0)) == 9, "con su esencia, su árbol, sus asedios y su récord")
+	check(m.sim.seen_forms.has("horno"), "y su bestiario")
+	check(m.menu.options_path.begins_with(root), "las opciones se guardan aparte, en la raíz")
+	var ids: Array = []
+	for b in m.menu.buttons(m):
+		ids.append(String(b["id"]))
+	check(ids.has("personajes") and ids.has("arbol"), "el menú tiene Personajes y Árbol")
+	# segundo personaje, creado desde el menú con nombre
+	m.menu._do(m, "personajes")
+	m.menu._do(m, "pj_new")
+	m._process(0.016)
+	check(m.menu.panel == "nuevo" and m.name_edit.visible, "crear un personaje pide el nombre")
+	m.name_edit.text = "Lilith"
+	m.menu._do(m, "pj_crear")
+	var p2: String = String(m.perfiles.current)
+	check(p2 != p1 and m.char_name() == "Lilith" and m.menu.panel == "main", "se crea y queda en uso")
+	check(m.sim.essence == 0 and m.sim.skills.is_empty() and m.siege_wins.is_empty() and m.records.is_empty() and not m.sim.seen_forms.has("horno"), "empieza de cero: ni esencia, ni árbol, ni asedios, ni bestiario del otro")
+	check(not m.menu.started, "y sin partida a medias")
+	# Lilith juega: gana esencia, compra en el árbol y deja una partida a medias
+	m.sim.essence = 500
+	m.open_tree_shop()
+	m.sim.buy_skill("door_hp")
+	m._close_tree()
+	m.menu.open = false
+	m.siege_wins["primer"] = 0
+	m._save_meta()
+	m.sim.souls = 99
+	m.sim.wave_index = 2
+	m.save_run()
+	var ess2: int = m.sim.essence
+	check(FileAccess.file_exists(m.perfiles.dir_of(p2) + "/partida.txt") and not FileAccess.file_exists(m.perfiles.dir_of(p1) + "/partida.txt"), "la partida a medias se guarda en la carpeta de quien la juega")
+	check(m.select_character(p1), "se cambia de personaje")
+	check(m.sim.essence == 321 and m.sim.skill_rank("brasa_radio") == 2 and m.sim.skill_rank("door_hp") == 0 and not m.menu.started and m.sim.wave_index == 0, "el primero sigue como estaba y no hereda la partida del otro")
+	check(m.select_character(p2) and m.sim.essence == ess2 and m.sim.skill_rank("door_hp") == 1 and m.siege_wins.has("primer"), "al volver, el segundo conserva su esencia, su árbol y sus asedios")
+	check(m.menu.started and m.sim.wave_index == 2 and m.sim.souls == 99, "y su partida a medias")
+	check(int(m.perfiles.summary(p2)["rangos"]) == 1 and int(m.perfiles.summary(p1)["esencia"]) == 321, "la pantalla de personajes resume cada uno")
+	m.menu.open = true
+	m.menu.panel = "personajes"
+	m.queue_redraw()
+	await get_tree().process_frame
+	# solapes de la pantalla de personajes
+	var bs: Array = m.menu.buttons(m)
+	var clash: Array = []
+	for i in bs.size():
+		if not Rect2(0, 0, 1280, 720).encloses(bs[i]["rect"]):
+			clash.append(String(bs[i]["id"]))
+		for j in range(i + 1, bs.size()):
+			if bs[i]["rect"].intersects(bs[j]["rect"]):
+				clash.append("%s/%s" % [bs[i]["id"], bs[j]["id"]])
+	check(clash.is_empty() and m.menu.slot_rect(2).end.x <= 1280.0, "las ranuras y sus botones no se solapan ni se salen %s" % str(clash))
+	# borrar pide confirmar
+	m.menu._do(m, "pj_del:" + p2)
+	check(m.perfiles.has(p2) and m.menu.del_arm == p2, "el primer clic en Borrar solo pide confirmar")
+	m.menu._do(m, "pj_del:" + p2)
+	check(not m.perfiles.has(p2) and not DirAccess.dir_exists_absolute(m.perfiles.dir_of(p2)), "el segundo borra el personaje y sus archivos")
+	check(String(m.perfiles.current) == p1 and m.sim.essence == 321, "y se pasa al que queda, con lo suyo")
+	m.queue_free()
+	await get_tree().process_frame
+	# al volver a abrir el juego se sigue con el último personaje
+	var m2 = packed.instantiate()
+	get_tree().root.add_child(m2)
+	await get_tree().process_frame
+	check(String(m2.perfiles.current) == p1 and m2.sim.essence == 321 and m2.perfiles.list.size() == 1, "al abrir de nuevo se continúa con el último personaje")
+	m2.menu._do(m2, "pj_del:" + p1)
+	m2.menu._do(m2, "pj_del:" + p1)
+	check(m2.perfiles.list.is_empty() and m2.menu.panel == "nuevo" and m2.sim.essence == 0, "sin personajes, el juego pide crear uno")
+	m2.name_edit.text = ""
+	m2.menu._do(m2, "pj_crear")
+	check(m2.char_name() == Perfiles.DEFAULT_NAME and m2.menu.panel == "main", "y con el nombre vacío recibe el nombre por defecto")
+	m2.queue_free()
+	await get_tree().process_frame
+	Engine.set_meta("sin_persistencia", true)
+	Engine.remove_meta("perfiles_root")
+	rm_tree(root)

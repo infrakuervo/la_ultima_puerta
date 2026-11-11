@@ -2140,9 +2140,9 @@ func _draw_tree() -> void:
 		var why: String = "Las mejoras se compran al terminar la partida, con las almas que te queden."
 		if tree_from_menu:
 			why = "Tienes una partida a medias: las mejoras se compran al terminarla, con las almas que te queden."
-		_txt(why, Vector2(0, 627), 16, Color(1.0, 0.82, 0.35), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt(why, Vector2(0, 621), 14, Color(1.0, 0.82, 0.35), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 	elif sim.meta_mode and sim.phase == "prep":
-		_txt("Entre partidas: gasta la esencia ahorrada antes de empezar.", Vector2(0, 627), 16, Color(0.6, 1.0, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt("Entre partidas: gasta la esencia ahorrada antes de empezar.", Vector2(0, 621), 14, Color(0.6, 1.0, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 	_draw_tree_tabs()
 	var br: Dictionary = sim.branch_def(tree_tab)
 	var bc: Color = _branch_color(tree_tab)

@@ -154,6 +154,7 @@ func _career(style: String, n_car: int, n_games: int) -> Dictionary:
 	var lvl_at: Array = []
 	var gain_at: Array = []
 	var bank_at: Array = []
+	var rank_at: Array = []
 	var climb: bool = OS.has_environment("BAL_CLIMB")
 	var spent_total: Array = []
 	var trees: Array = []
@@ -165,6 +166,7 @@ func _career(style: String, n_car: int, n_games: int) -> Dictionary:
 		lvl_at.append([])
 		gain_at.append(0)
 		bank_at.append(0)
+		rank_at.append(0)
 	for c in n_car:
 		var essence: int = 0
 		var skills: Dictionary = {}
@@ -189,6 +191,7 @@ func _career(style: String, n_car: int, n_games: int) -> Dictionary:
 				lvl_at[g].append("%d.%d" % [sg + 1, ira])
 			spent_total[c] += ess0 - s.essence
 			ess_at[g] += spent_total[c]
+			rank_at[g] += s.skill_points_spent()
 			var ess1: int = s.essence
 			var res: Dictionary = bot.play(s)
 			gain_at[g] += s.essence - ess1
@@ -211,7 +214,7 @@ func _career(style: String, n_car: int, n_games: int) -> Dictionary:
 	var tot: float = 0.0
 	for g in n_games:
 		tot += 100.0 * wins_at[g] / n_car
-		print("  partida %2d: victorias %d/%d (%.0f%%), esencia invertida media %d, ganada %d (de almas guardadas %d) %s" % [g + 1, wins_at[g], n_car, 100.0 * wins_at[g] / n_car, ess_at[g] / n_car, gain_at[g] / n_car, bank_at[g] / n_car, " ".join(lvl_at[g]) if climb else ""])
+		print("  partida %2d: victorias %d/%d (%.0f%%), %d rangos, esencia invertida media %d, ganada %d (de almas guardadas %d) %s" % [g + 1, wins_at[g], n_car, 100.0 * wins_at[g] / n_car, rank_at[g] / n_car, ess_at[g] / n_car, gain_at[g] / n_car, bank_at[g] / n_car, " ".join(lvl_at[g]) if climb else ""])
 	print("  media de la carrera (%s): %.0f%%" % [style, tot / n_games])
 	return {"trees": trees, "mean": tot / n_games}
 

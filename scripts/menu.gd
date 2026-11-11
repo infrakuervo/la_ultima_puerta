@@ -307,7 +307,10 @@ func draw(m) -> void:
 				# el personaje en uso se lee de la memoria: puede no estar guardado todavía
 				sm["esencia"] = m.sim.essence
 				sm["rangos"] = m.sim.skill_points_spent()
-			m._txt(String(c["nombre"]), Vector2(r.position.x + 16, r.position.y + 44), 30, Color(1.0, 0.9, 0.7), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 32.0)
+			var nfs: int = 30
+			while nfs > 16 and m.font.get_string_size(String(c["nombre"]), HORIZONTAL_ALIGNMENT_LEFT, -1, nfs).x > r.size.x - 32.0:
+				nfs -= 2
+			m._txt(String(c["nombre"]), Vector2(r.position.x + 16, r.position.y + 44), nfs, Color(1.0, 0.9, 0.7), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 32.0)
 			var rows: Array = [
 				"Árbol: %d de esencia · %d rangos" % [int(sm["esencia"]), int(sm["rangos"])],
 				"Asedios ganados: %d%s" % [int(sm["asedios"]), "  (Ira máx. %d)" % int(sm["ira"]) if int(sm["asedios"]) > 0 else ""],

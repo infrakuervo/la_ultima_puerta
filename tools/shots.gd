@@ -229,6 +229,7 @@ func run() -> void:
 		main.show_tree = true
 		main.tree_tab = "brasa"
 		await shot("arbol")
+		s().between_runs = true
 		# árbol a medias: piedra angular, camino elegido (el otro cerrado) y ratón sobre un nodo
 		for id in ["brasa_radio", "brasa_radio", "brasa_dmg", "brasa_dmg", "brasa_dmg", "brasa_cd", "brasa_cd", "brasa_delay", "brasa_burn", "brasa_burn",
 				"brasa_stun", "brasa_echo", "brasa_tierra", "brasa_cometa", "door_hp", "door_hp", "door_hp", "eco_reward", "eco_reward", "door_regen", "door_espinas"]:
@@ -252,6 +253,9 @@ func run() -> void:
 		for bid in ["bestias", "jauria", "horno", "trueno", "ojo", "abismo"]:
 			main.tree_tab = bid
 			await shot("arbol_" + bid)
+		s().between_runs = false
+		main.tree_tab = "brasa"
+		await shot("arbol_solo_ver", main._node_rect("brasa_radio").get_center())
 		s().skills.clear()
 		s().skill_paid.clear()
 		s().won = []
@@ -279,6 +283,52 @@ func run() -> void:
 		s().phase = "prep"
 		s().enemies.clear()
 		s().reset()
+	if want("personajes"):
+		# pantalla de personajes con datos de ejemplo en una carpeta temporal (no toca user://)
+		var Perfiles = load("res://scripts/perfiles.gd")
+		var root: String = OS.get_cache_dir().path_join("lup_capturas_%d" % OS.get_process_id()) + "/"
+		DirAccess.make_dir_recursive_absolute(root)
+		var P = Perfiles.new(root)
+		P.load_all()
+		var a: String = P.create("Belial")
+		var fa: FileAccess = FileAccess.open(P.path("meta.json"), FileAccess.WRITE)
+		fa.store_string(JSON.stringify({"esencia": 1240, "habilidades": {"brasa_radio": 5, "brasa_dmg": 4, "rayo_cadena": 1, "door_hp": 3}, "asedios": {"primer": 3, "alba": 1}, "records": {"grieta": 17}, "historial": [{"fecha": "2026-11-10", "resultado": "Victoria"}]}))
+		fa.close()
+		var fr: FileAccess = FileAccess.open(P.path("partida.txt"), FileAccess.WRITE)
+		fr.store_string("x")
+		fr.close()
+		P.create("Un nombre muy largo")
+		P.select(a)
+		main.perfiles = P
+		s().meta_mode = true
+		s().essence = 1240
+		main.menu.open = true
+		main.menu.panel = "main"
+		await shot("menu_personaje")
+		main.menu.panel = "personajes"
+		await shot("personajes")
+		main.menu.del_arm = String(P.list[1]["id"])
+		await shot("personajes_borrar", main.menu.slot_rect(1).get_center() + Vector2(100, 110))
+		main.menu.del_arm = ""
+		if main.name_edit == null:
+			main._make_name_edit()
+		main.menu.panel = "nuevo"
+		await _frames(2)
+		main.name_edit.text = "Lilith"
+		await shot("personaje_nuevo")
+		main.menu.panel = "main"
+		main.menu.open = false
+		await shot("cabecera_personaje")
+		main.perfiles = null
+		main.name_edit.visible = false
+		s().meta_mode = false
+		s().essence = 0
+		for sub in ["personajes/p1", "personajes/p2", "personajes", ""]:
+			var da: DirAccess = DirAccess.open(root + sub)
+			if da != null:
+				for fn in da.get_files():
+					DirAccess.remove_absolute((root + sub).path_join(fn))
+				DirAccess.remove_absolute(root + sub)
 	if want("ruta"):
 		s().reset()
 		s().phase = "route"
@@ -415,6 +465,8 @@ func run() -> void:
 		main.unlock_note = "Se abre: Segundo asedio: la Orden del Alba. Se abre Ira 1 en este asedio."
 		main.branch_note = "Rama nueva en el árbol: Abismo"
 		main.contract_note = "Encargo cumplido: Puerta intacta  (+80 esencia)"
+		s().banked = {"souls": 85, "essence": 85}
+		s().essence = 85
 		s().meta_mode = true
 		s().phase = "victory"
 		await shot("victoria")
