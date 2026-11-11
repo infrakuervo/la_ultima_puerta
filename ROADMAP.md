@@ -3,6 +3,44 @@
 Memoria entre turnos. Al empezar cada turno: leer esto y seguir por el primer punto pendiente.
 Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, cada hora, minuto 16) creada.
 
+## Árbol al final y personajes
+Encargo: `docs/prompts/arbol_final_personajes_fable_5_2.md`. La economía de la partida no cambia (almas, Sabueso, Ojo, niveles, draft, dones, augurios, encargos).
+
+### Plan
+1. [x] **El árbol se sube al terminar, con las almas que sobran.** `Sim._bank_souls()` al ganar o perder: 1 alma = 1 de esencia. `Sim.tree_shop_open()`: en modo permanente solo se compra (y se reasigna) en la pantalla final o entre partidas, desde el botón **Árbol** del menú. Entre oleadas el árbol se abre para mirar, con el aviso «Las mejoras se compran al terminar la partida, con las almas que te queden». Pantalla final: «Te quedan 85 almas: +85 de esencia para el árbol» y botón «Subir el árbol».
+2. [x] **Personajes con nombre.** `scripts/perfiles.gd`: tres ranuras, una carpeta por personaje (`user://personajes/<id>/` con `meta.json`, `partida.txt`, `bestiario.json`) y `user://personajes.json`. Menú → Personajes: crear (con nombre), elegir, borrar con dos clics. Nombre en la cabecera, el menú y la pantalla final. Los archivos de antes pasan al primer personaje.
+3. [x] **Ritmo.** Humanos más lentos y con más vida; el tamaño no se toca.
+4. [x] Tutorial, consejos, panel de preparación, «Cómo se juega», README y CLAUDE.md.
+5. [~] Medidas con el bot (ver abajo: la carrera con la configuración final quedó sin repetir).
+
+### Decisiones propias
+- **La esencia sigue siendo el saldo del árbol** y las almas se convierten 1 a 1 al acabar. Así lo ahorrado en `meta.json` se conserva tal cual y la frase de la pantalla final es exacta. Las almas guardadas **no** se multiplican por la Ira (1 alma es siempre 1 de esencia).
+- **Queda un extra pequeño** por oleada (4 + 2×n; antes 10 + 5×n) y por ganar (40; antes 60), que sí crece con la Ira. Sirve para que una derrota temprana no deje el árbol a cero y para que los dones y nodos de «esencia por oleada» sigan haciendo algo. En una primera partida el bot saca ~70 de extra y ~370-400 de almas guardadas: la decisión de guardar es lo que manda.
+- **«Entre partidas» = desde el menú, antes de la primera oleada.** Dentro de la partida el árbol es siempre de solo lectura, también en la oleada 1, para que la regla sea una sola. Con una partida a medias, el Árbol del menú avisa de que se compra al terminarla.
+- **Costes en la escala de las almas**: `meta.cost_scale` 1,8 e inflación 2,2% → 4,5%. Las almas que sobran crecen mucho al avanzar (de ~400 a ~1500 por partida: más enemigos, nodos de economía), así que la inflación tiene que frenar más. Con esto el bot llega a la partida 20 con 133 rangos (antes 137).
+- **Las opciones son generales**; todo lo demás es del personaje, incluida la partida a medias. Borrar pide un segundo clic.
+- **El nombre se escribe en un `LineEdit`** (única pieza de interfaz que no es dibujo inmediato): da teclado en móvil y acentos sin reinventar nada.
+- **Ritmo**: comunes −30% de velocidad y +20% de vida; élites −25% / +15%; héroes y jefes −20% / +5%. Para compensar la pelea más larga, los comunes pegan 1 punto menos (campesino 5 → 4, escudero 8 → 7, ballestero 7 → 6, flagelante 5 → 4, purificador 10 → 9). Subir la vida de la Puerta no ayudaba (las derrotas son por bestias que caen), así que se quedó en 130.
+
+### Medidas (bot torpe)
+- **Primer contacto** (`tools/debug_run.tscn -- 11 verdugo 99`, que ahora lo imprime): oleada 1 de 8,3 s a 11,5 s; oleadas 2-3 de ~8,5 s a ~12 s.
+- **Primera partida** (100): 50% antes → **42%** con todo (ritmo nuevo y el bot guardando almas antes de la última oleada el 60% de las veces si va bien). Pasos: +40% de vida 26%; +30% 38%; +25% y daño rebajado 46%; con el bot guardando en las dos últimas oleadas 35% (por eso la regla se suavizó). Bot hábil 82%.
+- **Carrera** (`BAL_CLIMB=1`, 20 partidas): con la calibración final de costes (×1,8, 4,5%) y la regla de ahorro anterior, mixto 56% (6 carreras; sin rachas al final: 33-67% en las partidas 14-20) y, con vida +25%, mixto 56% / fuego 52% (8 carreras). **La carrera completa de los tres estilos con la configuración final (vida +20%, regla de ahorro suave) no llegó a terminar** (la sesión se reinició a mitad): hay que repetirla con `BAL_CLIMB=1 godot --headless --path . res://tools/balance.tscn -- 100 8 20` (ahora tarda ~35 min: las partidas duran más).
+- Calibraciones descartadas: 1 alma = 1 esencia con los costes de antes → 90% de media y 17 000 de esencia en 10 partidas; costes ×3 con inflación 3% → 43%; ×2,2 / 2,5% y ×2,0 / 3,2% → 62-63% con 88-100% en las últimas seis partidas.
+- La Grieta no se ha vuelto a medir con el ritmo nuevo.
+
+### Comprobado
+- Suite: **500 comprobaciones, 0 fallos**, sin `SCRIPT ERROR` (77 nuevas: no se compra en preparación y sí al final o desde el menú; las almas que sobran pasan al árbol; crear, elegir y borrar personajes; cada uno guarda lo suyo; migración; solapes de la pantalla de personajes). Las pruebas de personajes trabajan en una carpeta temporal, no en `user://`.
+- Capturas revisadas: `tools/shots.tscn -- <dir> personajes` (menú, ranuras, borrar, nombre, cabecera), `victoria` y `arbol` (incluye `arbol_solo_ver`).
+- Web (exportación local, Chromium sin cabeza): crear «Lilith», jugar, perder, recargar → el personaje, su esencia y el fin de la partida se conservan. **Ojo:** en ese navegador la sincronización con IndexedDB tardó entre 6 y 20 s; recargando a los 6 s se perdió lo último. No se llegó a comprobar la partida a medias tras recargar (el robot no consiguió ganar la oleada 1) ni la versión publicada.
+- De paso: la flecha «→» no se veía con la fuente de la web; la línea de la pantalla final usa dos puntos.
+
+### Lo que haría después
+1. Repetir la carrera de los tres estilos y La Grieta con la configuración final, y retocar `cost_scale` / `inflation` si las medias se separan.
+2. Forzar el guardado en la web al acabar la partida (o avisar «guardando…») para no depender de la latencia de IndexedDB.
+3. Enseñar en preparación cuánto árbol comprarían las almas que tienes («con 120 almas: 2 rangos»), para que guardar sea una decisión informada.
+4. Renombrar un personaje y elegir retrato.
+
 ## Árbol 2 (rediseño del árbol de habilidades)
 Encargo: `docs/prompts/arbol_fable_5_2.md`. El árbol subía números pero no cambiaba cómo se juega.
 

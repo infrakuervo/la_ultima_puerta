@@ -40,7 +40,7 @@ Godot 4.7 (probado con 4.7.2) / GDScript, un demonio defiende la puerta del Infi
 
 ## Pruebas y herramientas
 - `godot --headless --editor --import --path .` (una vez) y `godot --headless --path . res://tests/run_scene.tscn` → `FIN_SUITE fallos=0`. (`--script res://tests/run_tests.gd` no funciona.)
-- `tests/bot.gd`: bot torpe (reacción lenta, puntería con error, draft mediano, augurio al azar el 60%). Objetivo de equilibrio: ~40-60% en la primera partida; hoy ~50% con variedad. `BAL_CLIMB=1` simula una carrera subiendo Ira tras cada victoria, una vez por estilo de compra (`BAL_STYLE=mixto,fuego,manada`; medias 59 / 57 / 60%; deben seguir parecidas y con árboles distintos); `BAL_SIEGE=3` mide La Grieta (0-2: asedios) (oleadas superadas con `BAL_ESS`).
+- `tests/bot.gd`: bot torpe (reacción lenta, puntería con error, draft mediano, augurio al azar el 60%). Objetivo de equilibrio: ~40-60% en la primera partida; hoy 42% (el bot guarda almas antes de la última oleada: `save_souls`). `BAL_CLIMB=1` simula una carrera subiendo Ira tras cada victoria, una vez por estilo de compra (`BAL_STYLE=mixto,fuego,manada`; deben quedar parecidas y con árboles distintos; pendiente de repetir con la configuración final, ver ROADMAP); `BAL_SIEGE=3` mide La Grieta (0-2: asedios) (oleadas superadas con `BAL_ESS`).
 - Capturas útiles: `tools/shots.tscn -- <dir> demonio|animacion|intro|augurio|draft|asedios|partida|victoria|derrota|arbol|piedras|personajes` (`partida` juega una partida entera con el bot a través de la vista).
 - `tools/balance.tscn` (informe de equilibrio), `tools/debug_run.tscn` (línea de tiempo de una partida), `tools/shots.tscn` (capturas con xvfb-run).
 - `*.uid` e `*.import` están en `.gitignore` para no chocar con la copia local del usuario.
