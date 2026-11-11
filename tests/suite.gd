@@ -959,6 +959,13 @@ func test_ui_smoke() -> void:
 	m.sim.meta_mode = true
 	m.sim.essence = 5000
 	m.sim.reset()
+	m.show_tree = false
+	m._toggle_tree()
+	m._on_press(m._node_rect("brasa_radio").get_center())
+	check(m.show_tree and m.sim.skill_rank("brasa_radio") == 0, "en la partida el árbol se abre para mirar, sin comprar")
+	m._close_tree()
+	m.open_tree_shop()
+	check(m.show_tree and not m.menu.open and m.sim.tree_shop_open(), "desde el menú, entre partidas, el árbol se abre para comprar")
 	m._on_press(m._tab_rect(2).get_center())
 	check(m.tree_tab == String(m.sim.BRANCHES[2]["id"]), "clic en una pestaña cambia de rama")
 	m._on_press(m._node_rect("door_hp").get_center())
@@ -980,6 +987,9 @@ func test_ui_smoke() -> void:
 		m.queue_redraw()
 		await get_tree().process_frame
 	await get_tree().process_frame
+	m._close_tree()
+	check(m.menu.open and not m.show_tree and not m.sim.between_runs, "al cerrar el árbol del menú se vuelve al menú")
+	m.menu.open = false
 	m.sim.meta_mode = false
 	m.show_tree = false
 	m.queue_redraw()
@@ -998,7 +1008,7 @@ func _click(p: Vector2) -> InputEventMouseButton:
 
 
 func test_meta() -> void:
-	print("Árbol permanente (esencia)")
+	print("Árbol permanente: se sube al terminar la partida")
 	var s = new_sim()
 	s.meta_mode = true
 	s.reset()
@@ -1006,7 +1016,10 @@ func test_meta() -> void:
 	s.essence = 500
 	var souls0: int = s.souls
 	var c: int = s.skill_cost("brasa_radio")
-	check(s.buy_skill("brasa_radio") and s.essence == 500 - c and s.souls == souls0, "se paga con esencia, no con almas")
+	check(not s.tree_shop_open() and not s.can_skill("brasa_radio") and not s.buy_skill("brasa_radio"), "en preparación no se compra en el árbol")
+	check(s.essence == 500 and s.skill_rank("brasa_radio") == 0, "y no se cobra nada")
+	s.between_runs = true
+	check(s.buy_skill("brasa_radio") and s.essence == 500 - c and s.souls == souls0, "entre partidas (desde el menú) se paga con esencia, no con almas")
 	var any_route_ok: bool = true
 	for id in s.SK_ORDER:
 		if s.skill_state(id) == "route":
@@ -1015,13 +1028,53 @@ func test_meta() -> void:
 	s.reset()
 	check(s.skill_rank("brasa_radio") == 1, "la mejora sobrevive a reiniciar la partida")
 	check(s.essence == 500 - c, "la esencia sobrevive a reiniciar")
+	s.between_runs = true
 	s.start_wave()
+	check(not s.between_runs, "al empezar la primera oleada se cierra la tienda del árbol")
 	s.essence = 500
 	check(not s.buy_skill("brasa_dmg"), "no se compra en combate")
+	s.enemies.clear()
+	s.spawn_queue.clear()
+	s._check_end()
+	s.draft.clear()
+	s.between_runs = true
+	check(s.phase == "prep" and s.wave_index == 1 and not s.can_skill("brasa_dmg"), "entre oleadas no se compra aunque haya esencia")
+	check(not s.can_respec(), "ni se reasigna")
+	s.souls = 85
+	var e0: int = s.essence
+	s.phase = "combat"
 	s.door_hp = 0.0
 	s._check_end()
 	check(s.phase == "defeat" and s.can_skill("brasa_dmg"), "tras caer la Puerta se puede comprar")
-	var before: int = s.essence
+	check(s.essence == e0 + 85 and s.souls == 0, "las almas que sobran al perder pasan al árbol (85 → +%d)" % (s.essence - e0))
+	check(int(s.banked.get("souls", 0)) == 85 and int(s.banked.get("essence", 0)) == 85, "y queda apuntado para la pantalla final")
+	check(s.buy_skill("brasa_dmg"), "con ellas se compra en la pantalla final")
+	s.reset()
+	check(s.banked.is_empty(), "la partida siguiente empieza sin almas guardadas")
+	# victoria: lo que sobra más el premio pequeño por oleada y por ganar
+	var v = new_sim()
+	v.meta_mode = true
+	v.set_siege(0, 2)
+	v.reset()
+	v.wave_index = v.wave_count() - 1
+	v.start_wave()
+	v.enemies.clear()
+	v.spawn_queue.clear()
+	v.souls = 100
+	var ev0: int = v.essence
+	v._check_end()
+	var wave_e: int = int(round(float(int(v.B["meta"]["wave_base"]) + int(v.B["meta"]["wave_step"]) * v.wave_count()) * (1.0 + 0.3 * 2.0)))
+	var win_e: int = int(round(float(v.B["meta"]["victory"]) * (1.0 + 0.3 * 2.0)))
+	var kept: int = int(v.banked.get("souls", 0))
+	check(v.phase == "victory" and kept >= 100 and int(v.banked["essence"]) == kept, "al ganar, cada alma que sobra es 1 de esencia, sin multiplicar por la Ira (%d)" % kept)
+	check(v.essence - ev0 == kept + wave_e + win_e, "la esencia ganada es: almas guardadas + extra por oleada + extra por ganar (%d)" % (v.essence - ev0))
+	check(wave_e + win_e < kept, "el extra es pequeño frente a las almas guardadas")
+	var nm = new_sim()
+	nm.souls = 77
+	nm.start_wave()
+	nm.door_hp = 0.0
+	nm._check_end()
+	check(nm.souls == 77 and nm.banked.is_empty(), "sin modo permanente las almas no se convierten")
 	var s2 = new_sim()
 	s2.meta_mode = true
 	s2.reset()
@@ -1031,7 +1084,6 @@ func test_meta() -> void:
 	s2._check_end()
 	var want_e: int = int(s2.B["meta"]["wave_base"]) + int(s2.B["meta"]["wave_step"])
 	check(s2.essence == want_e, "superar la oleada 1 da %d de esencia (%d)" % [want_e, s2.essence])
-	check(before >= 0, "esencia coherente")
 
 
 func spawn_beast(s, kind: String, lane: int, x: float) -> Dictionary:
@@ -1287,7 +1339,7 @@ func test_content() -> void:
 	check(s9.WAVES.size() == s9.SIEGES[1]["waves"].size() and s9.wrath == 2, "set_siege cambia oleadas e Ira")
 	to_combat(s9)
 	var w1: Dictionary = add_enemy(s9, "campesino", 1, 900.0)
-	check(absf(float(w1["max_hp"]) - 30.0 * s9.wrath_hp()) < 0.01 and s9.wrath_hp() > 1.0, "con Ira los enemigos tienen más vida")
+	check(absf(float(w1["max_hp"]) - float(s9.B["enemies"]["campesino"]["hp"]) * s9.wrath_hp()) < 0.01 and s9.wrath_hp() > 1.0, "con Ira los enemigos tienen más vida")
 	s9.meta_mode = true
 	var e0: int = s9.essence
 	s9._gain_essence(100)
@@ -1372,8 +1424,9 @@ func test_inflation() -> void:
 	var s = new_sim()
 	s.meta_mode = true
 	s.essence = 5000
+	s.between_runs = true
 	var c0: int = s.skill_cost("brasa_radio")
-	check(c0 == int(s.SK["brasa_radio"]["cost_base"]), "sin rangos comprados el coste es el de base")
+	check(c0 == int(round(float(s.SK["brasa_radio"]["cost_base"]) * float(s.B["meta"]["cost_scale"]))), "sin rangos comprados el coste es el de base por la escala de la moneda")
 	for i in 10:
 		var bought: bool = false
 		for id in s.SK_ORDER:
@@ -1385,7 +1438,7 @@ func test_inflation() -> void:
 			break
 	check(s.skill_cost("brasa_radio") > c0, "cada rango comprado encarece los demás (%d -> %d)" % [c0, s.skill_cost("brasa_radio")])
 	s.meta_mode = false
-	check(s.skill_cost("brasa_radio") == c0, "sin modo permanente no hay inflación")
+	check(s.skill_cost("brasa_radio") == int(s.SK["brasa_radio"]["cost_base"]), "sin modo permanente no hay inflación ni escala")
 
 
 func test_procedural() -> void:
@@ -1800,6 +1853,7 @@ func meta_sim(seed_v: int = 7):
 	s.essence = 999999
 	s.won = ["primer", "alba", "inquisicion"]
 	s.reset()
+	s.between_runs = true   # como si se abriera el árbol desde el menú
 	return s
 
 

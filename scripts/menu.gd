@@ -3,11 +3,12 @@ extends RefCounted
 ## Solo vista: lo usa main.gd (`m`), que le pasa los clics y le pide dibujar.
 
 const Art = preload("res://scripts/art.gd")
-const OPTIONS_PATH: String = "user://opciones.json"
+var options_path: String = "user://opciones.json"   # general, no de cada personaje
+var del_arm: String = ""         # personaje cuyo «Borrar» se pulsó una vez (pide confirmar)
 const W: float = 1280.0
 
 var open: bool = true            # se empieza en el menú
-var panel: String = "main"       # main | options | help
+var panel: String = "main"       # main | options | help | logros | historial | siege | personajes | nuevo
 var opts: Dictionary = {"volumen": 0.8, "velocidad": 1, "temblor": true, "tutorial_hecho": false, "intro": true, "musica": 0.6, "tips": []}
 var persist: bool = true
 var started: bool = false        # ya hay una partida empezada (Continuar)
@@ -20,9 +21,9 @@ var tut_t: float = 0.0
 
 
 func load_options() -> void:
-	if not persist or not FileAccess.file_exists(OPTIONS_PATH):
+	if not persist or not FileAccess.file_exists(options_path):
 		return
-	var f: FileAccess = FileAccess.open(OPTIONS_PATH, FileAccess.READ)
+	var f: FileAccess = FileAccess.open(options_path, FileAccess.READ)
 	if f == null:
 		return
 	var d: Variant = JSON.parse_string(f.get_as_text())
@@ -34,7 +35,7 @@ func load_options() -> void:
 func save_options() -> void:
 	if not persist:
 		return
-	var f: FileAccess = FileAccess.open(OPTIONS_PATH, FileAccess.WRITE)
+	var f: FileAccess = FileAccess.open(options_path, FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(opts, "  "))
 
@@ -64,12 +65,39 @@ func buttons(m) -> Array:
 				out.append({"id": "new", "rect": Rect2(x, y, 320, 58), "text": "Nueva partida"})
 			else:
 				out.append({"id": "new", "rect": Rect2(x, y, 320, 58), "text": "Jugar"})
-			y += 70.0
-			out.append({"id": "help", "rect": Rect2(x, y, 320, 58), "text": "Cómo se juega"})
-			y += 70.0
-			out.append({"id": "options", "rect": Rect2(x, y, 320, 58), "text": "Opciones"})
-			y += 70.0
-			out.append({"id": "logros", "rect": Rect2(x, y, 320, 58), "text": "Logros"})
+			y += 66.0
+			if m.sim.meta_mode:
+				out.append({"id": "arbol", "rect": Rect2(x, y, 320, 58), "text": "Árbol"})
+				y += 66.0
+			# fila doble: dos botones por línea
+			var xl: float = W * 0.5 - 205.0
+			if m.perfiles != null:
+				out.append({"id": "personajes", "rect": Rect2(xl, y, 200, 52), "text": "Personajes", "small": true})
+				out.append({"id": "help", "rect": Rect2(xl + 210, y, 200, 52), "text": "Cómo se juega", "small": true})
+				y += 60.0
+				out.append({"id": "options", "rect": Rect2(xl, y, 200, 52), "text": "Opciones", "small": true})
+				out.append({"id": "logros", "rect": Rect2(xl + 210, y, 200, 52), "text": "Logros", "small": true})
+			else:
+				out.append({"id": "help", "rect": Rect2(x, y, 320, 52), "text": "Cómo se juega"})
+				y += 60.0
+				out.append({"id": "options", "rect": Rect2(xl, y, 200, 52), "text": "Opciones", "small": true})
+				out.append({"id": "logros", "rect": Rect2(xl + 210, y, 200, 52), "text": "Logros", "small": true})
+		"personajes":
+			var P = m.perfiles
+			for i in P.MAX:
+				var r: Rect2 = slot_rect(i)
+				if i < P.list.size():
+					var cid: String = String(P.list[i]["id"])
+					out.append({"id": "pj_sel:" + cid, "rect": Rect2(r.position.x + 20, r.end.y - 62, 200, 46), "text": "En uso" if cid == String(P.current) else "Elegir", "small": true})
+					out.append({"id": "pj_del:" + cid, "rect": Rect2(r.position.x + 232, r.end.y - 62, 128, 46), "text": "¿Seguro?" if del_arm == cid else "Borrar", "small": true})
+				else:
+					out.append({"id": "pj_new", "rect": Rect2(r.position.x + 90, r.position.y + 120, 200, 58), "text": "Crear"})
+			if String(P.current) != "":
+				out.append({"id": "back", "rect": Rect2(x, 640, 320, 58), "text": "Volver"})
+		"nuevo":
+			out.append({"id": "pj_crear", "rect": Rect2(x, 390, 320, 58), "text": "Crear"})
+			if m.perfiles != null and String(m.perfiles.current) != "":
+				out.append({"id": "pj_cancel", "rect": Rect2(x, 460, 320, 50), "text": "Cancelar"})
 		"options":
 			var y2: float = 226.0
 			out.append({"id": "vol-", "rect": Rect2(x + 150, y2, 50, 50), "text": "−"})
@@ -102,6 +130,10 @@ func buttons(m) -> Array:
 	return out
 
 
+func slot_rect(i: int) -> Rect2:
+	return Rect2(50.0 + 400.0 * float(i), 190.0, 380.0, 300.0)
+
+
 func siege_rect(i: int, n: int) -> Rect2:
 	var w: float = minf(480.0, (W - 80.0 - 20.0 * float(n - 1)) / float(n))
 	var x0: float = (W - (w * n + 20.0 * (n - 1))) * 0.5
@@ -126,7 +158,33 @@ func _do(m, id: String) -> void:
 			sel_siege = si
 			sel_wrath = m.max_wrath(si)
 		return
+	var armed: String = del_arm
+	del_arm = ""
+	if id.begins_with("pj_sel:"):
+		if m.select_character(id.substr(7)):
+			panel = "main"
+		return
+	if id.begins_with("pj_del:"):
+		# dos clics: el primero pide confirmar
+		if armed == id.substr(7):
+			m.delete_character(id.substr(7))
+			if String(m.perfiles.current) == "":
+				panel = "nuevo"
+		else:
+			del_arm = id.substr(7)
+		return
 	match id:
+		"arbol":
+			m.open_tree_shop()
+		"personajes":
+			panel = "personajes"
+		"pj_new":
+			panel = "nuevo"
+		"pj_cancel":
+			panel = "personajes"
+		"pj_crear":
+			if m.create_character(m.name_edit.text if m.name_edit != null else ""):
+				panel = "main"
 		"continue":
 			open = false
 			m.fade = 1.0
@@ -216,7 +274,8 @@ func draw(m) -> void:
 		m._txt("LA ÚLTIMA PUERTA", Vector2(0, 190), 72, Color(1.0, 0.72, 0.38), HORIZONTAL_ALIGNMENT_CENTER, W)
 		m._txt("Defiende la puerta del Infierno. Cría bestias. Que no pase nadie.", Vector2(0, 240), 22, Color(0.9, 0.78, 0.7), HORIZONTAL_ALIGNMENT_CENTER, W)
 		if m.sim.meta_mode:
-			m._txt("Esencia: %d    Rangos del árbol: %d" % [m.sim.essence, m.sim.skill_points_spent()], Vector2(0, 290), 18, Color(0.7, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, W)
+			var who: String = (m.char_name() + "    ") if m.char_name() != "" else ""
+			m._txt("%sEsencia: %d    Rangos del árbol: %d" % [who, m.sim.essence, m.sim.skill_points_spent()], Vector2(0, 290), 18, Color(0.7, 0.85, 1.0), HORIZONTAL_ALIGNMENT_CENTER, W)
 			if m.tree_refund > 0:
 				m._txt("El árbol ha cambiado: recuperas %d de esencia de los nodos retirados." % m.tree_refund, Vector2(0, 314), 16, Color(1.0, 0.82, 0.35), HORIZONTAL_ALIGNMENT_CENTER, W)
 		m._txt("Esc: menú    B: bestiario    T: árbol    F: velocidad", Vector2(0, 700), 15, Color(0.7, 0.6, 0.55), HORIZONTAL_ALIGNMENT_CENTER, W)
@@ -229,6 +288,40 @@ func draw(m) -> void:
 			m._txt(rows[i][0], Vector2(x - 160, yy), 22, Color(0.95, 0.88, 0.8), HORIZONTAL_ALIGNMENT_RIGHT, 290.0)
 			if rows[i][1] != "":
 				m._txt(rows[i][1], Vector2(x + 200, yy), 22, Color(1.0, 0.9, 0.6), HORIZONTAL_ALIGNMENT_CENTER, 90.0)
+	elif panel == "personajes":
+		m._txt("Personajes", Vector2(0, 130), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
+		m._txt("Cada demonio guarda su árbol, sus asedios, sus récords y su partida a medias.", Vector2(0, 166), 17, Color(0.85, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, W)
+		var P = m.perfiles
+		for i in P.MAX:
+			var r: Rect2 = slot_rect(i)
+			var filled: bool = i < P.list.size()
+			var cur: bool = filled and String(P.list[i]["id"]) == String(P.current)
+			m.draw_rect(r, Color(0.28, 0.11, 0.08, 0.92) if cur else Color(0.12, 0.06, 0.06, 0.88))
+			m.draw_rect(r, Color(1.0, 0.85, 0.4) if cur else Color(0.6, 0.35, 0.22), false, 3.0 if cur else 2.0)
+			if not filled:
+				m._txt("Ranura libre", Vector2(r.position.x, r.position.y + 80), 22, Color(0.6, 0.52, 0.5), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+				continue
+			var c: Dictionary = P.list[i]
+			var sm: Dictionary = P.summary(String(c["id"]))
+			if cur:
+				# el personaje en uso se lee de la memoria: puede no estar guardado todavía
+				sm["esencia"] = m.sim.essence
+				sm["rangos"] = m.sim.skill_points_spent()
+			m._txt(String(c["nombre"]), Vector2(r.position.x + 16, r.position.y + 44), 30, Color(1.0, 0.9, 0.7), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 32.0)
+			var rows: Array = [
+				"Árbol: %d de esencia · %d rangos" % [int(sm["esencia"]), int(sm["rangos"])],
+				"Asedios ganados: %d%s" % [int(sm["asedios"]), "  (Ira máx. %d)" % int(sm["ira"]) if int(sm["asedios"]) > 0 else ""],
+				"Récord en la Grieta: %d oleadas" % int(sm["grieta"]),
+				"Última: %s" % (String(sm["ultima"]) if String(sm["ultima"]) != "" else "sin partidas"),
+				"Partida a medias" if bool(sm["partida"]) else "Creado el %s" % String(c["creado"]),
+			]
+			for k in rows.size():
+				m._txt(String(rows[k]), Vector2(r.position.x + 20, r.position.y + 84 + 28 * k), 16, Color(0.7, 0.9, 1.0) if k == 0 else (Color(1.0, 0.75, 0.4) if k == 4 and bool(sm["partida"]) else Color(0.88, 0.82, 0.78)), HORIZONTAL_ALIGNMENT_LEFT, r.size.x - 40.0)
+		if del_arm != "":
+			m._txt("Borrar un personaje borra su árbol, sus récords y su partida. Pulsa otra vez para confirmar.", Vector2(0, 520), 17, Color(1.0, 0.55, 0.45), HORIZONTAL_ALIGNMENT_CENTER, W)
+	elif panel == "nuevo":
+		m._txt("Nombra a tu demonio", Vector2(0, 220), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
+		m._txt("Cada personaje tiene su propio árbol, sus asedios y sus récords. Si lo dejas vacío se llamará %s." % m.perfiles.DEFAULT_NAME, Vector2(0, 268), 17, Color(0.85, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, W)
 	elif panel == "help":
 		m._txt("Cómo se juega", Vector2(0, 150), 44, Color(1.0, 0.8, 0.5), HORIZONTAL_ALIGNMENT_CENTER, W)
 		var lines: Array = [
@@ -239,9 +332,9 @@ func draw(m) -> void:
 			"Tras cada oleada eliges una recompensa: bestias, almas, esencia o un don para toda la partida.",
 			"Dos dones de la misma familia despiertan una resonancia. Antes de cada oleada, un augurio",
 			"opcional: más riesgo, más premio. Al empezar, un encargo opcional da esencia si lo cumples.",
-			"Las almas son de la partida (reclutar y subir de nivel). La esencia es para siempre:",
-			"gástala en el Árbol (T) entre oleadas o al terminar. Tras la oleada 4 eliges heraldo",
-			"y Tizón muta. Ganar abre la Ira, el segundo asedio y La Grieta (sin fin).",
+			"Con las almas reclutas y subes de nivel. Las que te sobren al acabar la partida, ganes o",
+			"pierdas, se convierten en esencia: con ella subes el Árbol al terminar o desde el menú.",
+			"Tras la oleada 4 eliges heraldo y Tizón muta. Ganar abre la Ira y más asedios.",
 			"El Árbol tiene una pestaña por rama. La piedra angular (marco dorado) cambia una regla",
 			"y pide algo a cambio; al final de cada rama eliges un camino y el otro se cierra.",
 			"Reasignar devuelve el 75% de lo pagado, entre partidas. Ganar el segundo y el tercer",
@@ -347,7 +440,8 @@ func draw(m) -> void:
 		var hov: bool = r.has_point(m.mouse_pos)
 		m.draw_rect(r, Color(0.36, 0.14, 0.09) if hov else Color(0.24, 0.09, 0.07))
 		m.draw_rect(r, Color(1.0, 0.8, 0.4) if hov else Color(0.8, 0.45, 0.25), false, 2.0)
-		m._txt(String(b["text"]), Vector2(r.position.x, r.position.y + r.size.y * 0.5 + 9), 24, Color(1.0, 0.92, 0.8), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
+		var fs: int = 20 if b.get("small", false) else 24
+		m._txt(String(b["text"]), Vector2(r.position.x, r.position.y + r.size.y * 0.5 + (7 if fs == 20 else 9)), fs, Color(1.0, 0.92, 0.8), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 
 
 # --- tutorial --------------------------------------------------------------------
@@ -410,9 +504,9 @@ func tut_draw(m) -> void:
 		3:
 			text = "Mantén pulsado para repetir el hechizo en cuanto se recargue.\n¡Que nadie toque la Puerta!"
 		4:
-			text = "Tras cada oleada eliges una recompensa:\nbestias gratis, almas o esencia."
+			text = "Tras cada oleada eliges una recompensa:\nbestias gratis, almas, esencia o un don."
 		5:
-			text = "La esencia se queda para siempre: gástala en el Árbol (T).\nLas almas sirven para reclutar y subir de nivel en esta partida."
+			text = "Las almas sirven para reclutar y subir de nivel. Las que te sobren\nal acabar la partida suben el Árbol: gastar ahora o guardar, tú decides."
 			hl = Rect2(340, 624, 150, 72)
 	if text == "":
 		return

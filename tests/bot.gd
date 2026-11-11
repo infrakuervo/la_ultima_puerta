@@ -155,6 +155,15 @@ func prep(s) -> void:
 				bs = sc
 				bi = i
 		s.draft_pick(bi)
+	# Las almas que sobren al acabar suben el árbol. Regla mediana: en las dos últimas oleadas guarda
+	# (no compra ni sube de nivel) si va bien: Puerta por encima de la mitad y al menos tres bestias.
+	# Antes de la última guarda el 75% de las veces; antes de la penúltima, el 40%.
+	if s.meta_mode and save_souls and not s.is_endless():
+		var left: int = s.wave_count() - s.wave_index
+		var fine: bool = s.door_hp >= s.door_max * 0.5 and s.creatures.size() >= 3
+		if fine and ((left <= 1 and rng.randf() < 0.75) or (left == 2 and rng.randf() < 0.4)):
+			_after_buys(s)
+			return
 	# compras: no siempre en el mejor momento
 	if rng.randf() < 0.7 and s.can_buy("ojo") and s.wave_index >= 1:
 		s.buy("ojo")
@@ -166,6 +175,10 @@ func prep(s) -> void:
 	for c in s.creatures:
 		if not c["named"] and rng.randf() < 0.25 and s.can_level(int(c["id"])):
 			s.level_up(int(c["id"]))
+	_after_buys(s)
+
+
+func _after_buys(s) -> void:
 	# encargo: uno al azar la mitad de las veces
 	if not s.contract_offer.is_empty() and s.wave_index == 0 and rng.randf() < 0.5:
 		s.choose_contract(String(s.contract_offer[rng.randi() % s.contract_offer.size()]))
@@ -226,6 +239,7 @@ const STYLES: Dictionary = {
 }
 
 var style: String = "mixto"
+var save_souls: bool = true   # guarda almas al final de la partida para el árbol (BAL_SAVE=0 lo apaga)
 
 
 func _allowed(s, id: String, st: Dictionary) -> bool:
@@ -255,6 +269,7 @@ func _cheapest(s, st: Dictionary, branches: Array) -> String:
 ## y por último lo más barato de cualquiera.
 func buy_meta(s) -> void:
 	var st: Dictionary = STYLES.get(style, STYLES["mixto"])
+	s.between_runs = true   # compra entre partidas, como desde el menú
 	var guard: int = 0
 	while guard < 400:
 		guard += 1

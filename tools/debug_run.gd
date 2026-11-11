@@ -15,6 +15,7 @@ func _ready() -> void:
 	s.reset()
 	var bot = Bot.new(sd, 0.0)
 	var last: float = -10.0
+	var contact: Dictionary = {}
 	while s.phase != "victory" and s.phase != "defeat":
 		match s.phase:
 			"prep":
@@ -26,6 +27,11 @@ func _ready() -> void:
 			"combat":
 				bot.combat_tick(s, Sim.TICK)
 				s.step(Sim.TICK)
+				for ev0 in s.events:
+					# primer contacto de cada oleada: primer mordisco, golpe a una bestia o a la Puerta
+					if not contact.has(s.wave_index) and ev0["t"] in ["bite", "creature_hit", "door_hit", "presa"]:
+						contact[s.wave_index] = s.wave_time
+						print("oleada %d: primer contacto a los %.1f s (%s)" % [s.wave_index + 1, s.wave_time, ev0["t"]])
 				for ev in s.events:
 					if s.wave_index + 1 == wv and ev["t"] in ["creature_down", "execute", "sweep", "tirador_shot", "ring", "horno_spit", "trueno_land"]:
 						print("   %.1f %s" % [s.wave_time, str(ev)])

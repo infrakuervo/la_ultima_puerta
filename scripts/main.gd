@@ -15,8 +15,19 @@ const FxLayer = preload("res://scripts/fx_layer.gd")
 
 const SCREEN_W: float = 1280.0
 const SCREEN_H: float = 720.0
-const BESTIARY_PATH: String = "user://bestiario.json"
-const RUN_PATH: String = "user://partida.txt"     # partida a medias (entre oleadas)
+const Perfiles = preload("res://scripts/perfiles.gd")
+var perfiles = null               # personajes (null en las pruebas sin persistencia)
+var tree_from_menu: bool = false  # el árbol se abrió desde el menú: al cerrarlo se vuelve allí
+var name_edit: LineEdit = null    # casilla del nombre al crear un personaje
+
+
+## Archivos del personaje en uso ("" si no hay personaje o no hay persistencia).
+func _pfile(file: String) -> String:
+	return "" if perfiles == null else String(perfiles.path(file))
+
+
+func char_name() -> String:
+	return "" if perfiles == null else String(perfiles.current_name())
 const ARENA_TOP: float = 90.0
 const ARENA_BOTTOM: float = 598.0
 
@@ -83,7 +94,7 @@ var challenge: Dictionary = {}
 var contract_note: String = ""
 var tip: Dictionary = {}          # consejo de una sola vez en pantalla: {id, text, t}
 const TIPS: Dictionary = {
-	"encargo": "Encargo: un objetivo opcional para esta partida. Si lo cumples al ganar, te da esencia extra.",
+	"encargo": "Encargo: un objetivo opcional para esta partida. Si lo cumples al ganar, te da esencia extra para el árbol.",
 	"augurio": "Augurio: antes de cada oleada puedes aceptar un riesgo a cambio de un premio. O nada (Calma).",
 	"don": "Los dones duran toda la partida. Dos de la misma familia despiertan una resonancia.",
 	"terreno": "Este campo tiene terreno especial (abajo a la izquierda). Cambia de una partida a otra.",
@@ -106,8 +117,12 @@ func _ready() -> void:
 		sim.remix_enabled = true
 		sim.augurs_enabled = true
 		sim.contracts_enabled = true
+		perfiles = Perfiles.new(String(Engine.get_meta("perfiles_root", "user://")))
+		perfiles.load_all()
+		menu.options_path = String(perfiles.root) + "opciones.json"
 		_load_meta()
 		sim.reset()
+		_make_name_edit()
 	sound = SoundBank.new()
 	fx_layer = FxLayer.new()
 	fx_layer.main = self
@@ -128,6 +143,8 @@ func _ready() -> void:
 	speed = int(menu.opts["velocidad"])
 	if load_run():
 		menu.started = true   # «Continuar» lleva a la partida guardada
+	if perfiles != null and perfiles.current == "":
+		menu.panel = "nuevo"   # primera vez: hay que crear un personaje
 	if DisplayServer.get_name() != "headless" and not Engine.has_meta("sin_persistencia"):
 		music.setup(self, "Musica")
 	if not Engine.has_meta("sin_persistencia") and bool(menu.opts.get("intro", true)) and DisplayServer.get_name() != "headless":
@@ -221,6 +238,15 @@ func _process(delta: float) -> void:
 	clock += delta
 	mouse_pos = get_global_mouse_position()
 	fade = maxf(0.0, fade - delta * 2.5)
+	if name_edit != null:
+		var want_edit: bool = menu.open and menu.panel == "nuevo"
+		if want_edit and not name_edit.visible:
+			name_edit.text = ""
+			name_edit.visible = true
+			name_edit.grab_focus()
+		elif not want_edit and name_edit.visible:
+			name_edit.visible = false
+			name_edit.release_focus()
 	if menu.open:
 		juice.update(delta)
 		demon_anim.update(delta)
@@ -237,7 +263,7 @@ func _process(delta: float) -> void:
 			_add_history()
 	menu.tut_update(delta)
 	_sim_dt = 0.0
-	if sim.phase == "combat" and juice.hitstop <= 0.0:
+	if sim.phase == "combat" and juice.hitstop <= 0.0 and not (show_tree and tree_from_menu):
 		accum += delta * float(speed)
 		var guard: int = 0
 		while accum >= Sim.TICK and guard < 12:
@@ -716,9 +742,9 @@ func _on_event(ev: Dictionary) -> void:
 # ----------------------------------------------------------------------------
 
 func _load_bestiary() -> void:
-	if not FileAccess.file_exists(BESTIARY_PATH):
+	if not FileAccess.file_exists(_pfile("bestiario.json")):
 		return
-	var f: FileAccess = FileAccess.open(BESTIARY_PATH, FileAccess.READ)
+	var f: FileAccess = FileAccess.open(_pfile("bestiario.json"), FileAccess.READ)
 	if f == null:
 		return
 	var data: Variant = JSON.parse_string(f.get_as_text())
@@ -731,14 +757,14 @@ func _load_bestiary() -> void:
 
 
 func _save_bestiary() -> void:
-	if Engine.has_meta("sin_persistencia"):
+	if Engine.has_meta("sin_persistencia") or _pfile("bestiario.json") == "":
 		return
 	var t: Dictionary = sim.named_creature()
 	var rec: Dictionary = {}
 	if not t.is_empty():
 		rec = {"nombre": t["name"], "forma": t["kind"], "bajas": t["kills"], "cicatrices": t["scars"]}
 	var data: Dictionary = {"formas": sim.seen_forms, "tizon": rec}
-	var f: FileAccess = FileAccess.open(BESTIARY_PATH, FileAccess.WRITE)
+	var f: FileAccess = FileAccess.open(_pfile("bestiario.json"), FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(data, "  "))
 
@@ -757,6 +783,8 @@ func _input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 			menu.press(self, event.position)
 		elif event is InputEventKey and event.pressed and not event.echo:
+			if menu.panel == "nuevo":
+				return   # se está escribiendo el nombre
 			if event.keycode == KEY_ESCAPE and menu.started:
 				menu.toggle(self)
 			elif (event.keycode == KEY_SPACE or event.keycode == KEY_ENTER) and menu.panel == "main":
@@ -789,7 +817,8 @@ func _input(event: InputEvent) -> void:
 				_toggle_tree()
 			elif k.keycode == KEY_ESCAPE:
 				if show_tree or show_bestiary:
-					show_tree = false
+					if show_tree:
+						_close_tree()
 					show_bestiary = false
 				else:
 					holding = false
@@ -809,13 +838,18 @@ func _draft_rect(i: int) -> Rect2:
 
 
 func _toggle_tree() -> void:
+	if show_tree:
+		_close_tree()
+		_play("click")
+		return
 	if _draft_active():
 		return
 	if sim.phase == "prep" or sim.phase == "victory" or sim.phase == "defeat":
-		show_tree = not show_tree
+		# dentro de la partida el árbol se mira; solo se compra al terminarla (o desde el menú)
+		sim.between_runs = false
+		tree_from_menu = false
+		show_tree = true
 		_play("click")
-	else:
-		show_tree = false
 
 
 func _toggle_spell() -> void:
@@ -884,7 +918,7 @@ func _buttons() -> Array:
 			dout.append({"id": "draft:%d" % i, "rect": _draft_rect(i), "text": "", "sub": "", "on": true})
 		return dout
 	if show_tree:
-		if sim.phase != "prep" and sim.phase != "victory" and sim.phase != "defeat":
+		if not tree_from_menu and sim.phase != "prep" and sim.phase != "victory" and sim.phase != "defeat":
 			show_tree = false
 		else:
 			return _tree_buttons()
@@ -899,7 +933,7 @@ func _buttons() -> Array:
 			if sim.can_skill(sid):
 				can_any = true
 				break
-		out.append({"id": "tree", "rect": Rect2(340, y, 150, 72), "text": "Árbol (T)", "sub": "%d rangos" % sim.skill_points_spent(), "on": true, "active": can_any})
+		out.append({"id": "tree", "rect": Rect2(340, y, 150, 72), "text": "Árbol (T)", "sub": ("%d rangos" if not sim.meta_mode else "ver · %d rangos") % sim.skill_points_spent(), "on": true, "active": can_any})
 		var lsub: String = "elige una bestia"
 		var lon: bool = false
 		if selected_id >= 0:
@@ -922,7 +956,12 @@ func _buttons() -> Array:
 		out.append({"id": "forge", "rect": Rect2(490, 430, 300, 64), "text": "Entregar a Tizón", "sub": "", "on": true})
 	elif ph == "victory" or ph == "defeat":
 		out.append({"id": "restart", "rect": Rect2(490, 480, 300, 64), "text": "Reiniciar", "sub": "Espacio", "on": true})
-		out.append({"id": "tree", "rect": Rect2(490, 552, 300, 64), "text": "Árbol (T)", "sub": "%d esencia" % sim.essence, "on": true})
+		var can_end: bool = false
+		for sid2 in sim.SK_ORDER:
+			if sim.can_skill(sid2):
+				can_end = true
+				break
+		out.append({"id": "tree", "rect": Rect2(490, 552, 300, 64), "text": "Subir el árbol (T)", "sub": "%d de esencia" % sim.essence, "on": true, "active": can_end})
 		out.append({"id": "menu", "rect": Rect2(810, 480, 160, 64), "text": "Menú", "sub": "Esc", "on": true})
 	out.append({"id": "speed", "rect": Rect2(820, y, 90, 72), "text": "Velocidad", "sub": "x%d" % speed, "on": true})
 	out.append({"id": "bestiary", "rect": Rect2(920, y, 100, 72), "text": "Bestiario", "sub": "B", "on": true})
@@ -963,7 +1002,7 @@ func _do_button(id: String) -> void:
 		"tree":
 			_toggle_tree()
 		"tree_close":
-			show_tree = false
+			_close_tree()
 		"level":
 			sim.level_up(selected_id)
 		"spell_brasa":
@@ -1824,6 +1863,8 @@ func _draw_hud() -> void:
 		sg_txt += "  ·  Ira %d" % sim.wrath
 	if not challenge.is_empty():
 		sg_txt = "Reto semanal  ·  " + sg_txt
+	if char_name() != "":
+		sg_txt = char_name() + "  ·  " + sg_txt
 	if sim.is_endless():
 		sg_txt += "  ·  récord %d" % int(records.get("grieta", 0))
 	_txt(sg_txt, Vector2(24, 68), 14, Color(0.85, 0.6, 0.5))
@@ -1858,7 +1899,7 @@ func _draw_hud() -> void:
 	draw_rect(Rect2(0, 604, SCREEN_W, 116), Color(0.05, 0.02, 0.03))
 	draw_line(Vector2(0, 604), Vector2(SCREEN_W, 604), Color(0.4, 0.12, 0.08), 3.0)
 	if sim.phase == "prep":
-		_txt("Arrastra bestias a las zonas marcadas: vanguardia hace de muro, retaguardia dispara. Selecciona una para subirla de nivel. T abre el árbol de habilidades.", Vector2(20, 618), 14, Color(0.75, 0.65, 0.6))
+		_txt("Arrastra bestias a las zonas marcadas: vanguardia hace de muro, retaguardia dispara. Selecciona una para subirla de nivel. Las almas que te sobren al acabar suben el árbol (T para verlo).", Vector2(20, 618), 14, Color(0.75, 0.65, 0.6))
 	elif sim.phase == "combat":
 		var left: int = sim.spawn_queue.size() + sim.enemies.size()
 		_txt("Quedan %d enemigos." % left, Vector2(340, 646), 17, Color(0.95, 0.85, 0.7))
@@ -2095,6 +2136,13 @@ func _draw_tree() -> void:
 	if sim.meta_mode:
 		var infl: float = float(sim.B["meta"].get("inflation", 0.0)) * float(sim.skill_points_spent())
 		_txt("%d rangos · cada rango encarece los demás un %s%% (ahora +%d%%)" % [sim.skill_points_spent(), String.num(float(sim.B["meta"].get("inflation", 0.0)) * 100.0, 1).replace(".", ","), int(round(infl * 100.0))], Vector2(24, 694), 13, Color(0.7, 0.65, 0.75))
+	if sim.meta_mode and not sim.tree_shop_open():
+		var why: String = "Las mejoras se compran al terminar la partida, con las almas que te queden."
+		if tree_from_menu:
+			why = "Tienes una partida a medias: las mejoras se compran al terminarla, con las almas que te queden."
+		_txt(why, Vector2(0, 627), 16, Color(1.0, 0.82, 0.35), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+	elif sim.meta_mode and sim.phase == "prep":
+		_txt("Entre partidas: gasta la esencia ahorrada antes de empezar.", Vector2(0, 627), 16, Color(0.6, 1.0, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 	_draw_tree_tabs()
 	var br: Dictionary = sim.branch_def(tree_tab)
 	var bc: Color = _branch_color(tree_tab)
@@ -2307,7 +2355,7 @@ func _draw_tree_panel(hov_id: String) -> void:
 	var pct: int = int(round(float(sim.B["meta"].get("respec_refund", 0.75)) * 100.0))
 	var note: String = "Reasignar devuelve el %d%% de lo pagado." % pct
 	if sim.paid_total("") > 0 and not sim.can_respec(""):
-		note = "Reasignar: solo entre partidas (antes de la primera oleada o al acabar)."
+		note = "Reasignar: solo entre partidas (desde el menú o al acabar)."
 	_txt(note, Vector2(TREE_PANEL.position.x + 14, _respec_rect(false).position.y - 8), 12, Color(0.7, 0.65, 0.7), HORIZONTAL_ALIGNMENT_LEFT, TREE_PANEL.size.x - 28.0)
 	for all in [false, true]:
 		var r: Rect2 = _respec_rect(all)
@@ -2502,9 +2550,17 @@ func _draw_overlays() -> void:
 			sub = "Aguantaste %d oleadas.  %s" % [sim.defeat_wave - 1, "¡Nuevo récord!" if new_record else "Récord: %d" % int(records.get(record_key(), 0))]
 		elif not challenge.is_empty():
 			sub += "  Reto semanal: %s" % ("¡nuevo récord!" if new_record else "récord %d/%d" % [int(records.get(record_key(), 0)), sim.wave_count()])
+		if char_name() != "":
+			sub = "%s: %s" % [char_name(), sub.substr(0, 1).to_lower() + sub.substr(1)]
 		_txt(sub, Vector2(0, 214), 24, Color(0.9, 0.85, 0.8), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		_txt("Enemigos abatidos: %d    Puerta: %d / %d" % [sim.kills, int(ceil(sim.door_hp)), int(sim.door_max)], Vector2(0, 254), 22, Color(0.8, 0.75, 0.7), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
-		_txt(_run_stats_line(), Vector2(0, 438), 16, Color(0.75, 0.8, 0.9), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		_txt(_run_stats_line(), Vector2(0, 462), 14, Color(0.7, 0.75, 0.85), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
+		# las almas que sobraron pasan al árbol
+		if sim.meta_mode:
+			var bank: String = "No te sobraron almas: esta vez el árbol no sube."
+			if not sim.banked.is_empty():
+				bank = "Te quedan %d almas  →  +%d de esencia para el árbol" % [int(sim.banked["souls"]), int(sim.banked["essence"])]
+			_txt(bank, Vector2(0, 438), 19, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var ep: String = sim.epitaph()
 		if ep != "":
 			_txt(ep, Vector2(0, 296), 24, Color(1.0, 0.85, 0.6), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
@@ -2613,13 +2669,12 @@ func _draw_tooltip() -> void:
 		yy += float(hs[i]) + 4.0
 
 
-const META_PATH: String = "user://meta.json"
 
 
 func _load_meta() -> void:
-	if not FileAccess.file_exists(META_PATH):
+	if not FileAccess.file_exists(_pfile("meta.json")):
 		return
-	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.READ)
+	var f: FileAccess = FileAccess.open(_pfile("meta.json"), FileAccess.READ)
 	if f == null:
 		return
 	var data: Variant = JSON.parse_string(f.get_as_text())
@@ -2643,23 +2698,23 @@ func _load_meta() -> void:
 
 
 func _save_meta() -> void:
-	if not sim.meta_mode:
+	if not sim.meta_mode or _pfile("meta.json") == "":
 		return
-	var f: FileAccess = FileAccess.open(META_PATH, FileAccess.WRITE)
+	var f: FileAccess = FileAccess.open(_pfile("meta.json"), FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify({"esencia": sim.essence, "habilidades": sim.skills, "pagado": sim.skill_paid, "asedios": siege_wins, "records": records, "logros_data": logros.to_save(), "historial": history}, "  "))
 
 
 ## Guarda la partida a medias (solo en preparación). Se recupera con «Continuar» al volver.
 func save_run() -> void:
-	if Engine.has_meta("sin_persistencia") or not sim.meta_mode:
+	if Engine.has_meta("sin_persistencia") or not sim.meta_mode or _pfile("partida.txt") == "":
 		return
 	var d: Dictionary = sim.run_save()
 	if d.is_empty():
 		return
 	d["challenge"] = challenge
 	d["logros_run"] = logros.run
-	var f: FileAccess = FileAccess.open(RUN_PATH, FileAccess.WRITE)
+	var f: FileAccess = FileAccess.open(_pfile("partida.txt"), FileAccess.WRITE)
 	if f != null:
 		f.store_string(var_to_str(d))
 
@@ -2684,15 +2739,124 @@ func _add_history() -> void:
 
 
 func clear_run() -> void:
-	if FileAccess.file_exists(RUN_PATH):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(RUN_PATH))
+	if _pfile("partida.txt") != "" and FileAccess.file_exists(_pfile("partida.txt")):
+		DirAccess.remove_absolute(_pfile("partida.txt"))
+
+
+# ----------------------------------------------------------------------------
+# Personajes: cada uno con su árbol, sus asedios, sus récords y su partida a medias
+# ----------------------------------------------------------------------------
+
+func _make_name_edit() -> void:
+	name_edit = LineEdit.new()
+	name_edit.position = Vector2(440, 300)
+	name_edit.size = Vector2(400, 56)
+	name_edit.max_length = Perfiles.NAME_MAX
+	name_edit.placeholder_text = Perfiles.DEFAULT_NAME
+	name_edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_edit.add_theme_font_size_override("font_size", 28)
+	name_edit.visible = false
+	name_edit.text_submitted.connect(func(_t): menu._do(self, "pj_crear"))
+	add_child(name_edit)
+
+
+## Deja la vista sin progreso de nadie (antes de cargar otro personaje).
+func _reset_profile_state() -> void:
+	sim.essence = 0
+	sim.skills.clear()
+	sim.skill_paid.clear()
+	sim.won = []
+	sim.unlocked = []
+	sim.seen_forms = []
+	sim.week_augur = ""
+	sim.between_runs = false
+	sim.set_siege(0, 0)
+	siege_wins.clear()
+	records.clear()
+	history = []
+	logros = Logros.new()
+	challenge = {}
+	tree_refund = 0
+	unlock_note = ""
+	branch_note = ""
+	contract_note = ""
+	show_tree = false
+	tree_from_menu = false
+	show_bestiary = false
+	selected_id = -1
+	menu.sel_siege = 0
+	menu.sel_wrath = 0
+
+
+## Carga el personaje en uso: su progreso, su bestiario y su partida a medias si la tiene.
+func _open_profile() -> void:
+	_reset_profile_state()
+	_load_meta()
+	_load_bestiary()
+	sim.reset()
+	fx.clear()
+	warns.clear()
+	mut_anim.clear()
+	poses.reset()
+	menu.started = load_run()
+	last_phase = "prep"
+
+
+func create_character(nombre: String) -> bool:
+	if perfiles == null or String(perfiles.create(nombre)) == "":
+		return false
+	_open_profile()
+	_save_meta()
+	return true
+
+
+func select_character(id: String) -> bool:
+	if perfiles == null or not perfiles.select(id):
+		return false
+	_open_profile()
+	return true
+
+
+func delete_character(id: String) -> bool:
+	if perfiles == null:
+		return false
+	var was_current: bool = String(perfiles.current) == id
+	if not perfiles.remove(id):
+		return false
+	if was_current:
+		if String(perfiles.current) == "":
+			_reset_profile_state()
+			sim.reset()
+			menu.started = false
+		else:
+			_open_profile()
+	return true
+
+
+## Árbol desde el menú: entre partidas se compra; con una partida a medias solo se mira.
+func open_tree_shop() -> void:
+	tree_from_menu = true
+	sim.between_runs = true
+	menu.open = false
+	show_tree = true
+	show_bestiary = false
+
+
+func _close_tree() -> void:
+	show_tree = false
+	_respec_arm = ""
+	if tree_from_menu:
+		tree_from_menu = false
+		sim.between_runs = false
+		menu.open = true
+		menu.panel = "main"
 
 
 ## Recupera la partida guardada. true si había una válida.
 func load_run() -> bool:
-	if Engine.has_meta("sin_persistencia") or not FileAccess.file_exists(RUN_PATH):
+	if Engine.has_meta("sin_persistencia") or not FileAccess.file_exists(_pfile("partida.txt")):
 		return false
-	var f: FileAccess = FileAccess.open(RUN_PATH, FileAccess.READ)
+	var f: FileAccess = FileAccess.open(_pfile("partida.txt"), FileAccess.READ)
 	if f == null:
 		return false
 	var d: Variant = str_to_var(f.get_as_text())

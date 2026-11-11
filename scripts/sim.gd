@@ -63,6 +63,8 @@ var contract_offer: Array = []
 var run_track: Dictionary = {}   # contadores de la partida para los encargos
 var unlocked: Array = []         # dones con "unlock" abiertos por logros (la vista los carga de meta.json)
 var boons: Array = []            # dones de la partida elegidos en el draft (ids del pool)
+var between_runs: bool = false   # la vista (menú) o el bot abren la tienda del árbol antes de la primera oleada
+var banked: Dictionary = {}      # almas que sobraron al acabar: {souls, essence} ({} si no hubo)
 var skill_paid: Dictionary = {}  # id de habilidad -> esencia pagada en total (para reasignar)
 var won: Array = []              # ids de asedios ganados (la vista lo carga de meta.json): abre ramas del árbol
 var LEGACY: Dictionary = {}      # nodos retirados del árbol (data/skills.json → legacy)
@@ -154,6 +156,7 @@ func reset() -> void:
 	augur_offer.clear()
 	contract = ""
 	contract_offer.clear()
+	banked = {}
 	run_track = {"brasa": 0, "rayo": 0, "levels": 0, "named_fell": false, "augur_missed": false}
 	terrain = "llano"
 	if remix_enabled:
@@ -507,6 +510,7 @@ func start_wave() -> bool:
 	if augurs_enabled and wave_index >= 1 and augur == "":
 		run_track["augur_missed"] = true
 	contract_offer.clear()   # el encargo se elige antes de la primera oleada
+	between_runs = false
 	_front_lane = rng.randi_range(0, 2) if augur_fx("one_front") > 0.0 else -1
 	spawn_queue = _build_spawns(WAVES[wave_index])
 	enemies.clear()
@@ -2220,6 +2224,7 @@ func _check_end() -> void:
 		door_hp = 0.0
 		phase = "defeat"
 		defeat_wave = wave_index + 1
+		_bank_souls()
 		events.append({"t": "defeat", "wave": defeat_wave})
 		return
 	if spawn_queue.is_empty() and enemies.is_empty():
@@ -2264,6 +2269,7 @@ func _wave_cleared() -> void:
 			else:
 				souls += rw
 			events.append({"t": "contract_done", "id": contract, "reward": rw})
+		_bank_souls()
 		events.append({"t": "victory"})
 		return
 	if draft_enabled:
@@ -2492,6 +2498,20 @@ func draft_pick(i: int) -> bool:
 	return true
 
 
+## Al acabar la partida, las almas que sobran pasan al árbol (1 alma = 1 de esencia, más la Ira).
+## Guardar almas en vez de gastarlas en bestias y niveles es la forma de subir el árbol.
+func _bank_souls() -> void:
+	banked = {}
+	if not meta_mode or souls <= 0:
+		return
+	var n: int = souls
+	var got: int = int(round(float(n) * float(B["meta"].get("soul_rate", 1.0))))   # sin multiplicador de Ira: 1 alma = 1 de esencia
+	essence += got
+	souls = 0
+	banked = {"souls": n, "essence": got}
+	events.append({"t": "banked", "souls": n, "essence": got})
+
+
 func _gain_essence(n: int) -> void:
 	n = int(round(float(n) * (1.0 + float(B["wrath"]["essence"]) * float(wrath))))
 	essence += n
@@ -2515,7 +2535,7 @@ func skill_cost(id: String) -> int:
 	if not meta_mode:
 		return base
 	# inflación: cada rango ya comprado encarece el siguiente (el árbol no se agota en 3 partidas)
-	return int(round(float(base) * (1.0 + float(B["meta"].get("inflation", 0.0)) * float(skill_points_spent()))))
+	return maxi(1, int(round(float(base) * float(B["meta"].get("cost_scale", 1.0)) * (1.0 + float(B["meta"].get("inflation", 0.0)) * float(skill_points_spent())))))
 
 
 func branch_def(bid: String) -> Dictionary:
@@ -2551,9 +2571,16 @@ func skill_state(id: String) -> String:
 	return "ok"
 
 
+## El árbol permanente solo se compra al terminar una partida (victoria o derrota) o entre partidas
+## (desde el menú, antes de la primera oleada: `between_runs`). Entre oleadas se mira, no se compra.
+func tree_shop_open() -> bool:
+	if not meta_mode:
+		return phase == "prep"   # modo de pruebas sin progreso permanente: se paga con almas en preparación
+	return phase == "victory" or phase == "defeat" or (phase == "prep" and wave_index == 0 and between_runs)
+
+
 func can_skill(id: String) -> bool:
-	var ok_phase: bool = phase == "prep" or (meta_mode and (phase == "victory" or phase == "defeat"))
-	return ok_phase and SK.has(id) and skill_state(id) == "ok"
+	return tree_shop_open() and SK.has(id) and skill_state(id) == "ok"
 
 
 func buy_skill(id: String) -> bool:
@@ -2597,9 +2624,7 @@ func respec_refund(branch: String = "") -> int:
 
 ## Se reasigna entre partidas: al acabar una o antes de la primera oleada.
 func can_respec(branch: String = "") -> bool:
-	if not meta_mode or paid_total(branch) <= 0:
-		return false
-	return phase == "victory" or phase == "defeat" or (phase == "prep" and wave_index == 0)
+	return meta_mode and paid_total(branch) > 0 and tree_shop_open()
 
 
 func respec(branch: String = "") -> bool:
@@ -2630,7 +2655,7 @@ func estimate_paid(ranks: Dictionary) -> Dictionary:
 	var out: Dictionary = {}
 	var infl: float = float(B["meta"].get("inflation", 0.0))
 	for i in buys.size():
-		out[buys[i][1]] = int(out.get(buys[i][1], 0)) + int(round(float(buys[i][0]) * (1.0 + infl * float(i))))
+		out[buys[i][1]] = int(out.get(buys[i][1], 0)) + maxi(1, int(round(float(buys[i][0]) * float(B["meta"].get("cost_scale", 1.0)) * (1.0 + infl * float(i)))))
 	return out
 
 
