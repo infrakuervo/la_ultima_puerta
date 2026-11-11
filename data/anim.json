@@ -1,0 +1,112 @@
+{
+	"_doc": "Animaciones por fotogramas (solo vista). Personaje -> clip. Fotogramas en art/anim/<dir>/<clip>/01.png, 02.png... height: alto en pantalla del cuadro entero; anchor: píxel del cuadro que cae en los pies del sprite fijo. Un clip puede sobrescribir height/anchor. fps; loop (bucle) u hold (quedarse en el último); start: primer fotograma (1 = el primero); impact: fotograma del golpe; hand: píxel de la mano en el impacto; frames: tope opcional. Si falta la carpeta o el primer fotograma se usa el sprite fijo.",
+	"demonio": {
+		"dir": "demonio",
+		"height": 199.0,
+		"anchor": [161, 236],
+		"idle": "reposo",
+		"clips": {
+			"reposo": {
+				"fps": 12,
+				"loop": true
+			},
+			"rayo": {
+				"fps": 24,
+				"start": 5,
+				"impact": 7,
+				"hand": [226, 80]
+			},
+			"brasa": {
+				"fps": 22,
+				"start": 8,
+				"impact": 13,
+				"hand": [240, 66]
+			},
+			"golpe": {
+				"fps": 16
+			},
+			"victoria": {
+				"fps": 12,
+				"hold": true
+			},
+			"derrota": {
+				"fps": 12,
+				"hold": true
+			}
+		}
+	},
+	"sabueso": {
+		"dir": "tizon",
+		"height": 89.6,
+		"anchor": [207, 219],
+		"idle": "",
+		"clips": {
+			"carrera": {
+				"fps": 16,
+				"loop": true
+			},
+			"mordisco": {
+				"fps": 22,
+				"start": 3,
+				"impact": 8
+			}
+		}
+	},
+	"horno": {
+		"dir": "horno",
+		"height": 100.0,
+		"anchor": [194, 247],
+		"idle": "reposo",
+		"clips": {
+			"reposo": {
+				"fps": 12,
+				"loop": true
+			},
+			"carrera": {
+				"fps": 14,
+				"loop": true
+			},
+			"mordisco": {
+				"fps": 18,
+				"impact": 8,
+				"height": 114.0,
+				"anchor": [185, 239]
+			}
+		}
+	},
+	"efectos": {
+		"_doc": "Efectos de Flow sobre fondo negro, con mezcla aditiva (scripts/fx_layer.gd). anchor [-1, -1] = centrados en el punto; height = alto en pantalla. brasa y rayo: al caer y al impactar; juicio: estirado a lo largo del carril; bola (proyectil de la Brasa), llamas (suelo ardiendo) y santuario: bucles que la vista coloca cada fotograma.",
+		"dir": "efectos",
+		"height": 190.0,
+		"anchor": [-1, -1],
+		"idle": "",
+		"clips": {
+			"brasa": {
+				"fps": 24,
+				"height": 150.0
+			},
+			"rayo": {
+				"fps": 24,
+				"height": 130.0
+			},
+			"juicio": {
+				"fps": 20
+			},
+			"bola": {
+				"fps": 12,
+				"loop": true,
+				"height": 44.0
+			},
+			"llamas": {
+				"fps": 12,
+				"loop": true
+			},
+			"santuario": {
+				"fps": 12,
+				"loop": true,
+				"height": 227.0,
+				"anchor": [150, 181]
+			}
+		}
+	}
+}

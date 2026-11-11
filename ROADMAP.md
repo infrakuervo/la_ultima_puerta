@@ -1,0 +1,246 @@
+# ROADMAP — trabajo autónomo
+
+Memoria entre turnos. Al empezar cada turno: leer esto y seguir por el primer punto pendiente.
+Tarea programada «La Última Puerta: seguir» (trig_01MLzV3vNtp2KM7sJUp7qaTV, cada hora, minuto 16) creada.
+
+## Árbol al final y personajes
+Encargo: `docs/prompts/arbol_final_personajes_fable_5_2.md`. La economía de la partida no cambia (almas, Sabueso, Ojo, niveles, draft, dones, augurios, encargos).
+
+### Plan
+1. [x] **El árbol se sube al terminar, con las almas que sobran.** `Sim._bank_souls()` al ganar o perder: 1 alma = 1 de esencia. `Sim.tree_shop_open()`: en modo permanente solo se compra (y se reasigna) en la pantalla final o entre partidas, desde el botón **Árbol** del menú. Entre oleadas el árbol se abre para mirar, con el aviso «Las mejoras se compran al terminar la partida, con las almas que te queden». Pantalla final: «Te quedan 85 almas: +85 de esencia para el árbol» y botón «Subir el árbol».
+2. [x] **Personajes con nombre.** `scripts/perfiles.gd`: tres ranuras, una carpeta por personaje (`user://personajes/<id>/` con `meta.json`, `partida.txt`, `bestiario.json`) y `user://personajes.json`. Menú → Personajes: crear (con nombre), elegir, borrar con dos clics. Nombre en la cabecera, el menú y la pantalla final. Los archivos de antes pasan al primer personaje.
+3. [x] **Ritmo.** Humanos más lentos y con más vida; el tamaño no se toca.
+4. [x] Tutorial, consejos, panel de preparación, «Cómo se juega», README y CLAUDE.md.
+5. [~] Medidas con el bot (ver abajo: la carrera con la configuración final quedó sin repetir).
+
+### Decisiones propias
+- **La esencia sigue siendo el saldo del árbol** y las almas se convierten 1 a 1 al acabar. Así lo ahorrado en `meta.json` se conserva tal cual y la frase de la pantalla final es exacta. Las almas guardadas **no** se multiplican por la Ira (1 alma es siempre 1 de esencia).
+- **Queda un extra pequeño** por oleada (4 + 2×n; antes 10 + 5×n) y por ganar (40; antes 60), que sí crece con la Ira. Sirve para que una derrota temprana no deje el árbol a cero y para que los dones y nodos de «esencia por oleada» sigan haciendo algo. En una primera partida el bot saca ~70 de extra y ~370-400 de almas guardadas: la decisión de guardar es lo que manda.
+- **«Entre partidas» = desde el menú, antes de la primera oleada.** Dentro de la partida el árbol es siempre de solo lectura, también en la oleada 1, para que la regla sea una sola. Con una partida a medias, el Árbol del menú avisa de que se compra al terminarla.
+- **Costes en la escala de las almas**: `meta.cost_scale` 1,8 e inflación 2,2% → 4,5%. Las almas que sobran crecen mucho al avanzar (de ~400 a ~1500 por partida: más enemigos, nodos de economía), así que la inflación tiene que frenar más. Con esto el bot llega a la partida 20 con 133 rangos (antes 137).
+- **Las opciones son generales**; todo lo demás es del personaje, incluida la partida a medias. Borrar pide un segundo clic.
+- **El nombre se escribe en un `LineEdit`** (única pieza de interfaz que no es dibujo inmediato): da teclado en móvil y acentos sin reinventar nada.
+- **Ritmo**: comunes −30% de velocidad y +20% de vida; élites −25% / +15%; héroes y jefes −20% / +5%. Para compensar la pelea más larga, los comunes pegan 1 punto menos (campesino 5 → 4, escudero 8 → 7, ballestero 7 → 6, flagelante 5 → 4, purificador 10 → 9). Subir la vida de la Puerta no ayudaba (las derrotas son por bestias que caen), así que se quedó en 130.
+
+### Medidas (bot torpe)
+- **Primer contacto** (`tools/debug_run.tscn -- 11 verdugo 99`, que ahora lo imprime): oleada 1 de 8,3 s a 11,5 s; oleadas 2-3 de ~8,5 s a ~12 s.
+- **Primera partida** (100): 50% antes → **42%** con todo (ritmo nuevo y el bot guardando almas antes de la última oleada el 60% de las veces si va bien). Pasos: +40% de vida 26%; +30% 38%; +25% y daño rebajado 46%; con el bot guardando en las dos últimas oleadas 35% (por eso la regla se suavizó). Bot hábil 82%.
+- **Carrera** (`BAL_CLIMB=1`, 20 partidas): con la calibración final de costes (×1,8, 4,5%) y la regla de ahorro anterior, mixto 56% (6 carreras; sin rachas al final: 33-67% en las partidas 14-20) y, con vida +25%, mixto 56% / fuego 52% (8 carreras). **La carrera completa de los tres estilos con la configuración final (vida +20%, regla de ahorro suave) no llegó a terminar** (la sesión se reinició a mitad): hay que repetirla con `BAL_CLIMB=1 godot --headless --path . res://tools/balance.tscn -- 100 8 20` (ahora tarda ~35 min: las partidas duran más).
+- Calibraciones descartadas: 1 alma = 1 esencia con los costes de antes → 90% de media y 17 000 de esencia en 10 partidas; costes ×3 con inflación 3% → 43%; ×2,2 / 2,5% y ×2,0 / 3,2% → 62-63% con 88-100% en las últimas seis partidas.
+- La Grieta no se ha vuelto a medir con el ritmo nuevo.
+
+### Comprobado
+- Suite: **500 comprobaciones, 0 fallos**, sin `SCRIPT ERROR` (77 nuevas: no se compra en preparación y sí al final o desde el menú; las almas que sobran pasan al árbol; crear, elegir y borrar personajes; cada uno guarda lo suyo; migración; solapes de la pantalla de personajes). Las pruebas de personajes trabajan en una carpeta temporal, no en `user://`.
+- Capturas revisadas: `tools/shots.tscn -- <dir> personajes` (menú, ranuras, borrar, nombre, cabecera), `victoria` y `arbol` (incluye `arbol_solo_ver`).
+- Web (exportación local, Chromium sin cabeza): crear «Lilith», jugar, perder, recargar → el personaje, su esencia y el fin de la partida se conservan. **Ojo:** en ese navegador la sincronización con IndexedDB tardó entre 6 y 20 s; recargando a los 6 s se perdió lo último. No se llegó a comprobar la partida a medias tras recargar (el robot no consiguió ganar la oleada 1) ni la versión publicada.
+- De paso: la flecha «→» no se veía con la fuente de la web; la línea de la pantalla final usa dos puntos.
+
+### Lo que haría después
+1. Repetir la carrera de los tres estilos y La Grieta con la configuración final, y retocar `cost_scale` / `inflation` si las medias se separan.
+2. Forzar el guardado en la web al acabar la partida (o avisar «guardando…») para no depender de la latencia de IndexedDB.
+3. Enseñar en preparación cuánto árbol comprarían las almas que tienes («con 120 almas: 2 rangos»), para que guardar sea una decisión informada.
+4. Renombrar un personaje y elegir retrato.
+
+## Árbol 2 (rediseño del árbol de habilidades)
+Encargo: `docs/prompts/arbol_fable_5_2.md`. El árbol subía números pero no cambiaba cómo se juega.
+
+### Plan
+1. [x] **Piedras angulares** — una por rama (`keystone` en `data/skills.json`, rango único, 80 de base): cambian una regla y piden algo a cambio. Se leen en `sim.gd` con claves `special.*`.
+2. [x] **Caminos excluyentes** — los ocho remates «+X% y +Y%» (fila 5) se retiran y en su lugar hay una pareja con `excl`: comprar uno cierra el otro (estado `excluded`, tachado en la vista).
+3. [x] **El árbol habla con los dones** — nodos con `set.need.<familia>` (resonancia con un solo don), `set.power.<familia>` (resonancia más fuerte), `draft.family.<familia>`, `draft.kind.<bestia>` y `draft.rarity.<rareza>` (pesos del draft).
+4. [x] **Reasignar con coste** — `Sim.respec(rama)` devuelve el 75% (`meta.respec_refund`) de lo pagado de verdad (`skill_paid`, que guarda cada compra con su inflación); una rama o todo el árbol; solo entre partidas. Se guarda en `meta.json` → `pagado`.
+5. [x] **Ramas que se ganan** — Abismo (pack 2; se abre al ganar el Alba) e Inquisición (al ganar el tercer asedio). `branches[].unlock`; estado `sealed` con el requisito escrito.
+6. [x] **Vista nueva** — pestañas por rama a la izquierda, árbol de la rama en el centro (dos columnas y una lateral para piedra angular y nodos de dones) y panel de detalle fijo a la derecha con los botones de reasignar. Capturas: `tools/shots.tscn -- <dir> arbol` (13 capturas).
+7. [x] **Migración** — `Sim.load_tree()`: los nodos retirados devuelven su esencia entera (la pagada si hay registro; si no, estimada repitiendo la compra de barato a caro con inflación); aviso en el menú. Una partida a medias se carga y ajusta la Puerta al árbol nuevo.
+8. [x] **Bot con estilos de compra** — `tests/bot.gd` → `STYLES`: `mixto` (sin plan: las seis ramas de siempre, ninguna piedra angular), `fuego` (Brasa, Rayo, Horno e Inquisición; Tierra quemada + Arco voltaico + Estallido de ceniza) y `manada` (Bestias, Jauría, Demonio, Trueno y Abismo; Camada + Puerta de espinas). Lista de deseos, ahorra para la piedra angular, elige el heraldo de su rama y prefiere en el draft los dones que su árbol empuja. `tools/balance.tscn` repite la carrera con cada estilo y compara árboles; `BAL_GRANT=<id>` mide una piedra angular suelta.
+9. [x] Documentación (CLAUDE.md, README.md, «Cómo se juega»), web republicada y PR #1 actualizado.
+
+### Decisiones propias
+- **Los remates se quitan en vez de añadir una fila más.** Eran los nodos más «porcentaje» del árbol y su sitio es justo el de la elección final. Quien los tenía recupera toda su esencia.
+- **«Tarda el doble»** de Tierra quemada es el enfriamiento, no el retardo de caída: con 3 s de caída no se acierta a nadie y el fuego en el suelo ya premia apuntar por delante.
+- **Tizón inmortal** no es un muro eterno: cae 3 s y se levanta con media vida (un bloqueador que nunca cae cerraba un carril para siempre). A cambio no gana cicatrices, así que choca con «Orgullo de cicatrices»: es una decisión de build.
+- **Reasignar devuelve el 75%** de lo pagado, con su inflación (se apunta cada compra). Así nunca se gana esencia reasignando y el precio de probar otra build es claro. Solo entre partidas, para que no sirva de truco a mitad de asedio.
+- **Las ramas nuevas se ven selladas** con su requisito, y la vista pasa a pestañas: diez columnas no caben en 1280 px y un panel fijo de detalle deja leer las piedras angulares sin tooltip.
+- Las piedras angulares no tienen rangos ni inflación propia distinta: cuestan 80 de base, que con el árbol a medias son 110-140 de esencia (una partida entera).
+
+### Piedras angulares
+| Rama | Piedra | Regla | A cambio |
+|---|---|---|---|
+| Brasa | Tierra quemada | deja el suelo ardiendo 5 s | tarda el doble en recargarse |
+| Rayo | Arco voltaico | salta sin límite (cada salto pierde ≥15%) | solo salta a enemigos que arden |
+| Demonio | Puerta de espinas | quien golpea la Puerta recibe 18 de daño (×Ira) | Puerta −25% de vida |
+| Bestias | Tizón inmortal | Tizón se levanta a los 3 s, sin cicatriz | las demás bestias −15% de vida |
+| Jauría | Camada | cada Sabueso trae un gemelo gratis | Sabuesos −25% de vida |
+| Horno | Estallido de ceniza | los que mueren ardiendo estallan y prenden | Horno −30% de vida |
+| Trueno | Tormenta errante | no vuelve a su puesto y salta un 30% más | recibe +30% de daño |
+| Ojo | Mirada fija | +80% de daño a un solo blanco | ya no encadena |
+| Abismo | Pacto del Abismo | empiezas con una bestia del Abismo | empiezas sin almas |
+| Inquisición | Hoguera profana | hoguera que cura bestias y quema humanos | Puerta −20% de vida |
+
+### Medidas (bot torpe)
+`BAL_CLIMB=1 godot --headless --path . res://tools/balance.tscn -- 100 12 20` (primera partida ×100 y carrera de 20 partidas ×12 por estilo; antes, ×8 con el único bot que había).
+
+| Medida | Antes | Después |
+|---|---|---|
+| Primera partida (sin árbol) | 50/100 (50%) | 50/100 (50%): sin árbol la simulación es la misma |
+| Primera partida, bot hábil | 85% | 85% |
+| Carrera, media de 20 partidas | 57% | mixto 59% · fuego 57% · manada 60% |
+| Peor partida de la carrera | 12% (la 1.ª, sin árbol) y 25% | 17% (la 1.ª); mínimos 17% / 8% / 33% |
+| Rachas del 100% | una partida (la 6.ª) | dos seguidas como mucho (mixto 17-18, al entrar en la Inquisición) |
+| Esencia invertida en la partida 20 | ~7350 | ~7400 |
+
+Por partida (victorias de 12 carreras, %):
+- mixto: 17, 100, 92, 50, 42, 50, 50, 75, 75, 58, 33, 33, 17, 33, 50, 75, 100, 100, 58, 67
+- fuego: 17, 92, 67, 50, 33, 83, 67, 75, 75, 42, 42, 25, 17, 8, 33, 67, 75, 92, 100, 75
+- manada: 17, 83, 92, 42, 67, 92, 75, 75, 83, 58, 50, 67, 67, 58, 92, 33, 33, 50, 33, 42
+- antes (8 carreras): 12, 88, 75, 62, 75, 100, 50, 88, 50, 38, 38, 62, 50, 25, 25, 25, 75, 62, 88, 50
+
+**Árboles distintos, tasas parecidas** (el objetivo de verdad): distancia entre árboles al final de la carrera (1 − rangos compartidos / rangos totales; 0 = iguales): fuego / manada 0,87, mixto / fuego 0,67, mixto / manada 0,57; entre dos carreras del mismo estilo 0,06. Fuego acaba con 30 rangos en Brasa, 31 en Rayo y 29 en Horno; manada con 27 en Bestias, 25 en Jauría, 25 en Demonio, 22 en Trueno y 21 en Abismo. Las tres medias caben en 3 puntos.
+
+Cada estilo tiene su asedio malo: fuego se atasca en el Alba con Ira 3 (paladines que no arden, escudos: 8-25% durante tres partidas) y luego sube rápido por la Inquisición; manada cruza el Alba sin frenar y sufre en la Inquisición (los santuarios queman a las bestias: 33-50%). Es justo donde reasignar tiene sentido.
+
+**Piedras angulares sueltas** (`BAL_SOLO_ESS=1 BAL_ESS=600 BAL_WRATH=2 BAL_GRANT=<id> ... -- 60 0 0`, primer asedio con Ira 2 y un árbol mixto de 600; sin piedra 53%; ±6 puntos de ruido): en la primera pasada Tizón inmortal daba 27% (las demás bestias perdían un 40% de vida) y Mirada fija 70% (+120%). Tras el ajuste: Tierra quemada ~52%, Arco voltaico 43-57% (medido antes de su último cambio; sin fuego alrededor resta: es para builds de quemadura), Puerta de espinas 60%, Tizón inmortal 37% con −25% (se dejó en −15%), Camada 60%, Estallido de ceniza 45-58%, Tormenta errante 48-52%, Mirada fija 62%, Pacto del Abismo 62-68%, Hoguera profana 53-55%. Ninguna es gratis y ninguna es obligatoria.
+
+**Ajustes hechos al medir** (todo en JSON salvo dos líneas):
+- Estilo manada 44% → 60%: Camada −35% → −25% de vida, Horda +4% por bestia y +6% de vida, Carnicero +25% / −10%, Puerta de espinas 14 → 18 y multiplicada por la Ira (si no, a Ira 3 no hacía nada).
+- El Arco voltaico tenía un suelo del 50% por salto y hasta 24 saltos: con «Cadena potente» y una multitud ardiendo eran ~13 rayos por lanzamiento. Ahora cada salto pierde al menos un 15% (`meta.arc_frac`).
+- El árbol nuevo rinde más por esencia (con 7500, la Inquisición con Ira 3 pasó del 29% al 71-100% según estilo): inflación 2% → 2,2%. Ira 5 sigue siendo el techo (12 / 12 / 42%).
+- El bot «mixto» compraba lo más barato de todo el árbol y tiraba la esencia en nodos situacionales (Abismo sin bestias del Abismo, nodos de dones sin buscar esos dones): 42%. Un jugador sin plan no hace eso; ahora reparte por las seis ramas de siempre (59%).
+
+### Resumen
+- El árbol pasa de 69 nodos «+X%» en 8 ramas a **110 nodos en 10 ramas**: una piedra angular y una pareja excluyente por rama, siete nodos que hablan con los dones, reasignación al 75% y dos ramas que se ganan con el segundo y el tercer asedio.
+- Vista nueva con pestañas, columna lateral y panel de detalle; 13 capturas revisadas a ojo (`tools/shots.tscn -- <dir> arbol`), más `piedras` (suelo ardiendo y Hoguera profana) y la prueba automática de solapes.
+- Migración probada con un `meta.json` antiguo en la vista real: devuelve 372 de esencia de cinco rangos de remates y lo dice en el menú.
+- Pruebas: **423 comprobaciones, 0 fallos** (96 nuevas: datos, exclusión, reasignación, ramas, migración, las diez piedras angulares, dones e interfaz).
+- De paso: la tarjeta del tercer asedio decía «gana el primer asedio»; ahora nombra el asedio que lo abre.
+
+### Lo que haría después
+1. **La escalera de asedios.** La Inquisición con Ira 0 es más fácil que el Alba con Ira 3, así que quien llega con 6000 de esencia gana 2-4 partidas seguidas al entrar (ya pasaba antes: 96% con 3000). Subir la base de la Inquisición o hacer que su Ira mínima dependa de la ganada en el Alba.
+2. **Jugar las piedras angulares a mano.** El bot dice que están equilibradas, no que sean divertidas. Las que más cambian la partida (Tierra quemada, Arco voltaico, Camada, Tormenta errante) necesitan manos; Hoguera profana y Puerta de espinas son más pasivas y quizá piden algo más vistoso.
+3. **Una piedra angular más por rama** y que también se excluyan entre sí (hoy se pueden tener las diez). Con dos por rama la elección de build sería más dura.
+4. **Segundo vistazo en el draft** (cambiar las opciones una vez por partida) como nodo del Demonio: es el nodo de dones que más pedía el diseño y necesita un botón en la tarjeta del draft.
+5. **Arte de las ramas nuevas**: iconos por nodo (hoy son cajas con texto) y un sprite para Gárgola, Enjambre y Garfio, que ahora tienen rama propia.
+6. **Reasignar gratis una vez** al abrirse una rama nueva, para invitar a probarla.
+7. El bot no usa Tizón inmortal + Alfa ni Mirada fija en ninguna carrera: añadir un cuarto estilo («campeón») para medir esa build.
+
+## Noche 2 (animaciones de Flow)
+Tarea programada «La Última Puerta: seguir 2» (trig_01RebsH5yBQGN7zjmY9vLLuV, cada hora, minuto 59) creada.
+Entorno rehecho igual que en el paso 0 (Godot 4.7.2 en `/opt/godot`, xvfb).
+
+1. [x] Sistema de animación por fotogramas — `scripts/anim.gd` + `data/anim.json` (personaje → clip: fps, bucle/hold, start, impacto, mano, alto y pies). Carga perezosa con caché; sin carpeta o sin fotograma → sprite fijo. Pruebas en `test_anim`.
+2. [x] Demonio — reposo en bucle; `rayo` (24 fps desde el fotograma 5) y `brasa` (22 fps desde el 8) al lanzar; `golpe` si golpean la Puerta y no está lanzando; `victoria` y `derrota` (se queda en el último) en las pantallas finales, donde ahora sale el demonio grande a la izquierda. El rayo y la bola salen de la mano (`hand` en el JSON) en el fotograma de impacto: los efectos visuales del rayo esperan ~0,08 s; la bola vuela el resto del retraso de la Brasa. Escala y pies medidos con PIL frente al sprite fijo (`tools/shots.tscn` → `demonio`).
+3. [x] Tizón / Sabuesos — `carrera` al moverse (velocidad suavizada leída de la simulación) y `mordisco` en `bite`/`presa`; sin reposo usa el sprite fijo con respiración por código. Al volver a casa se da la vuelta.
+4. [x] Horno — `reposo`, `carrera` y `mordisco` (en `bite` y `horno_spit`); el mordisco tiene su propio `height`/`anchor` en el JSON por el encuadre más abierto.
+5. [x] Animación por código — `scripts/poses.gd`: respiración en reposo, trote al moverse, embestida al atacar (bestias por evento; enemigos cuando su enfriamiento salta) y retroceso con el destello de golpe; preparación (Presa, apuntar) agacha un poco. La sombra se dibuja aparte, plana, y el cuerpo gira/escala desde los pies con `draw_set_transform(arena_offset + ...)`. Arreglado el reinicio a cero de la transformación en los charcos de brea. Capturas: `tools/shots.tscn` → `animacion`.
+6. [x] Intro en vídeo — `VideoStreamPlayer` en un `CanvasLayer` al abrir el juego, antes del menú; clic o tecla la salta (fundido al menú); tope de 12 s por si no avisa al terminar. Opción «Vídeo de inicio» (`intro` en `user://opciones.json`). No sale en las pruebas ni sin pantalla. Captura: `tools/shots.tscn` → `intro`.
+7. [x] Peso y web — antes `index.pck` 5,5 MB; con los fotogramas en PNG sin pérdida 39 MB (+34). Con WebP con pérdida (calidad 0,8, `tools/anim_lossy.sh`, llamado desde `tools/publish_web.sh`) queda en 14 MB (+8,5, de ellos 3 del vídeo) sin diferencia visible; no hizo falta bajar fps ni hacer hojas. `index.wasm` 39 MB (10 MB con gzip), igual que antes. Republicada y probada en Chromium sin cabeza: intro, se salta con Esc, menú con el demonio animado, combate con el clip de la Brasa.
+8. [x] Rejugabilidad — ver la sección «Rejugabilidad» (curva del árbol, música procedural con volúmenes aparte, logros y estadísticas, y mucho más).
+9. [x] Cierre — PR #1 actualizado; resumen abajo; lista de animaciones que faltan para Flow. La tarea programada sigue activa mientras quede trabajo en «Siguientes pasos»: cada activación hace el primero pendiente y, cuando no quede ninguno, se desactiva.
+
+### Resumen de la noche 2
+- Animación: sistema genérico por fotogramas (`anim.gd` + `data/anim.json`) con el demonio (6 clips, hechizos desde la mano), Tizón/Sabuesos y Horno; poses por código para todo lo demás; intro en vídeo; web de 14 MB.
+- Rejugabilidad: oleadas remezcladas, augurios, encargos, terreno, draft con rareza, dones y resonancias, La Grieta sin fin, reto semanal, logros que abren contenido, historial, estadísticas, guardado entre oleadas, música procedural, x3, inflación del árbol, consejos de una vez.
+- Contenido: tercer asedio «la Inquisición» con santuarios, tres enemigos nuevos por datos y su jefe; 17 dones y 10 augurios.
+- Equilibrio medido con el bot torpe: primera partida 50% (objetivo 40-60%); carrera de 20 partidas por los tres asedios subiendo Ira con ~58% de media y sin muro (antes: 100% desde la segunda partida).
+- Pruebas: 327 comprobaciones, 0 fallos. Web republicada y probada en Chromium sin cabeza. PR #1 actualizado.
+- Tarea programada «La Última Puerta: seguir 2» desactivada a las 05:00 UTC: lo que queda en «Siguientes pasos» necesita al usuario (jugar a mano, clips nuevos de Flow, arte del pack 2, aprobar el entorno).
+- Decisiones propias: la variedad se activa por banderas en `Sim` (las pruebas siguen deterministas); la Ira propuesta por defecto es la más alta abierta; sin encargo en la primera partida con tutorial; WebP con pérdida solo al exportar a web (los PNG originales no se tocan).
+
+### Siguientes pasos (para las próximas activaciones o para mañana)
+1. [ ] Jugar a mano y ajustar: volumen de la música frente a los efectos, tiempos de los clips (rayo 24 fps, brasa 22 fps), que el rayo espere 0,08 s al fotograma de impacto.
+2. [ ] Integrar los clips nuevos de Flow en cuanto lleguen (ver «Animaciones que faltan»): solo hay que crear la carpeta y añadir la entrada en `data/anim.json`. Los efectos sobre negro ya tienen su capa aditiva (`scripts/fx_layer.gd`, personaje `efectos`, clips `brasa` y `rayo` esperando fotogramas).
+3. [x] Tercer asedio «la Inquisición» (se abre al ganar el Alba): **santuario** en un punto al azar del campo en cada oleada (se ve al preparar) que cura a los humanos de dentro (no a héroes ni jefes) y quema a las bestias; obliga a recolocar y a sacar a los humanos con la Brasa. Enemigos nuevos por datos: Flagelante (rápido), Purificador (dispara de lejos, no arde) y el jefe Gran Inquisidor (Juicio y escolta). 8 oleadas, logro «Hoguera apagada», entra en el reto semanal. Equilibrio (bot torpe, 24 partidas): 29% / 79% / 96% con 600 / 1500 / 3000 de esencia (el Alba: 67 / 97 / 100). Antes del ajuste: 0 / 27 / 30%, el santuario curaba al jefe y era un muro.
+4. [~] Más dones y augurios — hecho: augurio Frenesí y dones Brasero vivo, Chispa negra, Garras de obsidiana y Diezmo eterno (17 dones, 10 augurios). Con tantos dones, las bestias salían menos en el draft y la primera partida bajó al 40%: pesos de los dones a 0,7 (raros) y 0,35 (épicos) → 50% en 100 partidas. Falta: un sprite para las bestias del pack 2.
+6. [x] La Grieta con temas de la Inquisición (Flagelantes, Hogueras) y sus enemigos en la remezcla.
+7. [x] Tercer asedio en la carrera del bot (`BAL_CLIMB=1`: primero → Alba → Inquisición, pasando al siguiente tras ganar Ira 3). 8 carreras × 20 partidas: victorias por partida 12 (muestra pequeña; la primera partida da ~50% en 100), 88, 75, 62, 75, 100, 50, 88, 50, 38, 38, 62, 50, 25, 25, 38, 88, 75, 75, 50%. Media ~58%, sin muro: el Alba con Ira 2-3 baja al 25-38% unas partidas y la Inquisición llega hacia la partida 12-18. Veinte partidas de progresión con reto.
+5. [ ] Setup script del entorno (necesita aprobación del usuario; no se propuso de noche para no dejar la sesión esperando). El entorno actual es el Default, compartido por todos los repositorios, así que debería ir en un entorno propio de este repo. Pasos que funcionan: descargar `Godot_v4.7.2-stable_linux.x86_64.zip` de GitHub a `/opt/godot` y enlazarlo en `/usr/local/bin/godot`; `apt-get install -y xvfb`; sacar `web_nothreads_release.zip` y `web_nothreads_debug.zip` del `.tpz` con peticiones por rangos (script en la nota de entorno) a `~/.local/share/godot/export_templates/4.7.2.stable/`.
+
+## Arte de Flow integrado (tanda del 10-11)
+- [x] Efectos: explosión de la Brasa, impacto del Rayo, Juicio, bola de la Brasa en vuelo, llamas del suelo y sigilo del santuario (ver `art/anim/LEEME.md`). Recorte por energía y corte de niveles; llamas y santuario con transparencia y en el suelo, debajo de las unidades.
+- [x] Sprites: Zapador, Ánima del Garfio, Gárgola de Ceniza y Gran Inquisidor. Sin tinte prestado en Zapador y Gran Inquisidor.
+- [x] Fondo del segundo asedio: `fondo-alba.jpg` (la Fosa con estandartes y luz de amanecer).
+- [x] Segunda tanda: Gran Maestre, Ariete Bendito (antes dibujado con código), Sacerdotisa (recortada sobre blanco) y Purificador, ya sin tinte prestado.
+- [ ] Faltan como archivo: Paladín del Alba y Flagelante (siguen con sprite prestado y tinte).
+- [ ] La «embestida del Horno» salió con otra criatura: repetir.
+
+## Animaciones que faltan (para pedir a Google Flow)
+Mismo método que hoy: fondo verde liso (o negro para efectos), cámara fija, personaje de perfil mirando a la derecha y sin desplazarse, 4-8 s. Se recortan a PNG en `art/anim/<pj>/<clip>/` y se añaden a `data/anim.json`.
+1. **Efectos sobre fondo negro** (se suman con mezcla aditiva, sin recorte): explosión de la Brasa al caer (vista un poco desde arriba, 1-1,5 s); impacto del Rayo (destello y chispas azules, 0,5 s); llamas de suelo en bucle (para los charcos de fuego del Horno y la Brasa); chispazo en la mano del demonio (bucle corto).
+2. **Tizón en reposo** (bucle de respiración, mismo encuadre que `carrera`/`mordisco`): ahora usa el sprite fijo con respiración por código.
+3. **Embestida del Horno en verde** (el clip magenta no se pudo recortar); también **inhalar** (abre las fauces y aspira 1-1,5 s), que encaja con su aviso INHALA.
+4. **Otras bestias** (reposo y ataque de cada una): Trueno (agacharse y salto), Ojo de Latón (flotar y disparo), Alacrán (pinza), Sapo (escupitajo), Manta (planeo). Las del pack 2 (Gárgola, Enjambre, Garfio) aún son siluetas por código: primero un sprite fijo de cada una.
+5. **Enemigos**: caminar y atacar del campesino y del escudero (son los más numerosos); el héroe Verdugo (hachazo) y el Inquisidor (campana).
+6. **Jefe Gran Maestre**: caminar, Juicio (levanta el brazo y cae la luz sobre un carril) y derrota.
+7. Opcional: el demonio **recibiendo Juicio** o **animando a la Puerta** entre oleadas.
+
+## Rejugabilidad (ampliación de la noche 2)
+El usuario quiere «un procedural divertido que dé horas de juego sin cansar aunque sea repetitivo».
+Plan: tras los puntos 1-7, jugar partidas de verdad (bot torpe, capturas, `tools/debug_run.tscn`), apuntar aquí qué se repite y qué aburre, y luego valorar: oleadas generadas con presupuesto, modificadores por oleada, sinergias y builds, draft con rareza, retos semanales con semilla, desbloqueos meta de contenido, ritmo (x3, menos tiempos muertos). Medir con el bot antes y después.
+
+### Diagnóstico (partidas del bot, `tools/balance.tscn`, `tools/debug_run.tscn`)
+- **Todas las partidas son la misma partida.** Las 6 oleadas del primer asedio (y las 8 del segundo) tienen siempre la misma composición; solo se sortean los frentes. Lo único que cambia de una partida a otra es el draft y la ruta (2 opciones fijas, con su héroe fijo).
+- **La curva se rompe enseguida.** Antes: con 180 de esencia (una partida) el bot torpe gana el 100% del primer asedio a Ira 0 y no vuelve a perder. Subiendo la Ira tras cada victoria (`BAL_CLIMB=1`), gana el 88-100% y agota todo el contenido (asedio 2, Ira 5) en ~12 partidas: la esencia crece más rápido que el reto.
+- **Pocas decisiones por oleada.** Entre oleadas: colocar (casi siempre igual), subir nivel y el draft (1 de 3, con recompensas planas). En combate, Brasa y Rayo. No hay riesgo/recompensa que elegir.
+- **Tiempos muertos.** La fase de preparación no tiene prisa ni nada nuevo que mirar; velocidad máxima x2.
+- **No hay final abierto.** Ganado el segundo asedio en Ira 5 no queda nada que perseguir.
+
+### Hecho
+- [x] **Curva del árbol** — inflación (`balance.json` → `meta.inflation` = 0,02): cada rango comprado encarece un 2% los demás. Carrera subiendo Ira (`BAL_CLIMB=1`, 8×14 partidas): asedio 1 con 62-100% de victorias en cada Ira (antes 88-100%), Ira 3 del asedio 2 queda como techo para el bot torpe. A Ira 0 sigue siendo fácil tras la primera victoria (es el «modo tranquilo»).
+- [x] **Oleadas remezcladas** (`waves.json` → `remix` por asedio, `Sim.remix_enabled`): cada partida copia las oleadas y cambia la composición con el mismo presupuesto (recompensa). El grupo principal de cada oleada conserva su tipo (es el tema y la nota); los demás comunes cambian con prob. 0,45 y las élites por otra élite con 0,6; cantidades ±20%. La oleada 1 no cambia (tutorial). Con semilla fija sale igual (para retos).
+- [x] **Augurios** (`balance.json` → `augurs`, `Sim.augurs_enabled`): antes de cada oleada desde la 2 se ofrecen dos riesgo/recompensa (Luna de sangre, Marea, Fervor, Campeón, Niebla, Diezmo, Lluvia de ceniza); se elige uno o ninguno (Calma) con tarjetas bajo la previsión. El bot coge uno al azar el 60% de las veces.
+  Medida (bot torpe, 80 primeras partidas): 58% sin variedad → 49% con remezcla y augurios al azar. Dentro del objetivo; un jugador que elige con cabeza lo tendrá algo mejor.
+- [x] **Draft con rareza y dones** — el pool tiene `rarity` (común/rara/épica: marco, halo y peso) y un tipo nuevo `boon`: efectos para el resto de la partida con los mismos `fx` que el árbol (se suman en `_fx_totals`). Nueve dones que empujan a builds: fuego (Pacto de fuego, Eco de la Fosa), rayo (Tormenta, Rayo de gracia), bestias (Ley de la manada, Sangre de la Fosa, Colmillos de hierro), almas (Usura) y Puerta (Muralla de huesos). Las épicas desde la oleada 2. Iconos de los dones activos arriba a la izquierda (nombre al pasar el ratón). Bot torpe: 46% en la primera partida.
+- [x] **La Grieta (sin fin)** — tercer «asedio» (`waves.json` → `grieta.endless`), se abre al ganar el primero. Empieza con las 6 oleadas del primer asedio remezcladas (ruta y héroe incluidos) y luego genera oleadas: presupuesto en recompensa ×1,08 por oleada, +7% de vida por oleada, un tema (grupo principal) y relleno al azar, élites que crecen hasta 6, heraldo cada 5 y Gran Maestre cada 15. No hay victoria: se guarda el récord de oleadas (`user://meta.json` → `records.grieta`) y la Ira se abre con él (1 por cada 8 oleadas). Tarjetas de asedio a tres columnas.
+  Ajuste (bot torpe, 12 partidas por medida, oleadas superadas): con vida +7% lineal el bot con árbol llegaba al tope de 30 min (26-28 oleadas) sin morir. Ahora vida ×1,075 y daño ×1,04 compuestos por oleada, presupuesto ×1,06 con tope 560 (rendimiento) y jefe con vida propia (`boss_hp`, sin crecimiento): sin árbol 3-9; con 1000 de esencia 14-27; con 2500, 14-24. El Gran Maestre de la oleada 15 frena a ~40% (es el hito; `boss_hp` bajado a 0,45 después de medir).
+  Tope de 70 comunes por oleada generada (`max_count`): el exceso se convierte en vida del grupo. Oleada 11: 45 enemigos; 21 y siguientes: ~76 (con élites), con vida ×3, ×6, ×12.
+- [x] **Reto semanal** — botón en la selección de asedio: semilla fija durante la semana (`unix/604800`), asedio (alterna primero/segundo si está abierto), Ira 1 y un augurio que dura toda la partida (`Sim.week_augur`). Reiniciar repite las mismas oleadas. Récord propio (`records["reto:<semana>"]`, oleadas superadas).
+- [x] **Ritmo** — velocidad x1 → x2 → x3 (botón, F y opción).
+- [x] **Logros y estadísticas** — `data/logros.json` (14) + `scripts/logros.gd` (condiciones por evento). Aviso arriba al conseguir uno, lista en el menú (Logros) con estadísticas (partidas, victorias, oleadas, bajas, mejor Brasa, récord de la Grieta) y los conseguidos en la partida en la pantalla final. **Progresión que abre contenido:** 5 logros abren dones del draft (`unlock` en el pool): Rayo de gracia, Furia del Abismo, Eco de la Fosa, Sangre de la Fosa y Presagio (nuevos Furia y Presagio). Se guarda en `user://meta.json` → `logros_data`. Después: «Abismo» abre el augurio Eclipse y «Ira encendida» abre Pacto de sangre (augurios de alto riesgo con `unlock`).
+- [x] **Música procedural** — `scripts/music.gd`: síntesis en tiempo real en un `AudioStreamGenerator` (drone frigio con progresión de 4 compases, campanas que improvisan, y en combate bajo, bombo y caja con tempo que sube). La intensidad sigue a la partida (menú/preparación en calma; combate según enemigos; héroes y jefes al máximo). Buses `Musica` y `Efectos` con volumen aparte en Opciones. ~20 ms de CPU por segundo de audio. No suena en las pruebas ni sin pantalla (hay prueba de la síntesis con `render()`).
+- [x] **Sinergias (resonancias)** — con 2 dones de la misma familia se activa un efecto extra (`balance.json` → `draft.sets`): Infierno (fuego), Tempestad (rayo), Jauría (bestias), Avaricia (almas) y Bastión (Puerta, con el don nuevo Sello del Abismo). Los dones de una familia que ya llevas salen ×1,8 en el draft, así cada partida tira hacia una build. Aviso grande al activarse y lista bajo los iconos de dones.
+- [x] **Encargos** (`balance.json` → `contracts`, `Sim.contracts_enabled`): en la preparación de la primera oleada se ofrecen dos objetivos opcionales para la partida (Puerta intacta, Solo fuego, Solo rayo, Tizón invicto, Austero, Manada viva, Agorero) que dan 60-90 de esencia al ganar si se cumplen. El estado (o «fallido») sale abajo durante el combate y el premio en la pantalla final. No hay encargos en La Grieta.
+- [x] **Medida con todo activo** (remezcla, augurios, dones, resonancias, encargos; `tools/balance.tscn -- 80 8 14`, `BAL_CLIMB=1`): primera partida bot torpe 49%, bot hábil 92%. Carrera subiendo Ira: 62, 50, 62, 50, 75, 62, 75, 88, 50, 62, 50% en las partidas 1-11 (asedio 1 Ira 0-3 y asedio 2 Ira 0-2), y luego 25-0% en el asedio 2 con Ira 3+, que queda como techo del bot torpe. Antes de la noche: 62% y después 100% siempre.
+- [x] **Terreno por partida** (`balance.json` → `terrains`, con la remezcla): Llanura de ceniza (nada), Fisura de lava (franja fija que quema a los humanos en un carril), Osario (humanos −15% de velocidad en un carril) y Viento del Abismo (Brasa cae antes, Rayo alcanza menos). Dibujados en la arena (grieta con lava y ascuas, huesos y calaveras, ráfagas) y con etiqueta abajo a la izquierda (descripción al pasar el ratón). Es la parte de «mapas que cambian».
+- [x] **Guardar a mitad de partida** — entre oleadas la partida se guarda sola en `user://partida.txt` (`var_to_str`, conserva tipos): al entrar en preparación y tras cada compra, colocación, draft o augurio. Al abrir el juego, «Continuar» la recupera (oleadas remezcladas, terreno, dones, encargo, reto y estado del generador al azar incluidos). Se borra al ganar, perder o empezar otra. Probado con una vista real que juega una oleada, se destruye y otra la recupera.
+- [x] **Consejos de una sola vez** — la primera vez que aparece un encargo, un augurio, un don, un terreno o La Grieta, sale una línea abajo que lo explica (7 s; se recuerda en `opciones.json` → `tips`). No sale durante el tutorial ni en las pruebas.
+- [x] **Estadísticas por partida** en la pantalla final (mejor bestia y sus bajas, mejor Brasa, dones, augurios aceptados, terreno), con el demonio a la izquierda y Tizón a la derecha.
+- [x] **Historial** — las últimas 12 partidas (fecha, modo e Ira, resultado, terreno, dones y encargo ✓/✗) en Logros → Historial; se guarda en `meta.json` → `historial`.
+- [x] **Medida de variedad** (`tools/variedad.gd`, `godot --headless --path . -s res://tools/variedad.gd`, 60 pares de semillas seguidas): distancia media de composición por oleada 0,25 (antes 0: idénticas); augurios repetidos entre dos partidas 28%; opciones del primer draft repetidas 22% (antes ~30% con el pool viejo).
+- [x] **Previsión con el augurio** — Marea multiplica los comunes, Campeón añade «élite al azar», Niebla avisa del frente único; tarjetas con 3 líneas y nombres largos que no se salen.
+
+
+## Entorno (paso 0)
+- [x] Godot 4.7.2 estándar en `/opt/godot/godot` (enlace `/usr/local/bin/godot`), desde
+  `https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip`.
+- Pruebas: `godot --headless --editor --import --path .` (una vez) y `godot --headless --path . res://tests/run_scene.tscn` → `FIN_SUITE fallos=0` (≈4 s).
+- Capturas: `xvfb-run` ya instalado (apt `xvfb`).
+- Plantillas web 4.7.2 en `~/.local/share/godot/export_templates/4.7.2.stable/` (solo las dos `web_nothreads_*`).
+- [ ] Guardar los pasos como setup script de un entorno propio (el entorno actual es el Default; se propondrá al final para no bloquear el turno con una aprobación).
+
+## Lista
+1. [x] Comprobación visual — `tools/shots.tscn` hace 11 capturas (ver cabecera). Arreglado: bestiario con 7+ formas solapado (ahora 2 columnas), botones de victoria/derrota tapados por el velo, retrato y epitafio solapados, banner tapando tarjetas/árbol/rutas, tooltip cortado y con nombre repetido, etiquetas de élite cortadas, estados («agarrado») encima del nombre, texto de combate cortado, título del árbol encima de las ramas, criaturas de la forja encima del texto, icono vacío en recompensas (ahora +45, +40%, +30).
+2. [x] Fallos — corregidos con pruebas (`test_bugfixes`): pinza del Alacrán, brea del Sapo y golpe de la Manta multiplicaban el nivel/cicatrices/manada dos veces; el Capataz anulaba la ralentización de la brea (ahora se multiplican); los apoyos aturdidos seguían curando. En la vista: la esencia elegida en el draft no se guardaba hasta la siguiente oleada.
+3. [x] Equilibrio (bot torpe) — `tests/bot.gd` + `tools/balance.tscn` (+ `tools/debug_run.tscn` para seguir una partida).
+   Antes: primera partida 80% (Verdugo 65 / Inquisidor 95), con árbol 100% desde la 2.ª partida. Después: 55% (48 / 64) en 120 partidas; árbol 80→85%, 150→98%.
+   Cambios (todo JSON salvo la esencia, que pasa a `balance.json` → `meta`): Puerta 180→130; oleadas 4-6 más cargadas; Horno más fuerte y de más alcance; Trueno algo más débil; curas de clérigo/Lumbrero y barrido del Tajo rebajados; Verdugo menos letal (ejecuta al 12%); draft con menos bestias (2/2/2/1) y más recompensas (2); esencia 10+5n y 60 por victoria.
+   La causa de la diferencia entre rutas era el héroe Verdugo ejecutando bestias en la oleada 5. Nota: la curva con árbol sube rápido; el segundo asedio (punto 5) debe ser el reto siguiente.
+4. [x] Pulido y sensación — `scripts/juice.gd`: destello y aplastamiento al recibir golpe, chispas/ceniza/ascuas, números de daño que se suman, temblor por trauma con ruido (opción para quitarlo), pausa breve al matar élites/héroes, Brasa con 3+ impactos y barrido del Tajo; ascuas de ambiente; banner que entra deslizando y fundido a negro en cambios de fase. Sonidos por capas propios (Capataz/élite al aparecer, Lumbrero, Tirador apunta/dispara, Tajo carga/barre, Campana, Alacrán, Sapo, Manta, muerte grande). `scripts/menu.gd`: menú principal (Esc), Cómo se juega, Opciones guardadas y tutorial de la primera partida (5 pasos con resaltado).
+5. [x] Más contenido — pack 2 de bestias (Gárgola de Ceniza, Enjambre Ígneo, Ánima del Garfio; siluetas por código), segundo asedio «la Orden del Alba» de 8 oleadas con Zapador, Paladín, Sacerdotisa, Ariete y jefe Gran Maestre (Juicio por carril y escolta), selección de asedio en el menú, desbloqueo al ganar, y niveles de Ira 0-5 para rejugar. Equilibrio: asedio 1 58%; asedio 2 28%/90% con 300/600 de esencia; Ira escala bien con el árbol. Pruebas en `test_content`.
+6. [x] Versión web — https://infrakuervo.github.io/la_ultima_puerta/ (rama `gh-pages`). Preset `Web` en `export_presets.cfg` (sin hilos). Plantillas: solo `web_nothreads_*.zip`, sacadas del .tpz con peticiones por rangos (`/tmp/claude-0/py/remotezip.py`, ver nota de entorno). Republicar: `tools/publish_web.sh`. Probada en Chromium sin cabeza (menú, tutorial, combate).
+7. [x] Cierre — descripción del PR #1 actualizada (con capturas de `docs/capturas/`), web republicada y tarea programada desactivada.
+
+## Resumen final
+- Godot 4.7.2 en headless: 215 comprobaciones, 0 fallos. Web: https://infrakuervo.github.io/la_ultima_puerta/
+- Hecho: revisión visual y arreglos de interfaz; 5 fallos de lógica corregidos con prueba; bot torpe y equilibrio (primera partida del 80% al 58%, con las dos rutas igualadas); sensación de golpe (partículas, números, destellos, trauma, pausa breve, sonidos por capas); menú, opciones y tutorial; pack 2 de bestias; segundo asedio con jefe; Ira 0-5; versión web en gh-pages.
+
+## Siguientes ideas
+- Jugarlo a mano y ajustar la sensación (tiempos de la Brasa, tamaño de los números, volumen de cada sonido).
+- Curva con árbol: el primer asedio se vuelve fácil en 1-2 partidas. Opciones: subir los costes del árbol, limitar los rangos por asedio o pedir Ira para algunos nodos.
+- Arte final para el pack 2 y los enemigos del Alba (ahora son siluetas y sprites con tinte).
+- Música procedural de fondo y un control de volumen separado para música y efectos.
+- Tercer asedio (por ejemplo, la Inquisición con magia) con una mecánica nueva de mapa: carriles que se cierran o una Puerta con dos hojas.
+- Logros y estadísticas por partida (bajas por bestia, mejor oleada) para dar más motivos de volver.
+- Guardar a mitad de partida.
+
+## Notas
+- Entorno: el setup script se propone al final con `create_environment`. Si no se aprobó, los pasos son: descargar Godot 4.7.2 Linux (zip de GitHub) en `/opt/godot`, `apt-get install -y xvfb`, y sacar `web_nothreads_*.zip` del .tpz.

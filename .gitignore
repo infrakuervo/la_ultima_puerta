@@ -1,0 +1,9 @@
+# Godot 4
+.godot/
+*.translation
+.import/
+# Local
+*.tmp
+*.uid
+*.import
+build/

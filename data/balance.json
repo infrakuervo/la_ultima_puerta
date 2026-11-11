@@ -1,0 +1,1268 @@
+{
+ "labels": {
+  "sabueso": "Sabueso de Escoria",
+  "horno": "Horno de Fosas",
+  "trueno": "Sabueso del Trueno",
+  "ojo": "Ojo de Latón",
+  "campesino": "Campesino",
+  "escudero": "Escudero",
+  "ballestero": "Ballestero",
+  "clerigo": "Clérigo",
+  "verdugo": "El Verdugo",
+  "inquisidor": "El Inquisidor",
+  "heroe": "Héroe",
+  "brasa": "Brasa",
+  "rayo": "Rayo",
+  "capataz": "Capataz de la Turba",
+  "muro": "Muro de Marfil",
+  "tirador": "Tirador de Cerrojo",
+  "lumbrero": "Lumbrero del Alba",
+  "tajo": "Verdugo del Tajo Negro",
+  "campana": "Inquisidor de la Gran Campana",
+  "alacran": "Alacrán de la Fosa",
+  "sapo": "Sapo de Brea",
+  "manta": "Manta del Umbral",
+  "gargola": "Gárgola de Ceniza",
+  "enjambre": "Enjambre Ígneo",
+  "garfio": "Ánima del Garfio",
+  "zapador": "Zapador",
+  "paladin": "Paladín del Alba",
+  "sacerdotisa": "Sacerdotisa de la Luz",
+  "ariete": "Ariete Bendito",
+  "gran_maestre": "El Gran Maestre",
+  "flagelante": "Flagelante",
+  "purificador": "Purificador",
+  "gran_inquisidor": "El Gran Inquisidor"
+ },
+ "arena": {
+  "door_x": 130,
+  "spawn_x": 1240,
+  "lane_y": [
+   250,
+   380,
+   510
+  ]
+ },
+ "door": {
+  "hp": 130
+ },
+ "economy": {
+  "start_souls": 40,
+  "wave_bonus": 15,
+  "costs": {
+   "sabueso": 40,
+   "ojo": 60
+  },
+  "level_step": 0.25,
+  "level_costs": [
+   30,
+   45,
+   65,
+   90
+  ]
+ },
+ "sabueso": {
+  "hp": 100,
+  "dmg": 10,
+  "cd": 0.9,
+  "speed": 170,
+  "leash": 280,
+  "reach": 36,
+  "presa_cd": 6.0,
+  "presa_time": 2.0,
+  "presa_range": 120,
+  "presa_windup": 0.35
+ },
+ "horno": {
+  "hp": 260,
+  "dmg": 8,
+  "cd": 1.0,
+  "speed": 90,
+  "leash": 300,
+  "reach": 40,
+  "inhale_cd": 6.0,
+  "inhale_time": 0.6,
+  "inhale_range": 460,
+  "inhale_max": 5,
+  "fill_timeout": 3.0,
+  "spit_range": 280,
+  "spit_dmg": 34,
+  "burn_dps": 8,
+  "burn_time": 4.0,
+  "minor_dmg": 10,
+  "minor_burn_time": 2.0,
+  "ground_time": 3.0
+ },
+ "trueno": {
+  "hp": 130,
+  "dmg": 10,
+  "cd": 0.9,
+  "speed": 210,
+  "leash": 320,
+  "reach": 36,
+  "jump_cd": 10.0,
+  "crouch_time": 0.5,
+  "jump_time": 0.7,
+  "jump_range": 760,
+  "min_gap": 160,
+  "land_dmg": 32,
+  "chain_dmg": [
+   16,
+   12,
+   8
+  ],
+  "chain_range": 150,
+  "return_after": 6.0
+ },
+ "ojo": {
+  "hp": 60,
+  "dmg": 12,
+  "cd": 1.2,
+  "range": 480,
+  "mark_range": 900,
+  "chain_dmg": 12,
+  "chain_count": 3,
+  "chain_range": 240
+ },
+ "enemies": {
+  "campesino": {
+   "hp": 36,
+   "speed": 31,
+   "dmg": 4,
+   "cd": 1.4,
+   "reach": 30,
+   "door_dmg": 3,
+   "reward": 2
+  },
+  "escudero": {
+   "hp": 145,
+   "speed": 24,
+   "dmg": 7,
+   "cd": 1.5,
+   "reach": 34,
+   "door_dmg": 5,
+   "armor": 0.7,
+   "reward": 6
+  },
+  "ballestero": {
+   "hp": 60,
+   "speed": 27,
+   "dmg": 6,
+   "cd": 1.8,
+   "range": 300,
+   "ranged": true,
+   "door_dmg": 3,
+   "reward": 6
+  },
+  "clerigo": {
+   "hp": 95,
+   "speed": 24,
+   "dmg": 0,
+   "cd": 9.9,
+   "reach": 30,
+   "door_dmg": 0,
+   "support": true,
+   "heal": 8,
+   "heal_cd": 2.0,
+   "heal_radius": 170,
+   "follow_gap": 90,
+   "reward": 8
+  },
+  "verdugo": {
+   "hp": 450,
+   "speed": 22,
+   "dmg": 22,
+   "cd": 1.4,
+   "reach": 42,
+   "door_dmg": 8,
+   "hero": true,
+   "execute": 0.12,
+   "reward": 30
+  },
+  "inquisidor": {
+   "hp": 450,
+   "speed": 24,
+   "dmg": 20,
+   "cd": 1.4,
+   "reach": 42,
+   "door_dmg": 7,
+   "hero": true,
+   "bell": true,
+   "bell_cd": 6.0,
+   "stun": 3.0,
+   "reward": 30
+  },
+  "capataz": {
+   "hp": 105,
+   "speed": 34,
+   "dmg": 6,
+   "cd": 1.3,
+   "reach": 30,
+   "door_dmg": 4,
+   "reward": 8,
+   "elite": true,
+   "sprite": "campesino_elite",
+   "scale": 1.12,
+   "haste_radius": 170,
+   "haste": 1.4
+  },
+  "muro": {
+   "hp": 230,
+   "speed": 22,
+   "dmg": 10,
+   "cd": 1.6,
+   "reach": 36,
+   "door_dmg": 6,
+   "armor": 0.6,
+   "reward": 14,
+   "elite": true,
+   "sprite": "escudero_elite",
+   "scale": 1.1,
+   "cover_range": 100,
+   "cover": 0.6
+  },
+  "tirador": {
+   "hp": 90,
+   "speed": 27,
+   "dmg": 20,
+   "cd": 4.0,
+   "range": 380,
+   "ranged": true,
+   "door_dmg": 6,
+   "reward": 14,
+   "elite": true,
+   "sprite": "ballestero_elite",
+   "scale": 1.12,
+   "aim": 0.9,
+   "pierce": 3
+  },
+  "lumbrero": {
+   "hp": 140,
+   "speed": 26,
+   "dmg": 0,
+   "cd": 9.9,
+   "reach": 30,
+   "door_dmg": 0,
+   "support": true,
+   "pulse": true,
+   "heal": 15,
+   "heal_cd": 4.5,
+   "heal_radius": 230,
+   "follow_gap": 90,
+   "reward": 14,
+   "elite": true,
+   "sprite": "clerigo_elite",
+   "scale": 1.1
+  },
+  "tajo": {
+   "hp": 370,
+   "speed": 21,
+   "dmg": 20,
+   "cd": 1.4,
+   "reach": 42,
+   "door_dmg": 9,
+   "reward": 20,
+   "elite": true,
+   "sprite": "verdugo_elite",
+   "scale": 1.0,
+   "sweep_dmg": 26,
+   "sweep_wind": 0.9,
+   "sweep_cd": 7.0,
+   "sweep_r": 120
+  },
+  "campana": {
+   "hp": 300,
+   "speed": 22,
+   "dmg": 14,
+   "cd": 1.5,
+   "reach": 42,
+   "door_dmg": 7,
+   "reward": 20,
+   "elite": true,
+   "sprite": "inquisidor_elite",
+   "scale": 1.0,
+   "ring_cd": 9.0,
+   "ring_r": 320,
+   "ring_stun": 1.4
+  },
+  "zapador": {
+   "hp": 54,
+   "speed": 50,
+   "dmg": 0,
+   "cd": 9.9,
+   "reach": 30,
+   "door_dmg": 20,
+   "ignore_block": true,
+   "explode": true,
+   "reward": 6,
+   "sprite": "zapador",
+   "scale": 1.0
+  },
+  "paladin": {
+   "hp": 255,
+   "speed": 22,
+   "dmg": 12,
+   "cd": 1.5,
+   "reach": 36,
+   "door_dmg": 6,
+   "armor": 0.6,
+   "burn_immune": true,
+   "reward": 14,
+   "elite": true,
+   "sprite": "escudero_elite",
+   "tint": [
+    1.25,
+    1.15,
+    0.8
+   ],
+   "scale": 1.12
+  },
+  "sacerdotisa": {
+   "hp": 115,
+   "speed": 26,
+   "dmg": 0,
+   "cd": 9.9,
+   "reach": 30,
+   "door_dmg": 0,
+   "support": true,
+   "pulse": false,
+   "heal": 0,
+   "heal_cd": 99.0,
+   "heal_radius": 0,
+   "follow_gap": 90,
+   "shield_cd": 6.0,
+   "shield": 35,
+   "shield_radius": 210,
+   "reward": 12,
+   "elite": true,
+   "sprite": "sacerdotisa",
+   "scale": 1.0
+  },
+  "ariete": {
+   "hp": 1035,
+   "speed": 12,
+   "dmg": 0,
+   "cd": 2.2,
+   "reach": 40,
+   "door_dmg": 30,
+   "ignore_block": true,
+   "unstoppable": true,
+   "reward": 40,
+   "elite": true
+  },
+  "gran_maestre": {
+   "hp": 2520,
+   "speed": 14,
+   "dmg": 30,
+   "cd": 1.6,
+   "reach": 46,
+   "door_dmg": 16,
+   "hero": true,
+   "boss": true,
+   "unstoppable": true,
+   "reward": 120,
+   "sprite": "gran_maestre",
+   "scale": 1.0,
+   "judge_cd": 9.0,
+   "judge_wind": 1.5,
+   "judge_dmg": 40,
+   "summon_at": [
+    0.75,
+    0.5,
+    0.25
+   ],
+   "summon": [
+    "paladin",
+    "sacerdotisa",
+    "zapador",
+    "zapador"
+   ]
+  },
+  "flagelante": {
+   "hp": 43,
+   "speed": 39,
+   "dmg": 4,
+   "cd": 1.1,
+   "reach": 30,
+   "door_dmg": 4,
+   "reward": 3,
+   "sprite": "campesino_v01",
+   "tint": [
+    1.25,
+    0.7,
+    0.65
+   ],
+   "scale": 0.95
+  },
+  "purificador": {
+   "hp": 90,
+   "speed": 24,
+   "dmg": 9,
+   "cd": 2.5,
+   "range": 340,
+   "ranged": true,
+   "door_dmg": 3,
+   "burn_immune": true,
+   "reward": 9,
+   "sprite": "purificador",
+   "scale": 1.0
+  },
+  "gran_inquisidor": {
+   "hp": 2415,
+   "speed": 16,
+   "dmg": 28,
+   "cd": 1.5,
+   "reach": 46,
+   "door_dmg": 16,
+   "hero": true,
+   "boss": true,
+   "unstoppable": true,
+   "reward": 130,
+   "sprite": "gran_inquisidor",
+   "scale": 1.0,
+   "judge_cd": 8.0,
+   "judge_wind": 1.4,
+   "judge_dmg": 38,
+   "summon_at": [
+    0.7,
+    0.4
+   ],
+   "summon": [
+    "purificador",
+    "flagelante",
+    "flagelante",
+    "sacerdotisa"
+   ]
+  }
+ },
+ "zones": {
+  "rear": {
+   "x0": 220,
+   "x1": 390
+  },
+  "front": {
+   "x0": 410,
+   "x1": 660
+  },
+  "min_gap": 56
+ },
+ "spells": {
+  "brasa": {
+   "dmg": 40,
+   "radius": 75,
+   "delay": 1.5,
+   "cd": 6.5,
+   "burn_time": 2.0,
+   "burn_dps": 5,
+   "stun": 0.0
+  },
+  "rayo": {
+   "dmg": 38,
+   "range": 800,
+   "pick_radius": 70,
+   "cd": 1.2,
+   "chain_frac": 0.6,
+   "chain_range": 170,
+   "stun": 0.0,
+   "chain_count": 1
+  }
+ },
+ "alacran": {
+  "hp": 190,
+  "dmg": 12,
+  "cd": 1.2,
+  "speed": 100,
+  "leash": 260,
+  "reach": 38,
+  "presa_cd": 9.0,
+  "presa_time": 3.0,
+  "presa_range": 110,
+  "presa_windup": 0.5,
+  "grab_dmg": 28,
+  "spot": "front"
+ },
+ "sapo": {
+  "hp": 90,
+  "range": 520,
+  "min_range": 120,
+  "cd": 5.0,
+  "windup": 0.7,
+  "tar_dmg": 16,
+  "tar_radius": 85,
+  "tar_time": 3.5,
+  "slow": 0.5,
+  "spot": "rear"
+ },
+ "manta": {
+  "hp": 80,
+  "swoop_cd": 7.0,
+  "windup": 0.5,
+  "speed": 560,
+  "sweep_len": 520,
+  "hit_dmg": 26,
+  "hit_stun": 0.4,
+  "min_targets": 1,
+  "spot": "rear"
+ },
+ "draft": {
+  "count": 3,
+  "pool": [
+   {
+    "id": "alacran",
+    "type": "beast",
+    "kind": "alacran",
+    "weight": 1,
+    "desc": "Tanque de vanguardia: agarra a un enemigo y lo retiene.",
+    "rarity": "comun"
+   },
+   {
+    "id": "sapo",
+    "type": "beast",
+    "kind": "sapo",
+    "weight": 1,
+    "desc": "Escupe brea desde atrás: daña y ralentiza.",
+    "rarity": "comun"
+   },
+   {
+    "id": "manta",
+    "type": "beast",
+    "kind": "manta",
+    "weight": 1,
+    "desc": "Embosca por un carril: golpea a todos y aturde.",
+    "rarity": "comun"
+   },
+   {
+    "id": "sabueso",
+    "type": "beast",
+    "kind": "sabueso",
+    "weight": 1,
+    "desc": "Otro Sabueso de Escoria, gratis.",
+    "rarity": "comun"
+   },
+   {
+    "id": "almas",
+    "type": "souls",
+    "amount": 45,
+    "weight": 2,
+    "title": "Cosecha",
+    "desc": "+45 almas.",
+    "rarity": "comun"
+   },
+   {
+    "id": "puerta",
+    "type": "door",
+    "amount": 0.4,
+    "weight": 2,
+    "title": "Remiendo",
+    "desc": "Repara el 40% de la Puerta.",
+    "rarity": "comun"
+   },
+   {
+    "id": "esencia",
+    "type": "essence",
+    "amount": 30,
+    "weight": 2,
+    "title": "Pozo de esencia",
+    "desc": "+30 de esencia permanente.",
+    "rarity": "comun"
+   },
+   {
+    "id": "gargola",
+    "type": "beast",
+    "kind": "gargola",
+    "weight": 1,
+    "desc": "Tanque: herida, se vuelve piedra y devuelve el daño en una onda.",
+    "rarity": "comun"
+   },
+   {
+    "id": "enjambre",
+    "type": "beast",
+    "kind": "enjambre",
+    "weight": 1,
+    "desc": "Desde atrás prende fuego a los más enteros. Combo con el Ojo.",
+    "rarity": "comun"
+   },
+   {
+    "id": "garfio",
+    "type": "beast",
+    "kind": "garfio",
+    "weight": 1,
+    "desc": "Engancha a un apoyo o tirador lejano y lo arrastra a la vanguardia.",
+    "rarity": "comun"
+   },
+   {
+    "id": "pacto_fuego",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "fuego",
+    "weight": 0.7,
+    "title": "Pacto de fuego",
+    "desc": "Esta partida: Brasa +35% de daño y +20% de radio.",
+    "fx": [
+     {
+      "k": "brasa.dmg",
+      "mul": 0.35
+     },
+     {
+      "k": "brasa.radius",
+      "mul": 0.2
+     }
+    ]
+   },
+   {
+    "id": "eco_brasa",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "fuego",
+    "weight": 0.35,
+    "min_wave": 2,
+    "title": "Eco de la Fosa",
+    "desc": "Esta partida: cada Brasa cae dos veces y se recarga un 20% antes.",
+    "fx": [
+     {
+      "k": "special.brasa_echo",
+      "add": 1
+     },
+     {
+      "k": "brasa.cd",
+      "mul": -0.2
+     }
+    ],
+    "unlock": true
+   },
+   {
+    "id": "tormenta",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "rayo",
+    "weight": 0.7,
+    "title": "Tormenta",
+    "desc": "Esta partida: el Rayo encadena a un blanco más y se recarga un 15% antes.",
+    "fx": [
+     {
+      "k": "special.rayo_chain",
+      "add": 1
+     },
+     {
+      "k": "rayo.chain_count",
+      "add": 1
+     },
+     {
+      "k": "rayo.cd",
+      "mul": -0.15
+     }
+    ]
+   },
+   {
+    "id": "gracia",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "rayo",
+    "weight": 0.35,
+    "min_wave": 2,
+    "title": "Rayo de gracia",
+    "desc": "Esta partida: Rayo +25% de daño y +100% contra los que están por debajo del 35%.",
+    "fx": [
+     {
+      "k": "rayo.dmg",
+      "mul": 0.25
+     },
+     {
+      "k": "special.rayo_exec",
+      "add": 1.0
+     }
+    ],
+    "unlock": true
+   },
+   {
+    "id": "manada",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 0.7,
+    "title": "Ley de la manada",
+    "desc": "Esta partida: bestias +25% de vida y +6% de daño por cada otra bestia viva.",
+    "fx": [
+     {
+      "k": "beast.hp",
+      "mul": 0.25
+     },
+     {
+      "k": "special.pack",
+      "add": 0.06
+     }
+    ]
+   },
+   {
+    "id": "sangre",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "bestia",
+    "weight": 0.35,
+    "min_wave": 2,
+    "title": "Sangre de la Fosa",
+    "desc": "Esta partida: bestias +20% de daño y regeneran un 2% de vida por segundo.",
+    "fx": [
+     {
+      "k": "beast.dmg",
+      "mul": 0.2
+     },
+     {
+      "k": "special.regen",
+      "add": 0.02
+     }
+    ],
+    "unlock": true
+   },
+   {
+    "id": "colmillos",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 0.7,
+    "title": "Colmillos de hierro",
+    "desc": "Esta partida: la Presa hiere (2 veces el mordisco) y dura un 40% más.",
+    "fx": [
+     {
+      "k": "special.presa_dmg",
+      "add": 2.0
+     },
+     {
+      "k": "sabueso.presa_time",
+      "mul": 0.4
+     }
+    ]
+   },
+   {
+    "id": "usura",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "alma",
+    "weight": 0.7,
+    "title": "Usura",
+    "desc": "Esta partida: +40% de almas por baja y un 10% de interés por oleada (máx. 25).",
+    "fx": [
+     {
+      "k": "eco.reward",
+      "mul": 0.4
+     },
+     {
+      "k": "special.interest",
+      "add": 0.1
+     }
+    ]
+   },
+   {
+    "id": "muralla",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "puerta",
+    "weight": 0.7,
+    "title": "Muralla de huesos",
+    "desc": "Esta partida: Puerta +30% de vida y recupera un 10% tras cada oleada.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.3
+     },
+     {
+      "k": "door.regen",
+      "add": 0.1
+     }
+    ]
+   },
+   {
+    "id": "furia",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "fuego",
+    "weight": 0.35,
+    "min_wave": 2,
+    "unlock": true,
+    "title": "Furia del Abismo",
+    "desc": "Esta partida: Brasa y Rayo +25% de daño; la Brasa aturde un instante.",
+    "fx": [
+     {
+      "k": "brasa.dmg",
+      "mul": 0.25
+     },
+     {
+      "k": "rayo.dmg",
+      "mul": 0.25
+     },
+     {
+      "k": "brasa.stun",
+      "add": 0.4
+     }
+    ]
+   },
+   {
+    "id": "presagio",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "alma",
+    "weight": 0.7,
+    "unlock": true,
+    "title": "Presagio",
+    "desc": "Esta partida: +30 almas por oleada y +25% de esencia por oleada.",
+    "fx": [
+     {
+      "k": "eco.wave_bonus",
+      "add": 30
+     },
+     {
+      "k": "meta.wave",
+      "mul": 0.25
+     }
+    ]
+   },
+   {
+    "id": "sello",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "puerta",
+    "weight": 0.7,
+    "title": "Sello del Abismo",
+    "desc": "Esta partida: la Puerta +20% de vida y +25 almas por oleada.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.2
+     },
+     {
+      "k": "eco.wave_bonus",
+      "add": 25
+     }
+    ]
+   },
+   {
+    "id": "brasero",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "fuego",
+    "weight": 0.7,
+    "title": "Brasero vivo",
+    "desc": "Esta partida: la Brasa se recarga un 20% antes y cae un 15% antes.",
+    "fx": [
+     {
+      "k": "brasa.cd",
+      "mul": -0.2
+     },
+     {
+      "k": "brasa.delay",
+      "mul": -0.15
+     }
+    ]
+   },
+   {
+    "id": "chispa",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "rayo",
+    "weight": 0.7,
+    "title": "Chispa negra",
+    "desc": "Esta partida: Rayo +30% de daño y +20% de alcance para elegir blanco.",
+    "fx": [
+     {
+      "k": "rayo.dmg",
+      "mul": 0.3
+     },
+     {
+      "k": "rayo.pick_radius",
+      "mul": 0.2
+     }
+    ]
+   },
+   {
+    "id": "garras",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 0.7,
+    "title": "Garras de obsidiana",
+    "desc": "Esta partida: bestias +15% de daño y la Presa se recarga un 25% antes.",
+    "fx": [
+     {
+      "k": "beast.dmg",
+      "mul": 0.15
+     },
+     {
+      "k": "sabueso.presa_cd",
+      "mul": -0.25
+     }
+    ]
+   },
+   {
+    "id": "diezmo_eterno",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "alma",
+    "weight": 0.35,
+    "min_wave": 2,
+    "title": "Diezmo eterno",
+    "desc": "Esta partida: +25 almas por oleada y subir de nivel cuesta un 25% menos.",
+    "fx": [
+     {
+      "k": "eco.wave_bonus",
+      "add": 25
+     },
+     {
+      "k": "eco.level_cost",
+      "mul": -0.25
+     }
+    ]
+   }
+  ],
+  "_doc": "rarity: comun | rara | epica (marco y peso). type boon: efecto para el resto de la partida, con fx como los del árbol (se suman a _fx_totals). min_wave: oleada mínima (1 = tras la primera). unlock: true = solo sale si el jugador consiguió el logro que lo abre (data/logros.json).",
+  "sets": {
+   "_doc": "Resonancias: con 2 dones de la misma familia (icon) se suma este efecto. Los dones de una familia que ya tienes salen más (family_weight).",
+   "family_weight": 1.8,
+   "fuego": {
+    "name": "Infierno",
+    "desc": "La Brasa quema el doble de tiempo y un 60% más fuerte.",
+    "fx": [
+     {
+      "k": "brasa.burn_time",
+      "mul": 1.0
+     },
+     {
+      "k": "brasa.burn_dps",
+      "mul": 0.6
+     }
+    ]
+   },
+   "rayo": {
+    "name": "Tempestad",
+    "desc": "El Rayo aturde 0,25 s y salta a otro blanco más.",
+    "fx": [
+     {
+      "k": "rayo.stun",
+      "add": 0.25
+     },
+     {
+      "k": "rayo.chain_count",
+      "add": 1
+     }
+    ]
+   },
+   "bestia": {
+    "name": "Jauría",
+    "desc": "Bestias +20% de velocidad, +15% de daño y regeneran un 1% por segundo.",
+    "fx": [
+     {
+      "k": "beast.speed",
+      "mul": 0.2
+     },
+     {
+      "k": "beast.dmg",
+      "mul": 0.15
+     },
+     {
+      "k": "special.regen",
+      "add": 0.01
+     }
+    ]
+   },
+   "alma": {
+    "name": "Avaricia",
+    "desc": "+30% de almas por baja y subir de nivel cuesta un 20% menos.",
+    "fx": [
+     {
+      "k": "eco.reward",
+      "mul": 0.3
+     },
+     {
+      "k": "eco.level_cost",
+      "mul": -0.2
+     }
+    ]
+   },
+   "puerta": {
+    "name": "Bastión",
+    "desc": "La Puerta +25% de vida y recibe un 25% menos de daño.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.25
+     },
+     {
+      "k": "door.armor",
+      "mul": -0.25
+     }
+    ]
+   }
+  }
+ },
+ "meta": {
+  "wave_base": 4,
+  "wave_step": 2,
+  "victory": 40,
+  "inflation": 0.045,
+  "cost_scale": 1.8,
+  "soul_rate": 1.0,
+  "respec_refund": 0.75,
+  "tizon_revive": 3.0,
+  "burst_r": 85,
+  "ground_burn": 1.6,
+  "arc_max": 24,
+  "arc_frac": 0.85,
+  "profane": {
+   "x": 470,
+   "r": 120,
+   "heal": 0.03,
+   "dps": 6
+  },
+  "_doc_arbol": "respec_refund: parte de la esencia pagada que devuelve reasignar. tizon_revive: segundos que tarda Tizón inmortal en levantarse. burst_r: radio del Estallido de ceniza. ground_burn: quemadura del suelo de Tierra quemada (× la de la Brasa). arc_max: tope de saltos del Arco voltaico; arc_frac: lo máximo que conserva cada salto del arco (aunque «Cadena potente» dé más). profane: Hoguera profana (cura por segundo a las bestias, quemadura a los humanos)."
+ },
+ "gargola": {
+  "hp": 200,
+  "dmg": 10,
+  "cd": 1.2,
+  "speed": 80,
+  "leash": 200,
+  "reach": 38,
+  "stone_at": 0.35,
+  "stone_time": 2.5,
+  "stone_cd": 12.0,
+  "stone_heal": 0.1,
+  "shock_dmg": 20,
+  "shock_mult": 0.5,
+  "shock_r": 130,
+  "spot": "front"
+ },
+ "enjambre": {
+  "hp": 70,
+  "range": 560,
+  "cd": 5.5,
+  "targets": 2,
+  "swarm_dmg": 6,
+  "burn_dps": 5,
+  "burn_time": 3.0,
+  "spot": "rear"
+ },
+ "garfio": {
+  "hp": 150,
+  "dmg": 9,
+  "cd": 1.0,
+  "speed": 120,
+  "leash": 220,
+  "reach": 36,
+  "hook_cd": 7.0,
+  "hook_range": 560,
+  "hook_min": 120,
+  "hook_windup": 0.5,
+  "hook_stun": 1.0,
+  "hook_dmg": 10,
+  "spot": "front"
+ },
+ "wrath": {
+  "max": 5,
+  "hp": 0.3,
+  "dmg": 0.15,
+  "essence": 0.3
+ },
+ "augurs": {
+  "_doc": "Augurios: antes de cada oleada (desde la 2) se ofrecen dos; el jugador puede elegir uno o ninguno (Calma). fx: enemy_hp, enemy_speed, count (comunes), extra_elite, one_front, door_dmg, spell_cd, reward (almas por baja), souls (almas al acabar), essence (esencia de la oleada), beast_dmg (daño de las bestias). unlock: true = solo sale si un logro lo abrió (Sim.unlocked).",
+  "offer": 2,
+  "list": [
+   {
+    "id": "luna",
+    "name": "Luna de sangre",
+    "desc": "Enemigos +25% de vida. Almas por baja +60%.",
+    "weight": 3,
+    "fx": {
+     "enemy_hp": 0.25,
+     "reward": 0.6
+    }
+   },
+   {
+    "id": "marea",
+    "name": "Marea",
+    "desc": "+35% de enemigos comunes. +50% de esencia en esta oleada.",
+    "weight": 3,
+    "fx": {
+     "count": 0.35,
+     "essence": 0.5
+    }
+   },
+   {
+    "id": "fervor",
+    "name": "Fervor",
+    "desc": "Enemigos un 20% más rápidos. Brasa y Rayo se recargan un 30% antes.",
+    "weight": 2,
+    "fx": {
+     "enemy_speed": 0.2,
+     "spell_cd": -0.3
+    }
+   },
+   {
+    "id": "campeon",
+    "name": "Campeón",
+    "desc": "Llega una élite más. +30 almas al acabar.",
+    "weight": 2,
+    "fx": {
+     "extra_elite": 1,
+     "souls": 30
+    },
+    "min_wave": 2
+   },
+   {
+    "id": "niebla",
+    "name": "Niebla",
+    "desc": "Todos entran por el mismo frente. +20 almas al acabar.",
+    "weight": 2,
+    "fx": {
+     "one_front": 1,
+     "souls": 20
+    }
+   },
+   {
+    "id": "diezmo",
+    "name": "Diezmo",
+    "desc": "La Puerta recibe +60% de daño. Almas por baja x2.",
+    "weight": 2,
+    "fx": {
+     "door_dmg": 0.6,
+     "reward": 1.0
+    }
+   },
+   {
+    "id": "ceniza",
+    "name": "Lluvia de ceniza",
+    "desc": "Brasa y Rayo se recargan un 25% más lento. +60% de esencia en esta oleada.",
+    "weight": 2,
+    "fx": {
+     "spell_cd": 0.25,
+     "essence": 0.6
+    }
+   },
+   {
+    "id": "eclipse",
+    "name": "Eclipse",
+    "desc": "+60% de enemigos comunes con +30% de vida. Esencia x2 en esta oleada.",
+    "weight": 1.5,
+    "unlock": true,
+    "fx": {
+     "count": 0.6,
+     "enemy_hp": 0.3,
+     "essence": 1.0
+    }
+   },
+   {
+    "id": "pacto",
+    "name": "Pacto de sangre",
+    "desc": "La Puerta recibe el doble de daño. Almas por baja x2,5 y +40 almas al acabar.",
+    "weight": 1.5,
+    "unlock": true,
+    "fx": {
+     "door_dmg": 1.0,
+     "reward": 1.5,
+     "souls": 40
+    }
+   },
+   {
+    "id": "frenesi",
+    "name": "Frenesí",
+    "desc": "Tus bestias hacen un 25% más de daño, pero los humanos golpean la Puerta un 25% más fuerte.",
+    "weight": 2,
+    "fx": {
+     "beast_dmg": 0.25,
+     "door_dmg": 0.25
+    }
+   }
+  ]
+ },
+ "contracts": {
+  "_doc": "Encargos: en la preparación de la primera oleada se ofrecen dos; si eliges uno y lo cumples al ganar, da esencia extra (y almas si no hay modo permanente). La comprobación de cada id está en Sim.contract_status().",
+  "offer": 2,
+  "list": [
+   {
+    "id": "puerta_intacta",
+    "name": "Puerta intacta",
+    "desc": "Gana con la Puerta por encima del 75%.",
+    "reward": 70
+   },
+   {
+    "id": "solo_fuego",
+    "name": "Solo fuego",
+    "desc": "Gana sin lanzar ni un Rayo.",
+    "reward": 90
+   },
+   {
+    "id": "solo_rayo",
+    "name": "Solo rayo",
+    "desc": "Gana sin lanzar ni una Brasa.",
+    "reward": 90
+   },
+   {
+    "id": "tizon_invicto",
+    "name": "Tizón invicto",
+    "desc": "Gana sin que Tizón caiga.",
+    "reward": 70
+   },
+   {
+    "id": "austero",
+    "name": "Austero",
+    "desc": "Gana sin subir de nivel a ninguna bestia.",
+    "reward": 80
+   },
+   {
+    "id": "manada_viva",
+    "name": "Manada viva",
+    "desc": "Gana con 5 bestias o más en pie.",
+    "reward": 60
+   },
+   {
+    "id": "agorero",
+    "name": "Agorero",
+    "desc": "Gana eligiendo un augurio en cada oleada.",
+    "reward": 60
+   }
+  ]
+ },
+ "terrains": {
+  "_doc": "Terreno por partida (con la remezcla activa). zone: franja ardiente fija en un carril al azar (quema a los humanos); slow: humanos más lentos en un carril al azar; fx: como el árbol, toda la partida.",
+  "list": [
+   {
+    "id": "llano",
+    "name": "Llanura de ceniza",
+    "desc": "Nada especial: el campo de siempre.",
+    "weight": 3
+   },
+   {
+    "id": "fisura",
+    "name": "Fisura de lava",
+    "desc": "Una grieta ardiente cruza un carril y quema a los humanos que la pisan.",
+    "weight": 2,
+    "zone": {
+     "x0": 720,
+     "x1": 820,
+     "dps": 6
+    }
+   },
+   {
+    "id": "osario",
+    "name": "Osario",
+    "desc": "Montones de huesos en un carril: los humanos van un 15% más lentos por él.",
+    "weight": 2,
+    "slow": 0.15
+   },
+   {
+    "id": "viento",
+    "name": "Viento del Abismo",
+    "desc": "La Brasa cae un 20% antes, pero el Rayo alcanza un 15% menos.",
+    "weight": 2,
+    "fx": [
+     {
+      "k": "brasa.delay",
+      "mul": -0.2
+     },
+     {
+      "k": "rayo.range",
+      "mul": -0.15
+     }
+    ]
+   }
+  ]
+ }
+}

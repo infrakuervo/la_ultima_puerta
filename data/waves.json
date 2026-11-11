@@ -1,0 +1,1077 @@
+{
+ "routes": {
+  "verdugo": {
+   "hero": "verdugo",
+   "hero_name": "El Verdugo",
+   "relic": "Brasero del Verdugo",
+   "form": "horno",
+   "form_name": "Horno de Fosas",
+   "promise": "Agrupa y quema. Inhala a los enemigos de su carril y, cuando se llena, escupe fuego."
+  },
+  "inquisidor": {
+   "hero": "inquisidor",
+   "hero_name": "El Inquisidor",
+   "relic": "Campana del Inquisidor",
+   "form": "trueno",
+   "form_name": "Sabueso del Trueno",
+   "promise": "Salta sobre la vanguardia hacia un apoyo y encadena descargas. Deja su hueco abierto hasta volver."
+  }
+ },
+ "sieges": [
+  {
+   "id": "primer",
+   "name": "Primer asedio",
+   "desc": "Seis oleadas de campesinos, escudos y élites. El héroe llega en la quinta.",
+   "waves": [
+    {
+     "title": "Primera sangre",
+     "note": "Tizón y su Presa.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 4,
+       "gap": 1.8
+      }
+     ]
+    },
+    {
+     "title": "Frentes cruzados",
+     "note": "Los humanos llegan sin orden, por cualquier frente.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 5,
+       "gap": 1.3
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 5,
+       "gap": 1.3,
+       "delay": 0.7
+      }
+     ]
+    },
+    {
+     "title": "La turba",
+     "note": "Catorce campesinos en un chorro: una Brasa bien puesta los barre.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 14,
+       "gap": 0.55
+      },
+      {
+       "lane": -1,
+       "kind": "capataz",
+       "count": 1,
+       "gap": 0,
+       "delay": 3.0
+      }
+     ]
+    },
+    {
+     "title": "Escudos y retaguardia",
+     "note": "Los apoyos van detrás de los escudos: el Rayo los alcanza.",
+     "after": "route",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 5,
+       "gap": 1.6
+      },
+      {
+       "lane": -1,
+       "kind": "clerigo",
+       "count": 1,
+       "gap": 0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 2,
+       "gap": 1.5,
+       "delay": 7.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 1,
+       "gap": 0,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "muro",
+       "count": 1,
+       "gap": 0,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "tirador",
+       "count": 1,
+       "gap": 0,
+       "delay": 11.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 0.8,
+       "delay": 4.0
+      }
+     ]
+    },
+    {
+     "title": "El héroe",
+     "note": "Derrótalo para conseguir su reliquia.",
+     "after": "forge",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "@hero",
+       "count": 1,
+       "gap": 0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 1.2,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 3,
+       "gap": 2.0,
+       "delay": 5.0
+      }
+     ]
+    },
+    {
+     "title": "Turba y retaguardia",
+     "note": "Prueba tu forma elegida.",
+     "loan_ojo": true,
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 12,
+       "gap": 0.7
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 6,
+       "gap": 2.0,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "clerigo",
+       "count": 1,
+       "gap": 0,
+       "delay": 8.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 6,
+       "gap": 1.3,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 1.0,
+       "delay": 12.0
+      },
+      {
+       "lane": -1,
+       "kind": "capataz",
+       "count": 1,
+       "gap": 0,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "muro",
+       "count": 1,
+       "gap": 0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "lumbrero",
+       "count": 1,
+       "gap": 0,
+       "delay": 10.0
+      },
+      {
+       "lane": -1,
+       "kind": "tajo",
+       "count": 1,
+       "gap": 0,
+       "delay": 13.0
+      },
+      {
+       "lane": -1,
+       "kind": "campana",
+       "count": 1,
+       "gap": 0,
+       "delay": 16.0
+      },
+      {
+       "lane": -1,
+       "kind": "tirador",
+       "count": 1,
+       "gap": 0,
+       "delay": 14.0
+      }
+     ]
+    }
+   ],
+   "remix": {
+    "commons": [
+     "campesino",
+     "escudero",
+     "ballestero",
+     "clerigo"
+    ],
+    "elites": [
+     "capataz",
+     "muro",
+     "tirador",
+     "lumbrero",
+     "tajo",
+     "campana"
+    ],
+    "swap": 0.45,
+    "elite_swap": 0.6,
+    "jitter": 0.2,
+    "keep_first": true
+   }
+  },
+  {
+   "id": "alba",
+   "name": "Segundo asedio: la Orden del Alba",
+   "desc": "Ocho oleadas: zapadores, paladines que no arden, escudos de luz, el Ariete y el Gran Maestre.",
+   "unlock": "primer",
+   "waves": [
+    {
+     "title": "Vanguardia del Alba",
+     "note": "Llegan con estandartes blancos. Nada que no hayas visto... aún.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 0.8
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 4,
+       "gap": 1.6,
+       "delay": 4.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 2,
+       "gap": 1.5,
+       "delay": 8.0
+      }
+     ]
+    },
+    {
+     "title": "Zapadores",
+     "note": "Los Zapadores no se paran ante tus bestias: corren a volar la Puerta. Rayo y Brasa.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 0.9
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 3,
+       "gap": 2.5,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 3,
+       "gap": 1.6,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 3,
+       "gap": 1.2,
+       "delay": 12.0
+      }
+     ]
+    },
+    {
+     "title": "Paladines",
+     "note": "El Paladín no arde. Deja que tus bestias lo muerdan y quema a los demás.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 4,
+       "gap": 1.4
+      },
+      {
+       "lane": -1,
+       "kind": "paladin",
+       "count": 2,
+       "gap": 4.0,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "clerigo",
+       "count": 2,
+       "gap": 3.0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 3,
+       "gap": 1.4,
+       "delay": 8.0
+      },
+      {
+       "lane": -1,
+       "kind": "capataz",
+       "count": 1,
+       "gap": 0,
+       "delay": 1.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 0.6,
+       "delay": 1.5
+      }
+     ]
+    },
+    {
+     "title": "Escudos de luz",
+     "note": "La Sacerdotisa da escudos a quien tiene cerca. Tras esta oleada eliges heraldo.",
+     "after": "route",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 5,
+       "gap": 1.4
+      },
+      {
+       "lane": -1,
+       "kind": "sacerdotisa",
+       "count": 1,
+       "gap": 0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 4,
+       "gap": 1.3,
+       "delay": 7.0
+      },
+      {
+       "lane": -1,
+       "kind": "muro",
+       "count": 1,
+       "gap": 0,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "tirador",
+       "count": 1,
+       "gap": 0,
+       "delay": 10.0
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 2,
+       "gap": 2.0,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 8,
+       "gap": 0.7,
+       "delay": 2.0
+      }
+     ]
+    },
+    {
+     "title": "El heraldo vuelve",
+     "note": "El heraldo regresa con escolta.",
+     "after": "forge",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "@hero",
+       "count": 1,
+       "gap": 1.0
+      },
+      {
+       "lane": -1,
+       "kind": "paladin",
+       "count": 1,
+       "gap": 0,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 0.8,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 3,
+       "gap": 2.0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 2,
+       "gap": 2.0,
+       "delay": 8.0
+      }
+     ]
+    },
+    {
+     "title": "El Ariete",
+     "note": "El Ariete no se detiene ante nada: solo cuenta el daño. Que no llegue.",
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "ariete",
+       "count": 1,
+       "gap": 0,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 4,
+       "gap": 1.5
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 4,
+       "gap": 2.0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 3,
+       "gap": 1.4,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "lumbrero",
+       "count": 1,
+       "gap": 0,
+       "delay": 8.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 0.6,
+       "delay": 4.0
+      }
+     ]
+    },
+    {
+     "title": "Coro de luz",
+     "note": "Toda la Orden a la vez: escudos, curas, campanas y hachas.",
+     "loan_ojo": true,
+     "spawns": [
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 12,
+       "gap": 0.6
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 5,
+       "gap": 1.6,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "sacerdotisa",
+       "count": 2,
+       "gap": 4.0,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "lumbrero",
+       "count": 1,
+       "gap": 0,
+       "delay": 9.0
+      },
+      {
+       "lane": -1,
+       "kind": "paladin",
+       "count": 2,
+       "gap": 3.0,
+       "delay": 7.0
+      },
+      {
+       "lane": -1,
+       "kind": "muro",
+       "count": 1,
+       "gap": 0,
+       "delay": 4.0
+      },
+      {
+       "lane": -1,
+       "kind": "tajo",
+       "count": 1,
+       "gap": 0,
+       "delay": 12.0
+      },
+      {
+       "lane": -1,
+       "kind": "campana",
+       "count": 1,
+       "gap": 0,
+       "delay": 15.0
+      },
+      {
+       "lane": -1,
+       "kind": "tirador",
+       "count": 1,
+       "gap": 0,
+       "delay": 13.0
+      },
+      {
+       "lane": -1,
+       "kind": "zapador",
+       "count": 4,
+       "gap": 1.5,
+       "delay": 10.0
+      }
+     ]
+    },
+    {
+     "title": "El Gran Maestre",
+     "note": "Juzga un carril: aparta a tus bestias o resiste. Al sangrar llama a su escolta.",
+     "spawns": [
+      {
+       "lane": 1,
+       "kind": "gran_maestre",
+       "count": 1,
+       "gap": 0,
+       "delay": 1.0
+      },
+      {
+       "lane": -1,
+       "kind": "escudero",
+       "count": 4,
+       "gap": 1.6,
+       "delay": 2.0
+      },
+      {
+       "lane": -1,
+       "kind": "ballestero",
+       "count": 3,
+       "gap": 1.4,
+       "delay": 6.0
+      },
+      {
+       "lane": -1,
+       "kind": "campesino",
+       "count": 10,
+       "gap": 0.6,
+       "delay": 3.0
+      },
+      {
+       "lane": -1,
+       "kind": "sacerdotisa",
+       "count": 1,
+       "gap": 0,
+       "delay": 10.0
+      }
+     ]
+    }
+   ],
+   "remix": {
+    "commons": [
+     "campesino",
+     "escudero",
+     "ballestero",
+     "clerigo",
+     "zapador"
+    ],
+    "elites": [
+     "capataz",
+     "muro",
+     "tirador",
+     "lumbrero",
+     "tajo",
+     "campana",
+     "paladin",
+     "sacerdotisa"
+    ],
+    "swap": 0.45,
+    "elite_swap": 0.6,
+    "jitter": 0.2,
+    "keep_first": true
+   },
+   "background": "fondo-alba.jpg"
+  },
+  {
+   "id": "inquisicion",
+   "name": "Tercer asedio: la Inquisición",
+   "desc": "Santuarios que curan a los humanos y queman a tus bestias. Flagelantes, Purificadores y el Gran Inquisidor.",
+   "unlock": "alba",
+   "sanctuary": {
+    "_doc": "Cada oleada aparece en un punto al azar del campo (se ve al preparar): cura a los humanos dentro (heal, fracción de vida por s) y quema a las bestias dentro (burn). r crece en la última oleada (boss_r).",
+    "r": 110,
+    "boss_r": 150,
+    "heal": 0.025,
+    "burn": 0.035,
+    "x0": 470,
+    "x1": 980
+   },
+   "remix": {
+    "commons": [
+     "campesino",
+     "escudero",
+     "ballestero",
+     "clerigo",
+     "flagelante",
+     "purificador"
+    ],
+    "elites": [
+     "capataz",
+     "muro",
+     "tirador",
+     "lumbrero",
+     "tajo",
+     "campana",
+     "paladin",
+     "sacerdotisa"
+    ],
+    "swap": 0.45,
+    "elite_swap": 0.6,
+    "jitter": 0.2,
+    "keep_first": true
+   },
+   "waves": [
+    {
+     "title": "Los herejes arden",
+     "note": "El santuario cura a los humanos de dentro y quema a tus bestias.",
+     "spawns": [
+      {
+       "kind": "campesino",
+       "count": 8,
+       "lane": -1
+      },
+      {
+       "kind": "flagelante",
+       "count": 6,
+       "lane": -1,
+       "delay": 4.0
+      },
+      {
+       "kind": "ballestero",
+       "count": 2,
+       "lane": -1,
+       "delay": 6.0
+      }
+     ]
+    },
+    {
+     "title": "Flagelantes",
+     "note": "Rápidos y muchos. Sácalos del santuario con la Brasa.",
+     "spawns": [
+      {
+       "kind": "flagelante",
+       "count": 10,
+       "lane": -1
+      },
+      {
+       "kind": "escudero",
+       "count": 3,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "clerigo",
+       "count": 1,
+       "lane": -1,
+       "delay": 5.0
+      },
+      {
+       "kind": "flagelante",
+       "count": 6,
+       "lane": -1,
+       "delay": 10.0
+      }
+     ]
+    },
+    {
+     "title": "Purificadores",
+     "note": "Disparan fuego de lejos y no arden. El Rayo los alcanza.",
+     "spawns": [
+      {
+       "kind": "escudero",
+       "count": 4,
+       "lane": -1
+      },
+      {
+       "kind": "purificador",
+       "count": 3,
+       "lane": -1,
+       "delay": 2.0
+      },
+      {
+       "kind": "campesino",
+       "count": 10,
+       "lane": -1,
+       "delay": 4.0
+      },
+      {
+       "kind": "capataz",
+       "count": 1,
+       "lane": -1,
+       "delay": 6.0
+      }
+     ]
+    },
+    {
+     "title": "La procesión",
+     "note": "Escudos, clérigos y la Campana. Luego eliges heraldo.",
+     "after": "route",
+     "spawns": [
+      {
+       "kind": "escudero",
+       "count": 5,
+       "lane": -1
+      },
+      {
+       "kind": "clerigo",
+       "count": 2,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "campana",
+       "count": 1,
+       "lane": -1,
+       "delay": 6.0
+      },
+      {
+       "kind": "purificador",
+       "count": 2,
+       "lane": -1,
+       "delay": 5.0
+      },
+      {
+       "kind": "flagelante",
+       "count": 8,
+       "lane": -1,
+       "delay": 8.0
+      },
+      {
+       "kind": "muro",
+       "count": 1,
+       "lane": -1,
+       "delay": 9.0
+      }
+     ]
+    },
+    {
+     "title": "El heraldo de la hoguera",
+     "note": "Tu heraldo vuelve con la Inquisición.",
+     "after": "forge",
+     "spawns": [
+      {
+       "kind": "@hero",
+       "count": 1,
+       "lane": -1
+      },
+      {
+       "kind": "flagelante",
+       "count": 8,
+       "lane": -1,
+       "delay": 2.0
+      },
+      {
+       "kind": "purificador",
+       "count": 2,
+       "lane": -1,
+       "delay": 4.0
+      },
+      {
+       "kind": "escudero",
+       "count": 3,
+       "lane": -1,
+       "delay": 6.0
+      }
+     ]
+    },
+    {
+     "title": "Fuego purificador",
+     "note": "Purificadores escudados por una Sacerdotisa.",
+     "spawns": [
+      {
+       "kind": "purificador",
+       "count": 4,
+       "lane": -1
+      },
+      {
+       "kind": "sacerdotisa",
+       "count": 1,
+       "lane": -1,
+       "delay": 2.0
+      },
+      {
+       "kind": "escudero",
+       "count": 5,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "flagelante",
+       "count": 10,
+       "lane": -1,
+       "delay": 6.0
+      },
+      {
+       "kind": "tirador",
+       "count": 1,
+       "lane": -1,
+       "delay": 8.0
+      }
+     ]
+    },
+    {
+     "title": "Auto de fe",
+     "note": "Toda la Inquisición. Aparta a tus bestias del santuario.",
+     "loan_ojo": true,
+     "spawns": [
+      {
+       "kind": "flagelante",
+       "count": 12,
+       "lane": -1
+      },
+      {
+       "kind": "escudero",
+       "count": 6,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "purificador",
+       "count": 3,
+       "lane": -1,
+       "delay": 4.0
+      },
+      {
+       "kind": "lumbrero",
+       "count": 1,
+       "lane": -1,
+       "delay": 5.0
+      },
+      {
+       "kind": "paladin",
+       "count": 2,
+       "lane": -1,
+       "delay": 7.0
+      },
+      {
+       "kind": "tajo",
+       "count": 1,
+       "lane": -1,
+       "delay": 9.0
+      },
+      {
+       "kind": "campana",
+       "count": 1,
+       "lane": -1,
+       "delay": 10.0
+      }
+     ]
+    },
+    {
+     "title": "El Gran Inquisidor",
+     "note": "Juzga un carril y llama a su escolta. Santuario más grande.",
+     "spawns": [
+      {
+       "kind": "gran_inquisidor",
+       "count": 1,
+       "lane": 1
+      },
+      {
+       "kind": "escudero",
+       "count": 4,
+       "lane": -1,
+       "delay": 3.0
+      },
+      {
+       "kind": "purificador",
+       "count": 3,
+       "lane": -1,
+       "delay": 5.0
+      },
+      {
+       "kind": "flagelante",
+       "count": 8,
+       "lane": -1,
+       "delay": 6.0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "grieta",
+   "name": "La Grieta",
+   "desc": "Oleadas sin fin, cada vez más duras. ¿Hasta dónde aguanta la Puerta?",
+   "unlock": "primer",
+   "endless": {
+    "_doc": "Las primeras oleadas son las de base_siege (remezcladas). Después se generan: presupuesto en recompensa ×growth por oleada (tope budget_max, por rendimiento), vida ×hp_growth y daño ×dmg_growth compuestos por oleada, élites cada vez más, héroe cada hero_every y jefe cada boss_every. boss_hp: vida del jefe respecto a la base (no usa hp_growth); hero_hp: factor extra del heraldo. max_count: tope de enemigos comunes por oleada; el exceso se convierte en vida. Tema: main (grupo principal) con main_share del presupuesto (0,5 por defecto) y extra: grupos fijos con su parte.",
+    "base_siege": "primer",
+    "budget": 190,
+    "growth": 1.06,
+    "elites_base": 1,
+    "elites_every": 2,
+    "elites_max": 6,
+    "hero_every": 5,
+    "boss": "gran_maestre",
+    "boss_every": 15,
+    "themes": [
+     {
+      "title": "La turba crece",
+      "main": "campesino",
+      "note": "Muchos y rápidos: Brasa sobre el chorro."
+     },
+     {
+      "title": "Muralla de escudos",
+      "main": "escudero",
+      "note": "Escudos delante, apoyos detrás."
+     },
+     {
+      "title": "Lluvia de virotes",
+      "main": "ballestero",
+      "note": "Ballesteros a distancia: el Rayo los alcanza."
+     },
+     {
+      "title": "Zapadores",
+      "main": "zapador",
+      "note": "Corren a la Puerta sin pararse.",
+      "main_share": 0.35,
+      "extra": [
+       {
+        "kind": "escudero",
+        "share": 0.15
+       }
+      ]
+     },
+     {
+      "title": "Procesión",
+      "main": "escudero",
+      "note": "Escudos que avanzan con clérigos detrás: céntrate en los clérigos.",
+      "main_share": 0.4,
+      "extra": [
+       {
+        "kind": "clerigo",
+        "share": 0.12
+       }
+      ]
+     },
+     {
+      "title": "Flagelantes",
+      "main": "flagelante",
+      "main_share": 0.45,
+      "note": "Rápidos y muchos: Brasa por delante de ellos."
+     },
+     {
+      "title": "Hogueras",
+      "main": "escudero",
+      "main_share": 0.35,
+      "extra": [
+       {
+        "kind": "purificador",
+        "share": 0.2
+       }
+      ],
+      "note": "Purificadores tras los escudos: no arden, búscalos con el Rayo."
+     }
+    ],
+    "budget_max": 560,
+    "hp_growth": 1.075,
+    "dmg_growth": 1.04,
+    "boss_hp": 0.45,
+    "hero_hp": 1.0,
+    "max_count": 70
+   },
+   "remix": {
+    "commons": [
+     "campesino",
+     "escudero",
+     "ballestero",
+     "clerigo",
+     "zapador",
+     "flagelante",
+     "purificador"
+    ],
+    "elites": [
+     "capataz",
+     "muro",
+     "tirador",
+     "lumbrero",
+     "tajo",
+     "campana",
+     "paladin",
+     "sacerdotisa"
+    ],
+    "swap": 0.45,
+    "elite_swap": 0.6,
+    "jitter": 0.2,
+    "keep_first": true
+   },
+   "waves": []
+  }
+ ]
+}
