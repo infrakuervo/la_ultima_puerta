@@ -126,7 +126,7 @@
  },
  "enemies": {
   "campesino": {
-   "hp": 38,
+   "hp": 36,
    "speed": 31,
    "dmg": 4,
    "cd": 1.4,
@@ -135,7 +135,7 @@
    "reward": 2
   },
   "escudero": {
-   "hp": 150,
+   "hp": 145,
    "speed": 24,
    "dmg": 7,
    "cd": 1.5,
@@ -155,7 +155,7 @@
    "reward": 6
   },
   "clerigo": {
-   "hp": 100,
+   "hp": 95,
    "speed": 24,
    "dmg": 0,
    "cd": 9.9,
@@ -286,7 +286,7 @@
    "ring_stun": 1.4
   },
   "zapador": {
-   "hp": 56,
+   "hp": 54,
    "speed": 50,
    "dmg": 0,
    "cd": 9.9,
@@ -379,7 +379,7 @@
    ]
   },
   "flagelante": {
-   "hp": 45,
+   "hp": 43,
    "speed": 39,
    "dmg": 4,
    "cd": 1.1,
@@ -395,7 +395,7 @@
    "scale": 0.95
   },
   "purificador": {
-   "hp": 95,
+   "hp": 90,
    "speed": 24,
    "dmg": 9,
    "cd": 2.5,

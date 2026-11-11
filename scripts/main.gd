@@ -2559,7 +2559,7 @@ func _draw_overlays() -> void:
 		if sim.meta_mode:
 			var bank: String = "No te sobraron almas: esta vez el árbol no sube."
 			if not sim.banked.is_empty():
-				bank = "Te quedan %d almas  →  +%d de esencia para el árbol" % [int(sim.banked["souls"]), int(sim.banked["essence"])]
+				bank = "Te quedan %d almas:  +%d de esencia para el árbol" % [int(sim.banked["souls"]), int(sim.banked["essence"])]
 			_txt(bank, Vector2(0, 438), 19, Color(0.7, 0.9, 1.0), HORIZONTAL_ALIGNMENT_CENTER, SCREEN_W)
 		var ep: String = sim.epitaph()
 		if ep != "":

@@ -57,7 +57,7 @@ Sale con 0 si todo pasa. También se puede abrir y ejecutar `tests/run_scene.tsc
 - `scripts/main.gd`: vista, ratón y avisos. `scripts/art.gd`: sprites y siluetas. `scripts/sound_bank.gd`: sonidos procedurales (con capas para élites y bestias nuevas).
 - `scripts/juice.gd`: partículas, números de daño, destello al golpear, temblor suave y pausa breve en los golpes grandes. `scripts/menu.gd`: menú, opciones y tutorial.
 - `data/balance.json`: costes, vidas, daños, tiempos, casillas. `data/waves.json`: oleadas, rutas y textos. Todo se edita sin tocar código.
-- `user://bestiario.json`: bestiario sencillo (formas vistas y registro de Tizón).
+- `scripts/perfiles.gd`: personajes (una carpeta por personaje en `user://personajes/`, con su progreso, su bestiario y su partida a medias).
 
 ## Qué hay (orden de URI-111)
 
@@ -115,7 +115,15 @@ Seis unidades con habilidad propia, en `data/balance.json` (campo `elite`) y `da
 
 ## Progreso permanente
 
-El árbol se paga con **Esencia**, que se conserva entre partidas (`user://meta.json`, junto con los rangos comprados). Se gana al superar cada oleada (10 + 5×n) y +60 por victoria (`data/balance.json` → `meta`). Se compra entre oleadas y en las pantallas de victoria o derrota. Las almas quedan solo para Sabuesos, Ojos y niveles de bestia.
+**El árbol se sube al terminar la partida, con las almas que te queden.** Al ganar o perder, cada alma que no gastaste se convierte en 1 de **Esencia** (la pantalla final lo dice: «Te quedan 85 almas: +85 de esencia para el árbol») y desde ahí se abre el árbol. También se puede gastar la esencia ahorrada desde el menú (**Árbol**), entre partidas. Entre oleadas el árbol se abre con **T** solo para mirar.
+
+Guardar almas es una decisión: más Sabuesos y niveles ahora, o más árbol después. Aparte hay un extra pequeño de esencia por oleada superada (4 + 2×n) y por ganar (+40), que crece con la Ira; las almas guardadas no se multiplican. Los costes del árbol están en la escala de las almas (`data/balance.json` → `meta.cost_scale` 1,8) y cada rango encarece los demás un 4,5%.
+
+## Personajes
+
+Al abrir el juego por primera vez se crea un **personaje**: tu demonio, con el nombre que escribas («Demonio» si lo dejas vacío). Hay tres ranuras (menú → **Personajes**): crear, elegir y borrar con confirmación. Cada personaje guarda lo suyo —esencia y árbol, asedios ganados e Ira, récords de La Grieta y del reto semanal, logros, estadísticas, historial, bestiario y la partida a medias— en `user://personajes/<id>/` (`meta.json`, `partida.txt`, `bestiario.json`); la lista y el último usado están en `user://personajes.json`. Las opciones (`user://opciones.json`) son generales. El nombre sale en la cabecera, en el menú y en la pantalla final.
+
+Si existen los archivos de antes (`user://meta.json`, `partida.txt`, `bestiario.json`), al abrir se convierten en el primer personaje sin perder nada. En la web todo esto vive en IndexedDB.
 
 ## Árbol 2: builds y decisiones
 
@@ -124,7 +132,7 @@ El árbol ya no es solo «+X%». Se abre con **T** y tiene una pestaña por rama
 - **Piedras angulares** (marco dorado, una por rama, rango único): cambian una regla y piden algo a cambio. Tierra quemada (la Brasa deja el suelo ardiendo, pero tarda el doble), Arco voltaico (el Rayo salta sin límite, pero solo a los que arden), Puerta de espinas, Tizón inmortal, Camada, Estallido de ceniza, Tormenta errante, Mirada fija, Pacto del Abismo y Hoguera profana.
 - **Caminos excluyentes**: al final de cada rama se elige uno de dos nodos y el otro se cierra (sale tachado, «camino cerrado»). Cometa o Lluvia de ascuas, Rayo verdugo o Chispa incesante, Baluarte o Mercader de almas, Horda o Alfa…
 - **Nodos que hablan con los dones** (rótulo morado): Corazón del Infierno y Pacto de Avaricia despiertan su resonancia con un solo don; Sangre de Jauría y Piedra del Bastión la hacen más fuerte; Heraldo de la Tempestad, Llamada del Abismo y Lengua de profeta cambian lo que sale en el draft.
-- **Reasignar**: en el panel del árbol, «Reasignar esta rama» o «Reasignar todo» (dos clics) devuelve el 75% de la esencia pagada de verdad (cada compra se apunta con su inflación en `meta.json` → `pagado`). Solo entre partidas: antes de la primera oleada o al acabar.
+- **Reasignar**: en el panel del árbol, «Reasignar esta rama» o «Reasignar todo» (dos clics) devuelve el 75% de la esencia pagada de verdad (cada compra se apunta con su inflación en `meta.json` → `pagado`). Solo entre partidas: desde el menú o al acabar.
 - **Ramas que se ganan**: **Abismo** (Gárgola, Enjambre y Garfio) se abre al ganar el segundo asedio; **Inquisición** (santuarios, escudos, Juicio, encargos) al ganar el tercero. Antes se ven selladas con el requisito escrito.
 - **Partidas guardadas**: los ocho remates antiguos (Maestría del fuego, Tormenta, Cría barata, Furia de la jauría, Sabueso alfa, Infierno interior, Tormenta de cobre, Mirada del Abismo) ya no existen; al abrir el juego su esencia se devuelve entera y el menú lo avisa.
 

@@ -155,13 +155,11 @@ func prep(s) -> void:
 				bs = sc
 				bi = i
 		s.draft_pick(bi)
-	# Las almas que sobren al acabar suben el árbol. Regla mediana: en las dos últimas oleadas guarda
-	# (no compra ni sube de nivel) si va bien: Puerta por encima de la mitad y al menos tres bestias.
-	# Antes de la última guarda el 75% de las veces; antes de la penúltima, el 40%.
+	# Las almas que sobren al acabar suben el árbol. Regla mediana: antes de la última oleada, si va
+	# bien (Puerta al 60% o más y al menos tres bestias), el 60% de las veces no gasta y las guarda.
 	if s.meta_mode and save_souls and not s.is_endless():
-		var left: int = s.wave_count() - s.wave_index
-		var fine: bool = s.door_hp >= s.door_max * 0.5 and s.creatures.size() >= 3
-		if fine and ((left <= 1 and rng.randf() < 0.75) or (left == 2 and rng.randf() < 0.4)):
+		var fine: bool = s.door_hp >= s.door_max * 0.6 and s.creatures.size() >= 3
+		if fine and s.wave_count() - s.wave_index <= 1 and rng.randf() < 0.6:
 			_after_buys(s)
 			return
 	# compras: no siempre en el mejor momento
