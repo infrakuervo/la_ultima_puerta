@@ -595,7 +595,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "fuego",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Pacto de fuego",
     "desc": "Esta partida: Brasa +35% de daño y +20% de radio.",
     "fx": [
@@ -614,7 +614,7 @@
     "type": "boon",
     "rarity": "epica",
     "icon": "fuego",
-    "weight": 0.35,
+    "weight": 0.098,
     "min_wave": 2,
     "title": "Eco de la Fosa",
     "desc": "Esta partida: cada Brasa cae dos veces y se recarga un 20% antes.",
@@ -635,7 +635,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "rayo",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Tormenta",
     "desc": "Esta partida: el Rayo encadena a un blanco más y se recarga un 15% antes.",
     "fx": [
@@ -658,7 +658,7 @@
     "type": "boon",
     "rarity": "epica",
     "icon": "rayo",
-    "weight": 0.35,
+    "weight": 0.098,
     "min_wave": 2,
     "title": "Rayo de gracia",
     "desc": "Esta partida: Rayo +25% de daño y +100% contra los que están por debajo del 35%.",
@@ -679,7 +679,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "bestia",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Ley de la manada",
     "desc": "Esta partida: bestias +25% de vida y +6% de daño por cada otra bestia viva.",
     "fx": [
@@ -698,7 +698,7 @@
     "type": "boon",
     "rarity": "epica",
     "icon": "bestia",
-    "weight": 0.35,
+    "weight": 0.098,
     "min_wave": 2,
     "title": "Sangre de la Fosa",
     "desc": "Esta partida: bestias +20% de daño y regeneran un 2% de vida por segundo.",
@@ -719,7 +719,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "bestia",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Colmillos de hierro",
     "desc": "Esta partida: la Presa hiere (2 veces el mordisco) y dura un 40% más.",
     "fx": [
@@ -738,7 +738,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "alma",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Usura",
     "desc": "Esta partida: +40% de almas por baja y un 10% de interés por oleada (máx. 25).",
     "fx": [
@@ -757,7 +757,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "puerta",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Muralla de huesos",
     "desc": "Esta partida: Puerta +30% de vida y recupera un 10% tras cada oleada.",
     "fx": [
@@ -776,7 +776,7 @@
     "type": "boon",
     "rarity": "epica",
     "icon": "fuego",
-    "weight": 0.35,
+    "weight": 0.098,
     "min_wave": 2,
     "unlock": true,
     "title": "Furia del Abismo",
@@ -801,7 +801,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "alma",
-    "weight": 0.7,
+    "weight": 0.196,
     "unlock": true,
     "title": "Presagio",
     "desc": "Esta partida: +30 almas por oleada y +25% de esencia por oleada.",
@@ -821,7 +821,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "puerta",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Sello del Abismo",
     "desc": "Esta partida: la Puerta +20% de vida y +25 almas por oleada.",
     "fx": [
@@ -840,7 +840,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "fuego",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Brasero vivo",
     "desc": "Esta partida: la Brasa se recarga un 20% antes y cae un 15% antes.",
     "fx": [
@@ -859,7 +859,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "rayo",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Chispa negra",
     "desc": "Esta partida: Rayo +30% de daño y +20% de alcance para elegir blanco.",
     "fx": [
@@ -878,7 +878,7 @@
     "type": "boon",
     "rarity": "rara",
     "icon": "bestia",
-    "weight": 0.7,
+    "weight": 0.196,
     "title": "Garras de obsidiana",
     "desc": "Esta partida: bestias +15% de daño y la Presa se recarga un 25% antes.",
     "fx": [
@@ -897,7 +897,7 @@
     "type": "boon",
     "rarity": "epica",
     "icon": "alma",
-    "weight": 0.35,
+    "weight": 0.098,
     "min_wave": 2,
     "title": "Diezmo eterno",
     "desc": "Esta partida: +25 almas por oleada y subir de nivel cuesta un 25% menos.",
@@ -909,6 +909,586 @@
      {
       "k": "eco.level_cost",
       "mul": -0.25
+     }
+    ]
+   },
+   {
+    "id": "ascua_densa",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "fuego",
+    "weight": 0.196,
+    "title": "Ascua densa",
+    "desc": "Esta partida: la Brasa hace un 25% más de daño y cubre un 15% más de radio.",
+    "fx": [
+     {
+      "k": "brasa.dmg",
+      "mul": 0.25
+     },
+     {
+      "k": "brasa.radius",
+      "mul": 0.15
+     }
+    ]
+   },
+   {
+    "id": "fuego_lento",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "fuego",
+    "weight": 0.196,
+    "title": "Fuego lento",
+    "desc": "Esta partida: las quemaduras de la Brasa hacen un 30% más de daño y duran un 25% más.",
+    "fx": [
+     {
+      "k": "brasa.burn_dps",
+      "mul": 0.3
+     },
+     {
+      "k": "brasa.burn_time",
+      "mul": 0.25
+     }
+    ]
+   },
+   {
+    "id": "boca_de_fosa",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "fuego",
+    "weight": 0.098,
+    "title": "Boca de fosa",
+    "desc": "Esta partida: el Horno escupe un 20% más de daño e inhala 1 enemigo más.",
+    "fx": [
+     {
+      "k": "horno.spit_dmg",
+      "mul": 0.2
+     },
+     {
+      "k": "horno.inhale_max",
+      "add": 1
+     }
+    ]
+   },
+   {
+    "id": "escoria_ardiente",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "fuego",
+    "weight": 0.098,
+    "title": "Escoria ardiente",
+    "desc": "Esta partida: el Horno inhala un 20% antes y quema un 25% más.",
+    "fx": [
+     {
+      "k": "horno.inhale_cd",
+      "mul": -0.2
+     },
+     {
+      "k": "horno.burn_dps",
+      "mul": 0.25
+     }
+    ]
+   },
+   {
+    "id": "crater_negro",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "fuego",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Cráter negro",
+    "desc": "Esta partida: la Brasa hace un 45% más de daño, pero tarda un 15% más en recargarse.",
+    "fx": [
+     {
+      "k": "brasa.dmg",
+      "mul": 0.45
+     },
+     {
+      "k": "brasa.cd",
+      "mul": 0.15
+     }
+    ]
+   },
+   {
+    "id": "impacto_ignio",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "fuego",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Impacto ígneo",
+    "desc": "Esta partida: la Brasa aturde 0,5 s al caer, pero reduce su radio un 12%.",
+    "fx": [
+     {
+      "k": "brasa.stun",
+      "add": 0.5
+     },
+     {
+      "k": "brasa.radius",
+      "mul": -0.12
+     }
+    ]
+   },
+   {
+    "id": "aguja_celeste",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "rayo",
+    "weight": 0.196,
+    "title": "Aguja celeste",
+    "desc": "Esta partida: el Rayo hace un 25% más de daño y llega un 20% más lejos.",
+    "fx": [
+     {
+      "k": "rayo.dmg",
+      "mul": 0.25
+     },
+     {
+      "k": "rayo.range",
+      "mul": 0.2
+     }
+    ]
+   },
+   {
+    "id": "pulso_seco",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "rayo",
+    "weight": 0.196,
+    "title": "Pulso seco",
+    "desc": "Esta partida: el Rayo se recarga un 20% antes y capta blancos en un 25% más de radio.",
+    "fx": [
+     {
+      "k": "rayo.cd",
+      "mul": -0.2
+     },
+     {
+      "k": "rayo.pick_radius",
+      "mul": 0.25
+     }
+    ]
+   },
+   {
+    "id": "salto_vivo",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "rayo",
+    "weight": 0.196,
+    "title": "Salto vivo",
+    "desc": "Esta partida: la cadena del Rayo salta un 25% más lejos y el Rayo aturde 0,3 s a su objetivo.",
+    "fx": [
+     {
+      "k": "rayo.chain_range",
+      "mul": 0.25
+     },
+     {
+      "k": "rayo.stun",
+      "add": 0.3
+     }
+    ]
+   },
+   {
+    "id": "nube_cargada",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "rayo",
+    "weight": 0.098,
+    "title": "Nube cargada",
+    "desc": "Esta partida: el Trueno salta un 15% antes y hace un 20% más de daño al caer.",
+    "fx": [
+     {
+      "k": "trueno.jump_cd",
+      "mul": -0.15
+     },
+     {
+      "k": "trueno.land_dmg",
+      "mul": 0.2
+     }
+    ]
+   },
+   {
+    "id": "descarga_bruta",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "rayo",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Descarga bruta",
+    "desc": "Esta partida: el Rayo hace un 45% más de daño, pero recarga un 15% más lento.",
+    "fx": [
+     {
+      "k": "rayo.dmg",
+      "mul": 0.45
+     },
+     {
+      "k": "rayo.cd",
+      "mul": 0.15
+     }
+    ]
+   },
+   {
+    "id": "arco_erratico",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "rayo",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Arco errático",
+    "desc": "Esta partida: el Rayo salta a 2 blancos más, pero hace un 10% menos de daño.",
+    "fx": [
+     {
+      "k": "rayo.chain_count",
+      "add": 2
+     },
+     {
+      "k": "rayo.dmg",
+      "mul": -0.1
+     }
+    ]
+   },
+   {
+    "id": "cuero_grueso",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 0.196,
+    "title": "Cuero grueso",
+    "desc": "Esta partida: las bestias tienen un 20% más de vida y atacan un 12% más rápido.",
+    "fx": [
+     {
+      "k": "beast.hp",
+      "mul": 0.2
+     },
+     {
+      "k": "beast.cd",
+      "mul": -0.12
+     }
+    ]
+   },
+   {
+    "id": "paso_de_caza",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 0.196,
+    "title": "Paso de caza",
+    "desc": "Esta partida: las bestias se mueven un 20% más rápido y hacen un 15% más de daño.",
+    "fx": [
+     {
+      "k": "beast.speed",
+      "mul": 0.2
+     },
+     {
+      "k": "beast.dmg",
+      "mul": 0.15
+     }
+    ]
+   },
+   {
+    "id": "mandibula_fija",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 0.196,
+    "title": "Mandíbula fija",
+    "desc": "Esta partida: la Presa del Sabueso recarga un 25% antes y retiene un 30% más de tiempo.",
+    "fx": [
+     {
+      "k": "sabueso.presa_cd",
+      "mul": -0.25
+     },
+     {
+      "k": "sabueso.presa_time",
+      "mul": 0.3
+     }
+    ]
+   },
+   {
+    "id": "pupila_abierta",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "bestia",
+    "weight": 0.098,
+    "title": "Pupila abierta",
+    "desc": "Esta partida: el Ojo dispara un 18% más rápido y alcanza un 20% más lejos.",
+    "fx": [
+     {
+      "k": "ojo.cd",
+      "mul": -0.18
+     },
+     {
+      "k": "ojo.range",
+      "mul": 0.2
+     }
+    ]
+   },
+   {
+    "id": "furia_ciega",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "bestia",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Furia ciega",
+    "desc": "Esta partida: las bestias hacen un 35% más de daño, pero tienen un 12% menos de vida.",
+    "fx": [
+     {
+      "k": "beast.dmg",
+      "mul": 0.35
+     },
+     {
+      "k": "beast.hp",
+      "mul": -0.12
+     }
+    ]
+   },
+   {
+    "id": "mirada_multiple",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "bestia",
+    "weight": 0.05,
+    "min_wave": 2,
+    "title": "Mirada múltiple",
+    "desc": "Esta partida: el Ojo encadena a 2 blancos más, pero hace un 10% menos de daño.",
+    "fx": [
+     {
+      "k": "ojo.chain_count",
+      "add": 2
+     },
+     {
+      "k": "ojo.dmg",
+      "mul": -0.1
+     }
+    ]
+   },
+   {
+    "id": "cria_barata",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "alma",
+    "weight": 0.196,
+    "title": "Cría barata",
+    "desc": "Esta partida: reclutar Sabuesos cuesta un 25% menos y subir de nivel un 20% menos.",
+    "fx": [
+     {
+      "k": "eco.sabueso_cost",
+      "mul": -0.25
+     },
+     {
+      "k": "eco.level_cost",
+      "mul": -0.2
+     }
+    ]
+   },
+   {
+    "id": "cosecha_oscura",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "alma",
+    "weight": 0.196,
+    "title": "Cosecha oscura",
+    "desc": "Esta partida: ganas un 20% más de almas por baja y +20 almas por oleada.",
+    "fx": [
+     {
+      "k": "eco.reward",
+      "mul": 0.2
+     },
+     {
+      "k": "eco.wave_bonus",
+      "add": 20
+     }
+    ]
+   },
+   {
+    "id": "residuo_astral",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "alma",
+    "weight": 0.196,
+    "title": "Residuo astral",
+    "desc": "Esta partida: ganas un 25% más de esencia por oleada y +18 almas por oleada.",
+    "fx": [
+     {
+      "k": "meta.wave",
+      "mul": 0.25
+     },
+     {
+      "k": "eco.wave_bonus",
+      "add": 18
+     }
+    ]
+   },
+   {
+    "id": "bolsa_honda",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "alma",
+    "weight": 0.196,
+    "title": "Bolsa honda",
+    "desc": "Esta partida: +25 almas por oleada y un 15% más de esencia por oleada.",
+    "fx": [
+     {
+      "k": "eco.wave_bonus",
+      "add": 25
+     },
+     {
+      "k": "meta.wave",
+      "mul": 0.15
+     }
+    ]
+   },
+   {
+    "id": "tributo_sangriento",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "alma",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Tributo sangriento",
+    "desc": "Esta partida: ganas un 40% más de almas por baja, pero la Puerta tiene un 12% menos de vida.",
+    "fx": [
+     {
+      "k": "eco.reward",
+      "mul": 0.4
+     },
+     {
+      "k": "door.hp",
+      "mul": -0.12
+     }
+    ]
+   },
+   {
+    "id": "pacto_austero",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "alma",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Pacto austero",
+    "desc": "Esta partida: ganas un 50% más de esencia por oleada, pero recibes un 10% menos de almas por baja.",
+    "fx": [
+     {
+      "k": "meta.wave",
+      "mul": 0.5
+     },
+     {
+      "k": "eco.reward",
+      "mul": -0.1
+     }
+    ]
+   },
+   {
+    "id": "mortero_negro",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "puerta",
+    "weight": 0.196,
+    "title": "Mortero negro",
+    "desc": "Esta partida: la Puerta tiene un 25% más de vida y recibe un 15% menos de daño.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.25
+     },
+     {
+      "k": "door.armor",
+      "mul": -0.15
+     }
+    ]
+   },
+   {
+    "id": "sangre_de_piedra",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "puerta",
+    "weight": 0.196,
+    "title": "Sangre de piedra",
+    "desc": "Esta partida: la Puerta recupera un 12% tras cada oleada y tiene un 15% más de vida.",
+    "fx": [
+     {
+      "k": "door.regen",
+      "add": 0.12
+     },
+     {
+      "k": "door.hp",
+      "mul": 0.15
+     }
+    ]
+   },
+   {
+    "id": "plancha_remachada",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "puerta",
+    "weight": 0.196,
+    "title": "Plancha remachada",
+    "desc": "Esta partida: la Puerta recibe un 25% menos de daño y recupera un 6% tras cada oleada.",
+    "fx": [
+     {
+      "k": "door.armor",
+      "mul": -0.25
+     },
+     {
+      "k": "door.regen",
+      "add": 0.06
+     }
+    ]
+   },
+   {
+    "id": "umbral_firme",
+    "type": "boon",
+    "rarity": "rara",
+    "icon": "puerta",
+    "weight": 0.196,
+    "title": "Umbral firme",
+    "desc": "Esta partida: la Puerta tiene un 25% más de vida y las bestias un 15% más de vida.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.25
+     },
+     {
+      "k": "beast.hp",
+      "mul": 0.15
+     }
+    ]
+   },
+   {
+    "id": "bastion_pesado",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "puerta",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Bastión pesado",
+    "desc": "Esta partida: la Puerta tiene un 45% más de vida, pero las bestias se mueven un 10% más lento.",
+    "fx": [
+     {
+      "k": "door.hp",
+      "mul": 0.45
+     },
+     {
+      "k": "beast.speed",
+      "mul": -0.1
+     }
+    ]
+   },
+   {
+    "id": "coraza_viva",
+    "type": "boon",
+    "rarity": "epica",
+    "icon": "puerta",
+    "weight": 0.098,
+    "min_wave": 2,
+    "title": "Coraza viva",
+    "desc": "Esta partida: la Puerta recupera un 20% tras cada oleada, pero ganas un 10% menos de almas por baja.",
+    "fx": [
+     {
+      "k": "door.regen",
+      "add": 0.2
+     },
+     {
+      "k": "eco.reward",
+      "mul": -0.1
      }
     ]
    }
@@ -1169,6 +1749,136 @@
      "beast_dmg": 0.25,
      "door_dmg": 0.25
     }
+   },
+   {
+    "id": "paso_ligero",
+    "name": "Paso ligero",
+    "desc": "Enemigos +20% de velocidad. +25 almas al acabar.",
+    "weight": 1.5,
+    "fx": {
+     "enemy_speed": 0.2,
+     "souls": 25
+    }
+   },
+   {
+    "id": "ariete_ciego",
+    "name": "Ariete ciego",
+    "desc": "La Puerta recibe +30% de daño. Almas por baja +45%.",
+    "weight": 1.5,
+    "fx": {
+     "door_dmg": 0.3,
+     "reward": 0.45
+    }
+   },
+   {
+    "id": "aire_espeso",
+    "name": "Aire espeso",
+    "desc": "Hechizos recargan un 20% más lento. Esencia de la oleada +40%.",
+    "weight": 1.5,
+    "fx": {
+     "spell_cd": 0.2,
+     "essence": 0.4
+    }
+   },
+   {
+    "id": "garra_roma",
+    "name": "Garra roma",
+    "desc": "Bestias -15% de daño. +30 almas al acabar.",
+    "weight": 1.5,
+    "fx": {
+     "beast_dmg": -0.15,
+     "souls": 30
+    }
+   },
+   {
+    "id": "horda_inquieta",
+    "name": "Horda inquieta",
+    "desc": "+25% de enemigos comunes y +15% de velocidad. Almas por baja +65%.",
+    "weight": 0.75,
+    "fx": {
+     "count": 0.25,
+     "enemy_speed": 0.15,
+     "reward": 0.65
+    }
+   },
+   {
+    "id": "cuna_de_hierro",
+    "name": "Cuña de hierro",
+    "desc": "Todos entran por un frente y tienen +20% de vida. +40 almas al acabar.",
+    "weight": 0.75,
+    "fx": {
+     "one_front": 1,
+     "enemy_hp": 0.2,
+     "souls": 40
+    }
+   },
+   {
+    "id": "heraldo_negro",
+    "name": "Heraldo negro",
+    "desc": "Llega una élite más y los enemigos tienen +15% de vida. Esencia de la oleada +55%.",
+    "weight": 0.75,
+    "fx": {
+     "extra_elite": 1,
+     "enemy_hp": 0.15,
+     "essence": 0.55
+    }
+   },
+   {
+    "id": "fiebre_belica",
+    "name": "Fiebre bélica",
+    "desc": "La Puerta recibe +35% de daño. Hechizos recargan un 25% antes.",
+    "weight": 0.75,
+    "fx": {
+     "door_dmg": 0.35,
+     "spell_cd": -0.25
+    }
+   },
+   {
+    "id": "plaga_de_acero",
+    "name": "Plaga de acero",
+    "desc": "+40% de enemigos comunes y +25% de vida. +60 almas al acabar.",
+    "weight": 0.4,
+    "fx": {
+     "count": 0.4,
+     "enemy_hp": 0.25,
+     "souls": 60
+    },
+    "min_wave": 3
+   },
+   {
+    "id": "vanguardia_elite",
+    "name": "Vanguardia élite",
+    "desc": "Llegan 2 élites más. Almas por baja +80%.",
+    "weight": 0.4,
+    "fx": {
+     "extra_elite": 2,
+     "reward": 0.8
+    },
+    "min_wave": 3
+   },
+   {
+    "id": "tormenta_seca",
+    "name": "Tormenta seca",
+    "desc": "Bestias -25% de daño y hechizos recargan un 20% más lento. Esencia de la oleada +80%.",
+    "weight": 0.4,
+    "fx": {
+     "beast_dmg": -0.25,
+     "spell_cd": 0.2,
+     "essence": 0.8
+    },
+    "min_wave": 3
+   },
+   {
+    "id": "embestida_mortal",
+    "name": "Embestida mortal",
+    "desc": "Enemigos +30% de velocidad y la Puerta recibe +50% de daño. +55 almas al acabar.",
+    "weight": 0.4,
+    "fx": {
+     "enemy_speed": 0.3,
+     "door_dmg": 0.5,
+     "souls": 55
+    },
+    "min_wave": 3
    }
   ]
  },

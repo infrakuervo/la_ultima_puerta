@@ -244,3 +244,11 @@ Plan: tras los puntos 1-7, jugar partidas de verdad (bot torpe, capturas, `tools
 
 ## Notas
 - Entorno: el setup script se propone al final con `create_environment`. Si no se aprobó, los pasos son: descargar Godot 4.7.2 Linux (zip de GitHub) en `/opt/godot`, `apt-get install -y xvfb`, y sacar `web_nothreads_*.zip` del .tpz.
+
+## Lote de dones y augurios (14 nov)
+- [x] 30 dones y 12 augurios nuevos por datos (borrador de Gemini, revisado aquí): **46 dones y 22 augurios**. Sin código nuevo.
+- Correcciones al borrador: `door.armor` reduce el daño con valor **negativo**; `door.regen` es la fracción de la Puerta que se recupera **al acabar cada oleada** (0,1 = 10%), no vida por segundo.
+- Equilibrio (250 partidas, bot torpe, primera partida): antes 46%; lote sin ajustar 33%; final **47%** (bot hábil 81%). Subir los valores de los dones no movía la tasa; lo que la hundía era que los dones salían más y las bestias menos.
+- Regla para añadir dones: no basta con repartir el peso total entre todos. Cinco dones están bloqueados por logro y, con muchos dones de poco peso, coger uno casi no vacía el montón. Pesos actuales: raros 0,196, épicos 0,098; los que dependen de una bestia concreta (Horno, Trueno, Ojo), la mitad. Tras cualquier cambio en `draft.pool`, medir con `tools/balance.tscn -- 250 0 0`.
+- Augurios nuevos con peso bajo (suaves 1,5; medios 0,75; duros 0,4 y desde la oleada 3) porque casi todos son más duros que los antiguos.
+- Pendiente: repetir la carrera con Ira (`BAL_CLIMB=1`) y republicar la web.
