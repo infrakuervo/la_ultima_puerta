@@ -1,0 +1,302 @@
+diff --git a/scripts/art.gd b/scripts/art.gd
+index 9f5d85e..a8eff4c 100644
+--- a/scripts/art.gd
++++ b/scripts/art.gd
+@@ -28,14 +28,25 @@ const SPRITE_H: Dictionary = {
+ 	"alacran": 86.0, "sapo": 76.0, "manta": 62.0,
+ }
+ const SPRITE_LIFT: Dictionary = {"ojo": 44.0, "manta": 26.0}
++const HORNO_FRAMES: Dictionary = {"reposo": 41, "carrera": 12, "mordisco": 19}
+ static var _tex_cache: Dictionary = {}
+ 
+ 
+ static func tex(key: String) -> Texture2D:
+-	if _tex_cache.has(key):
+-		return _tex_cache[key]
++	return _texture_at("res://art/sprites/%s.png" % key)
++
++
++static func horno_frame(clip: String, elapsed: float) -> Texture2D:
++	var count: int = HORNO_FRAMES[clip]
++	var index: int = floori(maxf(elapsed, 0.0) * 12.0)
++	index = mini(index, count - 1) if clip == "mordisco" else index % count
++	return _texture_at("res://art/anim/horno/%s/%02d.png" % [clip, index + 1])
++
++
++static func _texture_at(path: String) -> Texture2D:
++	if _tex_cache.has(path):
++		return _tex_cache[path]
+ 	var t: Texture2D = null
+-	var path: String = "res://art/sprites/%s.png" % key
+ 	if ResourceLoader.exists(path):
+ 		t = load(path)
+ 	else:
+@@ -45,7 +56,7 @@ static func tex(key: String) -> Texture2D:
+ 			if img != null:
+ 				img.generate_mipmaps()
+ 				t = ImageTexture.create_from_image(img)
+-	_tex_cache[key] = t
++	_tex_cache[path] = t
+ 	return t
+ 
+ 
+@@ -71,7 +82,8 @@ static func background() -> Texture2D:
+ 
+ ## Dibuja un sprite con los pies en `pos`. opts: scale, alpha, flash, squash, bob, glow
+ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opts: Dictionary) -> bool:
+-	var tx: Texture2D = tex(key)
++	var frame: Texture2D = opts.get("frame")
++	var tx: Texture2D = frame if frame != null else tex(key)
+ 	if tx == null:
+ 		return false
+ 	var sc: float = float(opts.get("scale", 1.0))
+@@ -97,6 +109,11 @@ static func draw_sprite(ci: CanvasItem, key: String, pos: Vector2, t: float, opt
+ 		ci.draw_circle(pos + Vector2(0, -h * 0.5 - lift), (h * 0.55 + 30.0 * glow), Color(1.0, 0.55, 0.2, 0.25 * glow))
+ 	var hh: float = h * squash * (1.0 - 0.08 * flash)
+ 	var rect: Rect2 = Rect2(pos.x - w * 0.5, pos.y - hh - lift + bob, w, hh)
++	if frame != null and bool(opts.get("bite_frame", false)):
++		# El vídeo del mordisco tiene un encuadre más abierto que los otros dos.
++		var bite_size: Vector2 = rect.size * 1.14
++		rect = Rect2(rect.get_center().x - bite_size.x * 0.5 + 7.0 * sc,
++			rect.end.y - bite_size.y + 4.0 * sc, bite_size.x, bite_size.y)
+ 	var col: Color = Color(1, 1, 1, alpha)
+ 	if opts.has("tint"):
+ 		var tn: Color = opts["tint"]
+@@ -116,15 +133,18 @@ static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float,
+ 	var flash: float = float(opts.get("flash", 0.0))
+ 	var fallen: bool = bool(opts.get("fallen", false))
+ 	var glow: float = float(opts.get("glow", 0.0))
++	var bob: float = 0.0 if bool(opts.get("posed", false)) else sin(t * 5.0) * 1.5
+ 	if SPRITE_H.has(kind):
+ 		var so: Dictionary = {"scale": s, "alpha": 0.35 if fallen else 1.0, "flash": flash, "glow": glow, "scars": scars,
+-			"squash": 0.86 if bool(opts.get("crouch", false)) else 1.0, "bob": sin(t * 5.0) * 1.5}
++			"squash": 0.86 if bool(opts.get("crouch", false)) else 1.0, "bob": bob}
++		if opts.has("frame"):
++			so["frame"] = opts["frame"]
++			so["bite_frame"] = opts["bite_frame"]
+ 		if draw_sprite(ci, kind, pos, t, so):
+ 			if int(opts.get("hambre", 0)) > 0:
+ 				for i in int(opts.get("hambre", 0)):
+ 					ci.draw_circle(pos + Vector2(-16 + i * 12, -34 * s), 4.0, Color(1.0, 0.6, 0.2))
+ 			return
+-	var bob: float = sin(t * 5.0) * 1.5
+ 	var p: Vector2 = pos + Vector2(0, bob)
+ 	var alpha: float = 0.35 if fallen else 1.0
+ 	# sombra
+@@ -234,9 +254,10 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
+ 	var flash: float = float(opts.get("flash", 0.0))
+ 	var burning: bool = bool(opts.get("burning", false))
+ 	var bump: float = float(opts.get("bump", 0.0))
++	var bob: float = 0.0 if bool(opts.get("posed", false)) else -absf(sin(t * 6.0 + bump * 6.0)) * 3.0
+ 	var esp: String = String(opts.get("sprite", ""))
+ 	if esp != "":
+-		var eo2: Dictionary = {"flash": flash, "scale": float(opts.get("scale", 1.0)), "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
++		var eo2: Dictionary = {"flash": flash, "scale": float(opts.get("scale", 1.0)), "bob": bob}
+ 		if opts.has("tint"):
+ 			eo2["tint"] = opts["tint"]
+ 		if burning:
+@@ -245,7 +266,7 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
+ 			return
+ 		kind = esp.get_slice("_", 0)
+ 	if SPRITE_H.has(kind):
+-		var eo: Dictionary = {"flash": flash, "bob": -absf(sin(t * 6.0 + bump * 6.0)) * 3.0}
++		var eo: Dictionary = {"flash": flash, "bob": bob}
+ 		if burning:
+ 			eo["flash"] = maxf(flash, 0.25 + 0.15 * sin(t * 14.0))
+ 		var vk: String = kind
+@@ -255,7 +276,7 @@ static func draw_enemy(ci: CanvasItem, kind: String, pos: Vector2, t: float, opt
+ 			vk = "%s_v%02d" % [kind, vi]
+ 		if draw_sprite(ci, vk, pos, t, eo):
+ 			return
+-	var p: Vector2 = pos + Vector2(0, absf(sin(t * 6.0 + bump * 6.0)) * -2.0)
++	var p: Vector2 = pos + Vector2(0, bob * (2.0 / 3.0))
+ 	var skin: Color = Color(0.85, 0.7, 0.55).lerp(Color(1, 1, 1), flash)
+ 	var cloth: Color = Color(0.4, 0.33, 0.22)
+ 	if burning:
+diff --git a/scripts/main.gd b/scripts/main.gd
+index 63b02ed..2c1c575 100644
+--- a/scripts/main.gd
++++ b/scripts/main.gd
+@@ -13,6 +13,12 @@ const SCREEN_H: float = 720.0
+ const BESTIARY_PATH: String = "user://bestiario.json"
+ const ARENA_TOP: float = 90.0
+ const ARENA_BOTTOM: float = 598.0
++const ATTACK_POSE_TIME: float = 0.23
++const HORNO_BITE_TIME: float = 0.65
++const CREATURE_ATTACK_EVENTS: Array[String] = [
++	"bite", "presa", "horno_spit", "trueno_land", "sapo_spit", "manta_dive",
++	"ojo_shot", "stone_break", "swarm", "hook",
++]
+ 
+ const FORM_INFO: Dictionary = {
+ 	"sabueso": "Muerde y a veces agarra a un enemigo (Presa) para que no avance.",
+@@ -48,6 +54,10 @@ var holding: bool = false
+ var fx: Array = []
+ var warns: Array = []
+ var mut_anim: Dictionary = {}
++var unit_previous_x: Dictionary = {}
++var unit_attack_until: Dictionary = {}
++var horno_bite_until: Dictionary = {}
++var arena_offset: Vector2 = Vector2.ZERO
+ var banner_text: String = ""
+ var banner_t: float = 0.0
+ var banner_dur: float = 1.0
+@@ -106,12 +116,25 @@ func _process(delta: float) -> void:
+ 	if sim.phase == "combat" and juice.hitstop <= 0.0:
+ 		accum += delta * float(speed)
+ 		var guard: int = 0
++		var previous_enemy_cd: Dictionary = {}
++		if accum >= Sim.TICK:
++			unit_previous_x.clear()
++			for c in sim.creatures:
++				unit_previous_x[c["id"]] = c["x"]
++			for e in sim.enemies:
++				unit_previous_x[e["id"]] = e["x"]
++				previous_enemy_cd[e["id"]] = e["cd"]
+ 		while accum >= Sim.TICK and guard < 12:
+ 			sim.step(Sim.TICK)
+ 			accum -= Sim.TICK
+ 			guard += 1
+ 			if sim.phase != "combat":
+ 				break
++		if guard > 0:
++			for e in sim.enemies:
++				var cd: float = float(e["cd"])
++				if cd > float(previous_enemy_cd.get(e["id"], 0.0)) + 0.05:
++					unit_attack_until[e["id"]] = clock + ATTACK_POSE_TIME
+ 	else:
+ 		accum = 0.0
+ 	if sim.phase == "combat" and holding and not show_bestiary:
+@@ -122,6 +145,12 @@ func _process(delta: float) -> void:
+ 
+ 
+ func _update_fx(delta: float) -> void:
++	for id in unit_attack_until.keys():
++		if float(unit_attack_until[id]) <= clock:
++			unit_attack_until.erase(id)
++	for id in horno_bite_until.keys():
++		if float(horno_bite_until[id]) <= clock:
++			horno_bite_until.erase(id)
+ 	var keep: Array = []
+ 	for f in fx:
+ 		f["t"] += delta
+@@ -212,6 +241,8 @@ func _handle_events() -> void:
+ 
+ func _on_event(ev: Dictionary) -> void:
+ 	var t: String = ev["t"]
++	if t in CREATURE_ATTACK_EVENTS:
++		unit_attack_until[ev["id"]] = clock + ATTACK_POSE_TIME
+ 	menu.tut_event(self, ev)
+ 	match t:
+ 		"placed":
+@@ -262,6 +293,9 @@ func _on_event(ev: Dictionary) -> void:
+ 			_float(_creature_pos_by_id(int(ev["id"])) + Vector2(0, -110), "Nivel %d" % int(ev["level"]), Color(1.0, 0.9, 0.4), 1.4)
+ 		"bite":
+ 			_play("bite", 0.06)
++			var attacker: Dictionary = sim.creature_by_id(int(ev["id"]))
++			if attacker.get("kind") == "horno":
++				horno_bite_until[ev["id"]] = clock + HORNO_BITE_TIME
+ 		"hit":
+ 			_play("hit", 0.05)
+ 			var hp0: Vector2 = Vector2(ev["x"], float(ev.get("y", _lane_y(int(ev["lane"])))) - 34)
+@@ -641,6 +675,9 @@ func _restart() -> void:
+ 	fx.clear()
+ 	warns.clear()
+ 	mut_anim.clear()
++	unit_previous_x.clear()
++	unit_attack_until.clear()
++	horno_bite_until.clear()
+ 	selected_id = -1
+ 	dragging = false
+ 	accum = 0.0
+@@ -820,8 +857,8 @@ func _txt(s: String, pos: Vector2, size: int, col: Color, align: int = HORIZONTA
+ 
+ func _draw() -> void:
+ 	draw_rect(Rect2(0, 0, SCREEN_W, SCREEN_H), Color(0.08, 0.03, 0.04))
+-	var sh: Vector2 = juice.offset()
+-	draw_set_transform(sh, 0.0, Vector2.ONE)
++	arena_offset = juice.offset()
++	draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+ 	_draw_arena()
+ 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+ 	_draw_hud()
+@@ -897,10 +934,10 @@ func _draw_arena_rest(painted: bool) -> void:
+ 		var ta: float = clampf(float(tp["t"]) / 1.0, 0.0, 1.0)
+ 		var pp: Vector2 = tp["p"]
+ 		var rr: float = float(tp["r"])
+-		draw_set_transform(pp, 0.0, Vector2(1.0, 0.45))
++		draw_set_transform(arena_offset + pp, 0.0, Vector2(1.0, 0.45))
+ 		draw_circle(Vector2.ZERO, rr, Color(0.12, 0.07, 0.04, 0.55 * ta))
+ 		draw_arc(Vector2.ZERO, rr, 0.0, TAU, 28, Color(0.5, 0.3, 0.12, 0.8 * ta), 2.0)
+-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
++		draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+ 	# hueco del Trueno
+ 	for c in sim.creatures:
+ 		if c["kind"] == "trueno" and not c["dead"] and c["state"] != "home":
+@@ -1021,6 +1058,25 @@ func draw_ctx() -> CanvasItem:
+ 	return self
+ 
+ 
++func _unit_is_moving(unit: Dictionary) -> bool:
++	var x: float = float(unit["x"])
++	return sim.phase == "combat" and absf(x - float(unit_previous_x.get(unit["id"], x))) > 0.15
++
++
++## Transforma solo el dibujo. Las posiciones, colisiones y textos quedan en su sitio.
++func _set_unit_pose(unit: Dictionary, pos: Vector2, facing: float, hit: float, preparing: bool = false, frame: Texture2D = null, bite_frame: bool = false) -> void:
++	var id: int = int(unit["id"])
++	var moving: bool = _unit_is_moving(unit)
++	var step_phase: float = sim.wave_time * 19.0 + float(id)
++	var stride: float = sin(step_phase) if moving and frame == null else 0.0
++	var breath: float = sin(clock * 4.0 + float(id)) * 0.027 if not moving and frame == null else 0.0
++	var attack: float = 0.0 if bite_frame else clampf((float(unit_attack_until.get(id, clock)) - clock) / ATTACK_POSE_TIME, 0.0, 1.0)
++	var windup: float = 1.0 if preparing else 0.0
++	var shift: Vector2 = Vector2(facing * (14.0 * attack - 7.0 * hit - 4.0 * windup), -absf(stride) * 5.0)
++	var scale_v: Vector2 = Vector2(1.0 + attack * 0.10 + hit * 0.04, 1.0 + breath + stride * 0.045 - windup * 0.08)
++	draw_set_transform(arena_offset + pos + shift, facing * (0.05 * stride + 0.08 * attack - 0.06 * hit), scale_v)
++
++
+ func _draw_creature(c: Dictionary) -> void:
+ 	var pos: Vector2 = _creature_pos(c)
+ 	var kind: String = c["kind"]
+@@ -1047,7 +1103,27 @@ func _draw_creature(c: Dictionary) -> void:
+ 	opts["flash"] = maxf(float(opts["flash"]), juice.flash_of(1000000 + int(c["id"])))
+ 	if selected_id == int(c["id"]):
+ 		draw_arc(pos + Vector2(0, -34), 52.0, 0.0, TAU, 28, Color(1.0, 0.9, 0.4, 0.8), 3.0)
+-	Art.draw_creature(self, kind, pos, clock + float(c["id"]), opts)
++	if m < 0.0 and not c["fallen"] and not c["air"] and c["state"] != "stone":
++		var frame: Texture2D = null
++		var bite_frame: bool = false
++		if kind == "horno":
++			var bite_left: float = float(horno_bite_until.get(c["id"], 0.0)) - clock
++			var moving: bool = _unit_is_moving(c)
++			if sim.phase == "combat" and bite_left > 0.0 and not moving:
++				var elapsed: float = (1.0 - bite_left / HORNO_BITE_TIME) * 19.0 / 12.0
++				frame = Art.horno_frame("mordisco", elapsed)
++				bite_frame = frame != null
++			else:
++				frame = Art.horno_frame("carrera" if moving else "reposo", sim.wave_time if moving else clock)
++		_set_unit_pose(c, pos, 1.0, juice.flash_of(1000000 + int(c["id"])),
++			float(c["windup"]) > 0.0, frame, bite_frame)
++		opts["frame"] = frame
++		opts["bite_frame"] = bite_frame
++		opts["posed"] = true
++		Art.draw_creature(self, kind, Vector2.ZERO, clock + float(c["id"]), opts)
++		draw_set_transform(arena_offset, 0.0, Vector2.ONE)
++	else:
++		Art.draw_creature(self, kind, pos, clock + float(c["id"]), opts)
+ 	if c["stun"] > 0.0:
+ 		_txt("aturdido", pos + Vector2(-30, -110), 15, Color(1.0, 0.9, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
+ 	for lv in int(c["level"]) - 1:
+@@ -1094,7 +1170,10 @@ func _draw_enemy(e: Dictionary) -> void:
+ 			draw_arc(ep0 + Vector2(0, 4), float(sim.B["enemies"][kind]["haste_radius"]), 0.0, TAU, 40, Color(1.0, 0.5, 0.2, 0.22), 2.0)
+ 		if sim.B["enemies"][kind].has("cover_range"):
+ 			draw_line(ep0 + Vector2(0, -6), ep0 + Vector2(float(sim.B["enemies"][kind]["cover_range"]), -6), Color(0.9, 0.85, 0.6, 0.4), 4.0)
+-	Art.draw_enemy(self, kind, pos, clock, opts)
++	_set_unit_pose(e, pos, -1.0, hfl, float(e["aim_t"]) > 0.0)
++	opts["posed"] = true
++	Art.draw_enemy(self, kind, Vector2.ZERO, clock, opts)
++	draw_set_transform(arena_offset, 0.0, Vector2.ONE)
+ 	var st: Dictionary = sim.B["enemies"][kind]
+ 	var top: float = -118.0 if (kind == "verdugo" or kind == "inquisidor" or kind == "tajo" or kind == "campana") else -62.0
+ 	if elite:
