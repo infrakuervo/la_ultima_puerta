@@ -252,3 +252,18 @@ Plan: tras los puntos 1-7, jugar partidas de verdad (bot torpe, capturas, `tools
 - Regla para añadir dones: no basta con repartir el peso total entre todos. Cinco dones están bloqueados por logro y, con muchos dones de poco peso, coger uno casi no vacía el montón. Pesos actuales: raros 0,196, épicos 0,098; los que dependen de una bestia concreta (Horno, Trueno, Ojo), la mitad. Tras cualquier cambio en `draft.pool`, medir con `tools/balance.tscn -- 250 0 0`.
 - Augurios nuevos con peso bajo (suaves 1,5; medios 0,75; duros 0,4 y desde la oleada 3) porque casi todos son más duros que los antiguos.
 - Pendiente: repetir la carrera con Ira (`BAL_CLIMB=1`) y republicar la web.
+
+## Fusión de bestias (15 nov)
+
+Hecho:
+- Subir de nivel con almas ya no existe. Tres bestias iguales del mismo nivel se funden en una del nivel siguiente (nivel 3 = nueve). Tizón cuenta como Sabueso y los devora aunque haya mutado.
+- Vida y daño por nivel: ×2, ×4 (`economy.merge_mult`). Aviso «¡FUSIÓN!» en las cartas y en la tienda; destello, tamaño, aura y estrellas por nivel (provisional hasta tener el arte de cada nivel).
+- Zonas de retaguardia y vanguardia: sin recuadros; solo esquinas finas al coger una bestia.
+- Medido (250 primeras partidas): bot torpe 50%, bot hábil 92%. Suite en verde.
+
+Pendiente (pedido por el usuario):
+- Guarida: almacén de bestias fuera del campo.
+- Muchas más bestias, en tandas de 10 (diseño y datos con Gemini, arte con Flow), y que la tienda ofrezca bestias al azar.
+- Arte por nivel de cada bestia (encargo a Flow) y cargarlo en `Art` por nivel.
+- Árbol que se va descubriendo (solo se ve un paso por delante).
+- Repetir la carrera de Ira (`BAL_CLIMB=1`) y revisar la piedra «Camada» (ahora cada compra funde con Tizón).

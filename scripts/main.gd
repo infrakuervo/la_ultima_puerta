@@ -386,7 +386,7 @@ func _on_event(ev: Dictionary) -> void:
 	var t: String = ev["t"]
 	menu.tut_event(self, ev)
 	poses.on_event(ev, sim)
-	if t in ["bought", "leveled", "placed", "draft_pick", "skill", "respec", "augur", "route_chosen"] and sim.phase == "prep":
+	if t in ["bought", "merged", "placed", "draft_pick", "skill", "respec", "augur", "route_chosen"] and sim.phase == "prep":
 		save_run()
 	for lid in logros.on_event(sim, ev, not challenge.is_empty()):
 		var ld: Dictionary = logros.def(String(lid))
@@ -460,9 +460,18 @@ func _on_event(ev: Dictionary) -> void:
 			_play("rayo")
 			var cdelay: float = Anim.impact_delay("demonio", "rayo") if demon_anim.clip == "rayo" else 0.0
 			_add_fx({"type": "bolt", "a": ev["from"], "b": ev["to"], "col": Color(0.9, 0.95, 1.0), "ttl": 0.22, "t": -cdelay})
-		"leveled":
-			_play("level")
-			_float(_creature_pos_by_id(int(ev["id"])) + Vector2(0, -110), "Nivel %d" % int(ev["level"]), Color(1.0, 0.9, 0.4), 1.4)
+		"merged":
+			_play("mutate")
+			var mp: Vector2 = _creature_pos_by_id(int(ev["id"]))
+			var mcol: Color = _level_col(int(ev["level"]))
+			for fr0 in ev["from"]:
+				var fp: Vector2 = Vector2(float(fr0["x"]), _lane_y(int(fr0["lane"])))
+				_add_fx({"type": "bolt", "a": fp + Vector2(0, -30), "b": mp + Vector2(0, -34), "col": mcol, "ttl": 0.35, "t": 0.0})
+				_add_fx({"type": "ring", "p": fp + Vector2(0, -30), "r0": 40.0, "r1": 6.0, "col": mcol, "ttl": 0.3, "t": 0.0})
+			_add_fx({"type": "ring", "p": mp + Vector2(0, -34), "r0": 10.0, "r1": 90.0, "col": mcol, "ttl": 0.5, "t": -0.2})
+			_float(mp + Vector2(0, -120), "¡FUSIÓN!  Nivel %d" % int(ev["level"]), mcol, 1.8)
+			if sim.creature_by_id(selected_id).is_empty():
+				selected_id = -1
 		"bite":
 			_play("bite", 0.06)
 		"hit":
@@ -927,22 +936,22 @@ func _buttons() -> Array:
 	var y: float = 624.0
 	if ph == "prep":
 		out.append({"id": "buy_sabueso", "rect": Rect2(20, y, 150, 72), "text": "Sabueso", "sub": "%d almas" % sim.cost_of("sabueso"), "on": sim.can_buy("sabueso")})
-		out.append({"id": "buy_ojo", "rect": Rect2(180, y, 150, 72), "text": "Ojo de Latón", "sub": "%d almas" % sim.cost_of("ojo"), "on": sim.can_buy("ojo")})
+		out.append({"id": "buy_ojo", "rect": Rect2(180, y, 150, 72), "text": "Ojo de Latón", "sub": ("%d almas · ¡fusión!" if sim.would_merge("ojo") else "%d almas") % sim.cost_of("ojo"), "on": sim.can_buy("ojo")})
 		var can_any: bool = false
 		for sid in sim.SK_ORDER:
 			if sim.can_skill(sid):
 				can_any = true
 				break
 		out.append({"id": "tree", "rect": Rect2(340, y, 150, 72), "text": "Árbol (T)", "sub": ("%d rangos" if not sim.meta_mode else "ver · %d rangos") % sim.skill_points_spent(), "on": true, "active": can_any})
-		var lsub: String = "elige una bestia"
-		var lon: bool = false
+		var lsub: String = "3 iguales = +1 nivel"
 		if selected_id >= 0:
 			var sc: Dictionary = sim.creature_by_id(selected_id)
 			if not sc.is_empty():
-				var lc: int = sim.level_cost(sc)
-				lsub = "máximo" if lc < 0 else "%d almas" % lc
-				lon = sim.can_level(selected_id)
-		out.append({"id": "level", "rect": Rect2(500, y, 150, 72), "text": "Subir nivel", "sub": lsub, "on": lon})
+				if int(sc["level"]) >= sim.max_level():
+					lsub = "nivel máximo"
+				else:
+					lsub = "%d de 3 · nivel %d" % [sim.merge_count(sim.merge_key(sc), int(sc["level"])), int(sc["level"])]
+		out.append({"id": "fuse", "rect": Rect2(500, y, 150, 72), "text": "Fusión", "sub": lsub, "on": false})
 		out.append({"id": "start", "rect": Rect2(1030, y, 230, 72), "text": "Iniciar oleada", "sub": "Espacio", "on": true})
 	elif ph == "combat":
 		var bcd: float = sim.brasa_cd / float(sim._stats("brasa")["cd"])
@@ -1003,8 +1012,6 @@ func _do_button(id: String) -> void:
 			_toggle_tree()
 		"tree_close":
 			_close_tree()
-		"level":
-			sim.level_up(selected_id)
 		"spell_brasa":
 			spell = "brasa"
 		"spell_rayo":
@@ -1421,18 +1428,45 @@ func _zone_rect(depth: String) -> Rect2:
 	return Rect2(float(z["x0"]) - 20.0, top, float(z["x1"]) - float(z["x0"]) + 40.0, _lane_y(2) - _lane_y(0) + 128.0)
 
 
+## Color del nivel de una bestia (2 oro, 3 carmesí, 4+ violeta).
+func _level_col(lvl: int) -> Color:
+	if lvl <= 2:
+		return Color(1.0, 0.82, 0.3)
+	if lvl == 3:
+		return Color(1.0, 0.35, 0.25)
+	return Color(0.8, 0.45, 1.0)
+
+
+func _draw_star(p: Vector2, r: float, col: Color) -> void:
+	var pts: PackedVector2Array = PackedVector2Array()
+	for i in 10:
+		var a: float = -PI / 2.0 + float(i) * PI / 5.0
+		pts.append(p + Vector2(cos(a), sin(a)) * (r if i % 2 == 0 else r * 0.45))
+	draw_colored_polygon(pts, col)
+	pts.append(pts[0])
+	draw_polyline(pts, Color(0.15, 0.05, 0.0, 0.9), 1.0)
+
+
+## Zonas de despliegue: no se ven hasta que coges una bestia; entonces, solo unas marcas finas en el suelo.
 func _draw_zones() -> void:
 	var active: bool = selected_id >= 0
-	var a: float = 0.20 if active else 0.08
-	var rr: Rect2 = _zone_rect("rear")
-	var fr: Rect2 = _zone_rect("front")
-	draw_rect(rr, Color(0.35, 0.5, 0.9, a))
-	draw_rect(fr, Color(1.0, 0.55, 0.2, a))
-	draw_rect(rr, Color(0.5, 0.65, 1.0, 0.5 if active else 0.25), false, 2.0)
-	draw_rect(fr, Color(1.0, 0.7, 0.3, 0.5 if active else 0.25), false, 2.0)
-	_txt("RETAGUARDIA", Vector2(rr.position.x, rr.position.y - 6), 15, Color(0.6, 0.75, 1.0, 0.9), HORIZONTAL_ALIGNMENT_CENTER, rr.size.x)
-	_txt("VANGUARDIA", Vector2(fr.position.x, fr.position.y - 6), 15, Color(1.0, 0.75, 0.4, 0.9), HORIZONTAL_ALIGNMENT_CENTER, fr.size.x)
-	if active and _in_arena(mouse_pos):
+	if not active:
+		return
+	var zdefs: Array = [[_zone_rect("rear"), Color(0.6, 0.75, 1.0), "retaguardia"], [_zone_rect("front"), Color(1.0, 0.75, 0.4), "vanguardia"]]
+	for zd in zdefs:
+		var zr: Rect2 = zd[0]
+		var zc: Color = zd[1]
+		var k: float = 22.0
+		var corners: Array = [[zr.position, Vector2(1, 1)], [zr.position + Vector2(zr.size.x, 0), Vector2(-1, 1)],
+			[zr.position + Vector2(0, zr.size.y), Vector2(1, -1)], [zr.end, Vector2(-1, -1)]]
+		for cn in corners:
+			var cp: Vector2 = cn[0]
+			var cd: Vector2 = cn[1]
+			draw_line(cp, cp + Vector2(k * cd.x, 0), Color(zc.r, zc.g, zc.b, 0.55), 2.0)
+			draw_line(cp, cp + Vector2(0, k * cd.y), Color(zc.r, zc.g, zc.b, 0.55), 2.0)
+		draw_line(zr.position + Vector2(k, zr.size.y), zr.end - Vector2(k, 0), Color(zc.r, zc.g, zc.b, 0.18), 1.0)
+		_txt(String(zd[2]), Vector2(zr.position.x, zr.end.y + 16), 13, Color(zc.r, zc.g, zc.b, 0.7), HORIZONTAL_ALIGNMENT_CENTER, zr.size.x)
+	if _in_arena(mouse_pos):
 		var lane: int = _nearest_lane(mouse_pos.y)
 		var gx: float = clampf(mouse_pos.x, sim.zone_min_x(), sim.zone_max_x())
 		var ok: bool = sim.spot_ok(gx, lane, selected_id)
@@ -1574,6 +1608,19 @@ func _draw_creature(c: Dictionary) -> void:
 			glow = 1.0 - (m - 0.9) / 1.0
 			scale_v = 1.0 + 0.25 * glow
 			draw_arc(pos + Vector2(0, -34), (m - 0.9) * 260.0, 0.0, TAU, 32, Color(1.0, 0.7, 0.3, clampf(glow, 0.0, 1.0)), 4.0)
+	var lvl: int = int(c["level"])
+	if lvl > 1:
+		# nivel por fusión: más grande y con un aura en el suelo
+		scale_v *= 1.0 + 0.15 * float(mini(lvl, 4) - 1)
+		var lc0: Color = _level_col(lvl)
+		var pulse: float = 0.5 + 0.5 * sin(clock * (2.0 + lvl) + float(c["id"]))
+		var aw: float = 34.0 + 10.0 * float(lvl)
+		draw_set_transform(pos + Vector2(0, 30), 0.0, Vector2(1.0, 0.32))
+		draw_circle(Vector2.ZERO, aw, Color(lc0.r, lc0.g, lc0.b, 0.10 + 0.08 * pulse))
+		draw_arc(Vector2.ZERO, aw, 0.0, TAU, 36, Color(lc0.r, lc0.g, lc0.b, 0.45 + 0.3 * pulse), 2.0)
+		if lvl >= 3:
+			draw_arc(Vector2.ZERO, aw + 7.0 + 3.0 * pulse, 0.0, TAU, 36, Color(lc0.r, lc0.g, lc0.b, 0.3), 1.5)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var crouch: bool = c["state"] == "crouch"
 	if crouch:
 		pos.y += 4.0
@@ -1598,8 +1645,8 @@ func _draw_creature(c: Dictionary) -> void:
 		Art.draw_creature(self, kind, pos, clock + float(id), opts)
 	if c["stun"] > 0.0:
 		_txt("aturdido", pos + Vector2(-30, -110), 15, Color(1.0, 0.9, 0.4), HORIZONTAL_ALIGNMENT_CENTER, 60.0)
-	for lv in int(c["level"]) - 1:
-		draw_circle(pos + Vector2(-8 + lv * 12, 40), 4.0, Color(1.0, 0.85, 0.3))
+	for lv in lvl - 1:
+		_draw_star(pos + Vector2(-7.0 * float(lvl - 2) + lv * 14.0, 42), 6.0, _level_col(lvl))
 	if c["named"]:
 		var nm: String = String(c["name"])
 		_txt(nm, pos + Vector2(-50, 24), 18, Color(1.0, 0.85, 0.55), HORIZONTAL_ALIGNMENT_CENTER, 100.0)
@@ -1899,7 +1946,7 @@ func _draw_hud() -> void:
 	draw_rect(Rect2(0, 604, SCREEN_W, 116), Color(0.05, 0.02, 0.03))
 	draw_line(Vector2(0, 604), Vector2(SCREEN_W, 604), Color(0.4, 0.12, 0.08), 3.0)
 	if sim.phase == "prep":
-		_txt("Arrastra bestias a las zonas marcadas: vanguardia hace de muro, retaguardia dispara. Selecciona una para subirla de nivel. Las almas que te sobren al acabar suben el árbol (T para verlo).", Vector2(20, 618), 14, Color(0.75, 0.65, 0.6))
+		_txt("Coge una bestia y arrástrala: delante hace de muro, detrás dispara. Tres iguales se funden en una más fuerte. Las almas que sobren al acabar suben el árbol (T).", Vector2(20, 618), 14, Color(0.75, 0.65, 0.6))
 	elif sim.phase == "combat":
 		var left: int = sim.spawn_queue.size() + sim.enemies.size()
 		_txt("Quedan %d enemigos." % left, Vector2(340, 646), 17, Color(0.95, 0.85, 0.7))
@@ -2422,6 +2469,9 @@ func _draw_draft() -> void:
 			if String(o["type"]) == "door":
 				glyph = "+%d%%" % int(round(float(o["amount"]) * 100.0))
 			_txt(glyph, Vector2(oc.x - 60, oc.y + 12), 32, rcol, HORIZONTAL_ALIGNMENT_CENTER, 120.0)
+		if beast and sim.would_merge(String(o["kind"])):
+			draw_rect(Rect2(r.position.x + r.size.x * 0.5 - 70, r.position.y + 96, 140, 26), Color(0.9, 0.6, 0.1, 0.92))
+			_txt("¡FUSIÓN!", Vector2(r.position.x, r.position.y + 115), 18, Color(0.15, 0.05, 0.0), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 		_txt(String(o["title"]), Vector2(r.position.x, r.position.y + 238), 24, Color(1.0, 0.92, 0.75), HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 		draw_multiline_string(font, Vector2(r.position.x + 20, r.position.y + 268), String(o["desc"]), HORIZONTAL_ALIGNMENT_CENTER, r.size.x - 40.0, 17, -1, Color(0.85, 0.8, 0.75))
 

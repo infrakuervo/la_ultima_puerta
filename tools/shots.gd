@@ -197,6 +197,25 @@ func run() -> void:
 				await shot("impacto")
 		if not shot_done:
 			await shot("impacto")
+	if want("fusion"):
+		# bestias de nivel 1, 2 y 3, una seleccionada (se ven las marcas de zona) y el aviso de fusión
+		s().reset()
+		main.menu.open = false
+		s().souls = 400
+		for k in ["sabueso", "alacran", "sapo", "sapo", "gargola"]:
+			add_beast(k)
+		var lv: int = 1
+		for c in s().creatures:
+			c["level"] = 1 + lv % 3
+			lv += 1
+		s().refresh_creatures()
+		await shot("fusion_sin_seleccion")
+		main.selected_id = int(s().creatures[1]["id"])
+		await shot("fusion", Vector2(560, 380))
+		main.selected_id = -1
+		s().buy("sabueso")
+		await _frames(4)
+		await shot("fusion_fx")
 	if want("draft"):
 		s().reset()
 		s().draft_enabled = true

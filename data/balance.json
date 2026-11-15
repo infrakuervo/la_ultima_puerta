@@ -59,6 +59,13 @@
    45,
    65,
    90
+  ],
+  "merge_mult": [
+   1,
+   2,
+   4,
+   7,
+   11
   ]
  },
  "sabueso": {
@@ -900,7 +907,7 @@
     "weight": 0.098,
     "min_wave": 2,
     "title": "Diezmo eterno",
-    "desc": "Esta partida: +25 almas por oleada y subir de nivel cuesta un 25% menos.",
+    "desc": "Esta partida: +25 almas por oleada y reclutar bestias cuesta un 25% menos.",
     "fx": [
      {
       "k": "eco.wave_bonus",
@@ -1267,7 +1274,7 @@
     "icon": "alma",
     "weight": 0.196,
     "title": "Cría barata",
-    "desc": "Esta partida: reclutar Sabuesos cuesta un 25% menos y subir de nivel un 20% menos.",
+    "desc": "Esta partida: reclutar Sabuesos cuesta un 45% menos y el resto de bestias un 20% menos.",
     "fx": [
      {
       "k": "eco.sabueso_cost",
@@ -1913,7 +1920,7 @@
    {
     "id": "austero",
     "name": "Austero",
-    "desc": "Gana sin subir de nivel a ninguna bestia.",
+    "desc": "Gana sin fundir ninguna bestia.",
     "reward": 80
    },
    {

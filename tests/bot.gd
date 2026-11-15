@@ -167,12 +167,9 @@ func prep(s) -> void:
 		s.buy("ojo")
 	if rng.randf() < 0.6 and s.can_buy("sabueso"):
 		s.buy("sabueso")
-	var t: Dictionary = s.named_creature()
-	if not t.is_empty() and rng.randf() < 0.6 and s.can_level(int(t["id"])):
-		s.level_up(int(t["id"]))
-	for c in s.creatures:
-		if not c["named"] and rng.randf() < 0.25 and s.can_level(int(c["id"])):
-			s.level_up(int(c["id"]))
+	# con lo que le queda, a veces insiste con otro Sabueso (así acaba fundiendo tríos sin buscarlo)
+	if rng.randf() < 0.45 and s.can_buy("sabueso"):
+		s.buy("sabueso")
 	_after_buys(s)
 
 

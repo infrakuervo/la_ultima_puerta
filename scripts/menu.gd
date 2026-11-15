@@ -335,7 +335,7 @@ func draw(m) -> void:
 			"Tras cada oleada eliges una recompensa: bestias, almas, esencia o un don para toda la partida.",
 			"Dos dones de la misma familia despiertan una resonancia. Antes de cada oleada, un augurio",
 			"opcional: más riesgo, más premio. Al empezar, un encargo opcional da esencia si lo cumples.",
-			"Con las almas reclutas y subes de nivel. Las que te sobren al acabar la partida, ganes o",
+			"Con las almas reclutas bestias; tres iguales se funden en una más fuerte. Las que te sobren al acabar la partida, ganes o",
 			"pierdas, se convierten en esencia: con ella subes el Árbol al terminar o desde el menú.",
 			"Tras la oleada 4 eliges heraldo y Tizón muta. Ganar abre la Ira y más asedios.",
 			"El Árbol tiene una pestaña por rama. La piedra angular (marco dorado) cambia una regla",
@@ -509,7 +509,7 @@ func tut_draw(m) -> void:
 		4:
 			text = "Tras cada oleada eliges una recompensa:\nbestias gratis, almas, esencia o un don."
 		5:
-			text = "Las almas sirven para reclutar y subir de nivel. Las que te sobren\nal acabar la partida suben el Árbol: gastar ahora o guardar, tú decides."
+			text = "Las almas sirven para reclutar: tres bestias iguales se funden en una mejor. Las que te sobren\nal acabar la partida suben el Árbol: gastar ahora o guardar, tú decides."
 			hl = Rect2(340, 624, 150, 72)
 	if text == "":
 		return

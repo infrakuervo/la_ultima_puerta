@@ -250,9 +250,10 @@ func has_kind(kind: String) -> bool:
 
 func cost_of(item: String) -> int:
 	var c: float = float(B["economy"]["costs"].get(item, 999999))
+	var m: float = 1.0 + fmul("eco.level_cost")   # «cría»: abarata reclutar cualquier bestia
 	if item == "sabueso":
-		c *= maxf(0.3, 1.0 + fmul("eco.sabueso_cost"))
-	return int(round(c))
+		m += fmul("eco.sabueso_cost")
+	return int(round(c * maxf(0.3, m)))
 
 
 func epitaph() -> String:
@@ -356,7 +357,11 @@ func _set_pos(c: Dictionary, x: float, lane: int) -> void:
 
 
 func stat_mult(c: Dictionary) -> float:
-	return 1.0 + float(B["economy"]["level_step"]) * float(int(c["level"]) - 1)
+	var mm: Array = B["economy"].get("merge_mult", [])
+	var lv: int = int(c["level"]) - 1
+	if lv < mm.size():
+		return float(mm[lv])
+	return 1.0 + float(B["economy"]["level_step"]) * float(lv)
 
 
 func hp_mult(c: Dictionary) -> float:
@@ -394,35 +399,72 @@ func refresh_creatures() -> void:
 			c["hp"] = c["max_hp"]
 
 
-func level_cost(c: Dictionary) -> int:
-	var costs: Array = B["economy"]["level_costs"]
-	var i: int = int(c["level"]) - 1
-	if i < 0 or i >= costs.size() or int(c["level"]) >= 3 + int(fadd("eco.max_level")):
-		return -1
-	return int(round(float(costs[i]) * maxf(0.3, 1.0 + fmul("eco.level_cost"))))
+## Nivel máximo de una bestia (3, o más con «Más allá del límite»).
+func max_level() -> int:
+	return 3 + int(fadd("eco.max_level"))
 
 
-func can_level(cid: int) -> bool:
-	if phase != "prep":
-		return false
-	var c: Dictionary = creature_by_id(cid)
-	if c.is_empty() or c["dead"]:
-		return false
-	var cost: int = level_cost(c)
-	return cost > 0 and souls >= cost
+## Clave de fusión: tres bestias con la misma clave y nivel se funden en una del nivel siguiente.
+## Tizón cuenta siempre como Sabueso (devora sabuesos de su nivel, tenga la forma que tenga).
+func merge_key(c: Dictionary) -> String:
+	return "sabueso" if c["named"] else String(c["kind"])
 
 
-func level_up(cid: int) -> bool:
-	if not can_level(cid):
-		return false
-	var c: Dictionary = creature_by_id(cid)
-	souls -= level_cost(c)
-	c["level"] += 1
-	run_track["levels"] = int(run_track.get("levels", 0)) + 1
-	c["max_hp"] = calc_max_hp(c)
-	c["hp"] = c["max_hp"]
-	events.append({"t": "leveled", "id": cid, "level": c["level"]})
-	return true
+## Cuántas bestias hay con la clave y nivel dados (para avisar de que una carta completa un trío).
+func merge_count(key: String, level: int) -> int:
+	var n: int = 0
+	for c in creatures:
+		if not c["dead"] and not c["loaned"] and merge_key(c) == key and int(c["level"]) == level:
+			n += 1
+	return n
+
+
+## True si añadir una bestia de ese tipo (nivel 1) provoca una fusión.
+func would_merge(kind: String) -> bool:
+	return max_level() > 1 and merge_count(kind, 1) >= 2
+
+
+## Funde tríos hasta que no quede ninguno. Se queda la que tiene nombre (o la más antigua), en su sitio.
+func merge_creatures() -> int:
+	var done: int = 0
+	var again: bool = true
+	while again:
+		again = false
+		var groups: Dictionary = {}
+		for c in creatures:
+			if c["dead"] or c["loaned"] or int(c["level"]) >= max_level():
+				continue
+			var k: String = "%s|%d" % [merge_key(c), int(c["level"])]
+			if not groups.has(k):
+				groups[k] = []
+			groups[k].append(c)
+		for k in groups:
+			var g: Array = groups[k]
+			if g.size() < 3:
+				continue
+			var keep: Dictionary = g[0]
+			for c in g:
+				if c["named"]:
+					keep = c
+			var gone: Array = []
+			var from: Array = []
+			for c in g:
+				if c["id"] != keep["id"] and gone.size() < 2:
+					gone.append(c)
+					from.append({"x": float(c["home_x"]), "lane": int(c["home_lane"])})
+					keep["kills"] = int(keep["kills"]) + int(c["kills"])
+			for c in gone:
+				creatures.erase(c)
+			keep["level"] = int(keep["level"]) + 1
+			keep["fallen"] = false
+			keep["max_hp"] = calc_max_hp(keep)
+			keep["hp"] = keep["max_hp"]
+			run_track["levels"] = int(run_track.get("levels", 0)) + 1
+			events.append({"t": "merged", "id": keep["id"], "level": keep["level"], "kind": keep["kind"], "from": from})
+			done += 1
+			again = true
+			break
+	return done
 
 
 func can_buy(item: String) -> bool:
@@ -432,12 +474,12 @@ func can_buy(item: String) -> bool:
 		return false
 	match item:
 		"sabueso":
-			return not find_spot("front").is_empty()
+			return would_merge("sabueso") or not find_spot("front").is_empty()
 		"ojo":
 			for c in creatures:
-				if c["kind"] == "ojo" and not c["loaned"] and not c["dead"]:
-					return false
-			return has_kind("ojo") or not find_spot("rear").is_empty()
+				if c["kind"] == "ojo" and c["loaned"] and not c["dead"]:
+					return true
+			return would_merge("ojo") or not find_spot("rear").is_empty()
 	return false
 
 
@@ -447,7 +489,10 @@ func buy(item: String) -> bool:
 	souls -= cost_of(item)
 	match item:
 		"sabueso":
-			var sc: Dictionary = _new_creature("sabueso", find_spot("front"))
+			var ssp: Dictionary = find_spot("front")
+			if ssp.is_empty():
+				ssp = {"x": zone_min_x(), "lane": 1}   # no cabe, pero se funde al momento
+			var sc: Dictionary = _new_creature("sabueso", ssp)
 			sc["name"] = "Sabueso"
 			creatures.append(sc)
 			if fadd("special.litter") > 0.0:
@@ -459,17 +504,21 @@ func buy(item: String) -> bool:
 		"ojo":
 			var existing: Dictionary = {}
 			for c in creatures:
-				if c["kind"] == "ojo" and not c["dead"]:
+				if c["kind"] == "ojo" and c["loaned"] and not c["dead"]:
 					existing = c
 			if not existing.is_empty():
 				existing["loaned"] = false
 				existing["name"] = label("ojo")
 			else:
-				var oc: Dictionary = _new_creature("ojo", find_spot("rear"))
+				var osp: Dictionary = find_spot("rear")
+				if osp.is_empty():
+					osp = {"x": zone_min_x(), "lane": 1}
+				var oc: Dictionary = _new_creature("ojo", osp)
 				oc["name"] = label("ojo")
 				creatures.append(oc)
 				_note_seen("ojo")
 	events.append({"t": "bought", "item": item})
+	merge_creatures()
 	return true
 
 
@@ -2472,7 +2521,9 @@ func draft_pick(i: int) -> bool:
 			var kind: String = String(o["kind"])
 			var spot: Dictionary = find_spot(String(B[kind].get("spot", "front")))
 			if spot.is_empty():
-				return false
+				if not would_merge(kind):
+					return false
+				spot = {"x": zone_min_x(), "lane": 1}   # no cabe, pero se funde al momento
 			var nc: Dictionary = _new_creature(kind, spot)
 			creatures.append(nc)
 			_note_seen(kind)
@@ -2494,6 +2545,7 @@ func draft_pick(i: int) -> bool:
 			door_max = nm
 			refresh_creatures()
 	events.append({"t": "draft_pick", "id": o["id"]})
+	merge_creatures()
 	draft.clear()
 	return true
 

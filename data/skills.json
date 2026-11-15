@@ -489,7 +489,7 @@
    "id": "eco_level",
    "branch": "demonio",
    "name": "Maestro de la cría",
-   "desc": "-12% al coste de subir de nivel.",
+   "desc": "-12% al coste de reclutar bestias.",
    "max": 3,
    "row": 2,
    "fx": [

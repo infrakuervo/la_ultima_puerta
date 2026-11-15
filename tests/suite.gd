@@ -217,18 +217,34 @@ func test_spells() -> void:
 func test_levels() -> void:
 	print("Subir estadísticas")
 	var s = new_sim()
-	s.souls = 200
+	s.souls = 2000
 	var t: Dictionary = s.named_creature()
 	var tid: int = int(t["id"])
-	check(s.level_up(tid), "se sube a Tizón de nivel")
-	check(int(t["level"]) == 2 and s.souls == 170, "cuesta 30 almas")
-	check(float(t["max_hp"]) > float(s.B["sabueso"]["hp"]), "sube su vida máxima")
-	check(s.level_up(tid) and int(t["level"]) == 3, "se sube al nivel 3")
-	check(not s.level_up(tid), "el nivel 3 es el máximo")
+	check(s.buy("sabueso") and s.creatures.size() == 2 and int(t["level"]) == 1, "con dos iguales todavía no hay fusión")
+	check(s.would_merge("sabueso"), "se avisa de que el siguiente Sabueso completa el trío")
+	check(s.buy("sabueso") and s.creatures.size() == 1, "tres Sabuesos se funden en uno")
+	check(int(t["level"]) == 2 and not s.creature_by_id(tid).is_empty(), "Tizón se queda y sube al nivel 2")
+	check(float(t["max_hp"]) > float(s.B["sabueso"]["hp"]) * 1.5, "sube su vida máxima")
+	for i in 3:
+		s.buy("sabueso")
+	check(s.creatures.size() == 2 and s.merge_count("sabueso", 2) == 2, "otros tres forman un segundo Sabueso de nivel 2")
+	for i in 3:
+		s.buy("sabueso")
+	check(s.creatures.size() == 1 and int(t["level"]) == 3, "tres de nivel 2 hacen uno de nivel 3 (fusión en cadena)")
+	for i in 6:
+		s.buy("sabueso")
+	for i in 3:
+		s.buy("sabueso")
+	check(int(t["level"]) == 3 and s.merge_count("sabueso", 3) == 2, "el nivel 3 es el máximo")
 	mutate_tizon(s, "verdugo")
 	check(float(t["max_hp"]) > float(s.B["horno"]["hp"]), "la mutación conserva el nivel")
+	var sm = new_sim()
+	sm.souls = 500
+	mutate_tizon(sm, "verdugo")
+	sm.buy("sabueso")
+	sm.buy("sabueso")
+	check(int(sm.named_creature()["level"]) == 2 and sm.creatures.size() == 1, "Tizón mutado sigue devorando Sabuesos")
 	to_combat(s)
-	check(not s.level_up(tid), "no se sube de nivel en combate")
 	var e: Dictionary = add_enemy(s, "ballestero", 1, 600.0)
 	var base: float = float(e["hp"])
 	s.damage_enemy(e, 10.0, tid, false)
@@ -541,8 +557,9 @@ func autoplay(route: String, invulnerable: bool, seed_v: int) -> Dictionary:
 					s.buy("ojo")
 				buy_skills(s, route)
 				for c2 in s.creatures:
-					if c2["named"] and s.wave_index >= 3 and s.can_level(int(c2["id"])):
-						s.level_up(int(c2["id"]))
+					if c2["named"] and s.wave_index >= 3 and int(c2["level"]) < 2:
+						c2["level"] = 2
+						s.refresh_creatures()
 				if s.wave_index >= 4 and n_sab < 2 and s.can_buy("sabueso"):
 					s.buy("sabueso")
 				arrange(s)
@@ -767,15 +784,13 @@ func test_skills() -> void:
 	var s5 = new_sim()
 	s5.souls = 900
 	var lv: Dictionary = s5.named_creature()
-	s5.level_up(int(lv["id"]))
-	s5.level_up(int(lv["id"]))
-	check(not s5.can_level(int(lv["id"])), "sin la habilidad el nivel 3 es el máximo")
+	check(s5.max_level() == 3, "sin la habilidad el nivel 3 es el máximo")
 	s5.buy_skill("door_hp")
 	s5.buy_skill("eco_reward")
 	s5.buy_skill("eco_level")
 	s5.buy_skill("eco_level")
 	check(s5.buy_skill("eco_cap") or s5.skill_state("eco_cap") != "locked", "Más allá del límite se desbloquea con Maestro de la cría")
-	check(s5.can_level(int(lv["id"])), "con Más allá del límite se puede subir al nivel 4")
+	check(s5.max_level() >= 4 and lv["named"], "con Más allá del límite se puede llegar al nivel 4")
 
 
 func test_full_runs() -> void:
@@ -870,8 +885,10 @@ func test_ui_smoke() -> void:
 	var from_p: Vector2 = m._creature_pos(t) + Vector2(10, -20)
 	m._on_press(from_p)
 	check(m.selected_id == int(t["id"]), "clic en una bestia la selecciona")
-	m._on_press(Vector2(575, 660))
-	check(int(t["level"]) == 2, "el botón Subir nivel sube a la bestia seleccionada")
+	m._on_press(Vector2(95, 660))
+	m._process(1.0 / 30.0)
+	check(int(t["level"]) == 2 and m.sim.creatures.size() == 1, "el tercer Sabueso se funde con Tizón (nivel 2)")
+	m._on_press(m._creature_pos(t) + Vector2(10, -20))
 	m._on_release(Vector2(330, m._lane_y(1)))
 	check(float(t["home_x"]) == 330.0 and int(t["home_lane"]) == 1, "arrastrar con el ratón recoloca a Tizón en la retaguardia (x %d)" % int(t["home_x"]))
 	m._on_press(Vector2(415, 660))
@@ -2104,11 +2121,13 @@ func test_arbol2_piedras() -> void:
 	var c = meta_sim()
 	grant(c, "sab_camada")
 	c.souls = 500
+	c.named_creature()["level"] = 2   # así el gemelo no completa un trío con Tizón
+	c.refresh_creatures()
 	var n0: int = c.creatures.size()
 	var s_before: int = c.souls
 	c.buy("sabueso")
 	check(c.creatures.size() == n0 + 2 and c.souls == s_before - c.cost_of("sabueso"), "Camada: un Sabueso comprado trae un gemelo gratis")
-	check(absf(float(c.creatures[n0]["max_hp"]) - float(c._stats("sabueso")["hp"]) * 0.75) < 0.01 and float(c.named_creature()["max_hp"]) == float(c._stats("sabueso")["hp"]), "Camada: los Sabuesos tienen un 25% menos de vida, Tizón no")
+	check(absf(float(c.creatures[n0]["max_hp"]) - float(c._stats("sabueso")["hp"]) * 0.75) < 0.01 and float(c.named_creature()["max_hp"]) == float(c._stats("sabueso")["hp"]) * 2.0, "Camada: los Sabuesos tienen un 25% menos de vida, Tizón no")
 	# Estallido de ceniza
 	for with_horno in [true, false]:
 		var h = meta_sim()
