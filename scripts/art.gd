@@ -169,10 +169,17 @@ static func draw_creature(ci: CanvasItem, kind: String, pos: Vector2, t: float, 
 		if bool(opts.get("stone", false)):
 			so["tint"] = Color(0.72, 0.72, 0.76)   # Gárgola hecha piedra
 			so["bob"] = 0.0
-		if opts.has("frame") and not opts["frame"].is_empty():
+		# aspecto por nivel: art/sprites/<bestia>_n2.png, _n3.png… (si falta, el del nivel anterior)
+		var skey: String = kind
+		var lv: int = int(opts.get("level", 1))
+		while lv >= 2 and skey == kind:
+			if tex("%s_n%d" % [kind, lv]) != null:
+				skey = "%s_n%d" % [kind, lv]
+			lv -= 1
+		if skey == kind and opts.has("frame") and not opts["frame"].is_empty():
 			so["frame"] = opts["frame"]
 			so["bob"] = 0.0
-		if draw_sprite(ci, kind, pos, t, so):
+		if draw_sprite(ci, skey, pos, t, so):
 			if int(opts.get("hambre", 0)) > 0:
 				for i in int(opts.get("hambre", 0)):
 					ci.draw_circle(pos + Vector2(-16 + i * 12, -34 * s), 4.0, Color(1.0, 0.6, 0.2))

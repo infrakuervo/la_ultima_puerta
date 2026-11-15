@@ -1597,6 +1597,7 @@ func _draw_creature(c: Dictionary) -> void:
 	var kind: String = c["kind"]
 	var scale_v: float = 1.0
 	var glow: float = 0.0
+	var lvl: int = int(c["level"])
 	var m: float = float(mut_anim.get(int(c["id"]), -1.0))
 	if m >= 0.0:
 		if m < 0.9:
@@ -1608,7 +1609,6 @@ func _draw_creature(c: Dictionary) -> void:
 			glow = 1.0 - (m - 0.9) / 1.0
 			scale_v = 1.0 + 0.25 * glow
 			draw_arc(pos + Vector2(0, -34), (m - 0.9) * 260.0, 0.0, TAU, 32, Color(1.0, 0.7, 0.3, clampf(glow, 0.0, 1.0)), 4.0)
-	var lvl: int = int(c["level"])
 	if lvl > 1:
 		# nivel por fusión: más grande y con un aura en el suelo
 		scale_v *= 1.0 + 0.15 * float(mini(lvl, 4) - 1)
@@ -1625,7 +1625,7 @@ func _draw_creature(c: Dictionary) -> void:
 	if crouch:
 		pos.y += 4.0
 	var opts: Dictionary = {"scale": scale_v, "scars": c["scars"], "hambre": c["hambre"], "crouch": crouch, "stone": c["state"] == "stone",
-		"fallen": c["fallen"], "glow": glow, "flash": 0.0}
+		"fallen": c["fallen"], "glow": glow, "flash": 0.0, "level": lvl}
 	if c["stun"] > 0.0:
 		opts["flash"] = 0.15
 	opts["flash"] = maxf(float(opts["flash"]), juice.flash_of(1000000 + int(c["id"])))
